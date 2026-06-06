@@ -1,4 +1,4 @@
-﻿#!/usr/bin/env rust-script
+#!/usr/bin/env rust-script
 
 //! Doc-Comment Validation Script for Equipchain Contracts
 //! 

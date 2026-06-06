@@ -1,4 +1,4 @@
-﻿#![no_std]
+#![no_std]
 use soroban_sdk::{
     contract, contractclient, contracterror, contractimpl, contracttype, panic_with_error,
     symbol_short, token, Address, Env, String, Symbol, Vec, BytesN,

@@ -1,4 +1,4 @@
-﻿//! # Tamper-Proof Hardware Nonce Sync Module
+//! # Tamper-Proof Hardware Nonce Sync Module
 //!
 //! This module implements a strict Device_Nonce tracking system for IoT device liveness verification.
 //! It prevents man-in-the-middle attacks and replay attacks by requiring strictly incrementing

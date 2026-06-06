@@ -1,4 +1,4 @@
-﻿use chrono::Utc;
+use chrono::Utc;
 use clap::Parser;
 use ed25519_dalek::{Signer, SigningKey, VerifyingKey};
 use rand::rngs::OsRng;
