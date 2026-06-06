@@ -1,21 +1,21 @@
-# Utility Drip - Usage Dashboard
+﻿# Equipchain - Usage Dashboard
 
-A modern, real-time dashboard for visualizing kWh usage vs. XLM spend in the Utility Drip smart contract system.
+A modern, real-time dashboard for visualizing kWh usage vs. XLM spend in the Equipchain smart contract system.
 
 ## Features
 
-### 🚀 Real-Time Monitoring
+### ðŸš€ Real-Time Monitoring
 - **Live Usage Data**: Updates every 5 seconds with simulated real-time data
 - **Dynamic Pricing**: Shows current rate based on peak/off-peak hours
 - **Interactive Charts**: Beautiful visualizations using Recharts
 
-### 📊 Comprehensive Analytics
+### ðŸ“Š Comprehensive Analytics
 - **24 Hour Overview**: Track usage patterns throughout the day
 - **Cost Analysis**: Monitor XLM spending alongside energy consumption
 - **Peak Hour Detection**: Visual indicators for peak pricing periods
 - **Historical Trends**: View usage patterns over time
 
-### 💡 Smart Features
+### ðŸ’¡ Smart Features
 - **Rate Schedule**: Clear display of peak (18:00-21:00 UTC) vs off-peak hours
 - **Meter Information**: Detailed account and contract information
 - **System Status**: Real-time connection and operational status
@@ -39,8 +39,8 @@ A modern, real-time dashboard for visualizing kWh usage vs. XLM spend in the Uti
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/Great-2025/Utility-Drip-Contracts.git
-cd Utility-Drip-Contracts/usage-dashboard
+git clone https://github.com/EquipChain/EquipChain-contracts.git
+cd EquipChain-contracts/usage-dashboard
 ```
 
 2. Install dependencies:
@@ -105,7 +105,7 @@ interface MeterData {
 
 ## Integration with Smart Contracts
 
-This dashboard is designed to work with the Utility Drip smart contracts:
+This dashboard is designed to work with the Equipchain smart contracts:
 
 - **Contract ID**: CB7PSJZALNWNX7NLOAM6LOEL4OJZMFPQZJMIYO522ZSACYWXTZIDEDSS
 - **Network**: Stellar Testnet
@@ -116,13 +116,13 @@ This dashboard is designed to work with the Utility Drip smart contracts:
 ### Project Structure
 ```
 usage-dashboard/
-├── src/
-│   ├── app/                 # Next.js App Router
-│   ├── components/          # React components
-│   ├── lib/                # Utility functions and mock data
-│   └── types/              # TypeScript type definitions
-├── public/                 # Static assets
-└── README.md
+â”œâ”€â”€ src/
+â”‚   â”œâ”€â”€ app/                 # Next.js App Router
+â”‚   â”œâ”€â”€ components/          # React components
+â”‚   â”œâ”€â”€ lib/                # Utility functions and mock data
+â”‚   â””â”€â”€ types/              # TypeScript type definitions
+â”œâ”€â”€ public/                 # Static assets
+â””â”€â”€ README.md
 ```
 
 ### Available Scripts

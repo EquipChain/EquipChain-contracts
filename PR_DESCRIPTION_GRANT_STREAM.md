@@ -1,8 +1,8 @@
-# Grant-Stream Integration for Matching Utilities (#130)
+﻿# Grant-Stream Integration for Matching Utilities (#130)
 
 ## Summary
 
-This PR implements a comprehensive Grant-Stream integration that transforms the Utility Drips protocol into a "Proof of Sustainability" system. When communities achieve water conservation goals, they automatically trigger grant matching from philanthropic organizations and green energy foundations.
+This PR implements a comprehensive Grant-Stream integration that transforms the Equipchains protocol into a "Proof of Sustainability" system. When communities achieve water conservation goals, they automatically trigger grant matching from philanthropic organizations and green energy foundations.
 
 ## Key Features
 
@@ -12,14 +12,14 @@ This PR implements a comprehensive Grant-Stream integration that transforms the 
 - **Automatic Achievement Detection**: Goals are automatically marked as complete when targets are reached
 
 ### 2. Grant Stream Listener Contract
-- **Event-Driven Processing**: Listens for `GoalReached` events from Utility Drips
+- **Event-Driven Processing**: Listens for `GoalReached` events from Equipchains
 - **Treasury Management**: Securely manages and distributes grant funds
 - **Monthly Limits**: Enforces configurable monthly grant limits to prevent overspending
 - **Maintenance Coverage**: Calculates maintenance months covered based on grant amount
 
 ### 3. Inter-Contract Communication
 - **Event Emission**: `GoalReached` events contain all necessary grant information
-- **Contract Client Integration**: Seamless communication between Utility Drips and Grant Stream contracts
+- **Contract Client Integration**: Seamless communication between Equipchains and Grant Stream contracts
 - **Configuration Management**: Flexible setup of grant stream matches per goal
 
 ## Architecture

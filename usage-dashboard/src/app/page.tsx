@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useEffect } from 'react';
 import { Zap, DollarSign, TrendingUp, Activity } from 'lucide-react';
@@ -62,7 +62,7 @@ export default function Home() {
                 <Zap className="w-6 h-6 text-white" />
               </div>
               <div>
-                <h1 className="text-xl font-bold text-gray-900">Utility Drip</h1>
+                <h1 className="text-xl font-bold text-gray-900">Equipchain</h1>
                 <p className="text-sm text-gray-500">Usage Dashboard</p>
               </div>
             </div>
@@ -73,7 +73,7 @@ export default function Home() {
                   ? 'bg-red-100 text-red-800' 
                   : 'bg-green-100 text-green-800'
               }`}>
-                {stats.isPeakHour ? '🔴 Peak Hours' : '🟢 Off-Peak'}
+                {stats.isPeakHour ? 'ðŸ”´ Peak Hours' : 'ðŸŸ¢ Off-Peak'}
               </div>
               
               <button
@@ -84,7 +84,7 @@ export default function Home() {
                     : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                 }`}
               >
-                {isRealTime ? '🔴 Live' : '⏸️ Paused'}
+                {isRealTime ? 'ðŸ”´ Live' : 'â¸ï¸ Paused'}
               </button>
             </div>
           </div>

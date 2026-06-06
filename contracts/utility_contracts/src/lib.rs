@@ -1,4 +1,4 @@
-#![no_std]
+﻿#![no_std]
 use soroban_sdk::xdr::ToXdr;
 use soroban_sdk::{
     contract, contracterror, contractimpl, contracttype, panic_with_error, symbol_short, token,
@@ -35,7 +35,7 @@ pub struct PriceData {
 #[contracttype]
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub enum ReputationTier {
-    /// User has no history (new or pruned) — neutral score.
+    /// User has no history (new or pruned) â€” neutral score.
     NewUser = 0,
     /// Occasional late payments or low buffer health.
     Bronze = 1,
@@ -43,7 +43,7 @@ pub enum ReputationTier {
     Silver = 2,
     /// Consistently on-time with healthy buffer.
     Gold = 3,
-    /// Perfect record — eligible for premium DeFi features.
+    /// Perfect record â€” eligible for premium DeFi features.
     Platinum = 4,
 }
 
@@ -52,7 +52,7 @@ pub enum ReputationTier {
 #[contracttype]
 #[derive(Clone)]
 pub struct ReputationScore {
-    /// Score in basis points (0–10 000). 10 000 = perfect.
+    /// Score in basis points (0â€“10 000). 10 000 = perfect.
     pub score_bps: u32,
     /// Human-readable tier for partner DApps.
     pub tier: ReputationTier,
@@ -63,7 +63,7 @@ pub struct ReputationScore {
 }
 
 // ============================================================================
-// Issue #257: IoT Error Enum — u16 machine-readable codes
+// Issue #257: IoT Error Enum â€” u16 machine-readable codes
 // ============================================================================
 
 /// Compact u16 error codes for IoT firmware handshakes.
@@ -73,31 +73,31 @@ pub struct ReputationScore {
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
 #[repr(u16)]
 pub enum IoTErrorCode {
-    // 0x01xx — Meter / stream lifecycle
+    // 0x01xx â€” Meter / stream lifecycle
     MeterNotFound          = 0x0101,
     MeterNotPaired         = 0x0102,
     MeterOffline           = 0x0103,
     MeterPaused            = 0x0104,
     MeterClosed            = 0x0105,
-    // 0x02xx — Balance / billing
+    // 0x02xx â€” Balance / billing
     InsufficientBalance    = 0x0201,
     BufferBreached         = 0x0202,
     DebtThresholdExceeded  = 0x0203,
     CreditLimitApproached  = 0x0204,
     CreditLimitBreached    = 0x0205,
-    // 0x03xx — Auth / signature
+    // 0x03xx â€” Auth / signature
     InvalidSignature       = 0x0301,
     PublicKeyMismatch      = 0x0302,
     TimestampTooOld        = 0x0303,
     UnauthorizedDevice     = 0x0304,
-    // 0x04xx — Device / firmware
+    // 0x04xx â€” Device / firmware
     DeviceBlacklisted      = 0x0401,
     FirmwareUpdateActive   = 0x0402,  // triggers hibernation mode in firmware
     FirmwareWindowExpired  = 0x0403,
-    // 0x05xx — Clawback / compliance
+    // 0x05xx â€” Clawback / compliance
     ClawbackDetected       = 0x0501,
     StreamTerminated       = 0x0502,
-    // 0x06xx — Generic
+    // 0x06xx â€” Generic
     UnknownError           = 0x0601,
 }
 
@@ -118,7 +118,7 @@ impl IoTErrorCode {
         }
     }
 
-    /// Return the raw u16 code — zero-copy for firmware parsing.
+    /// Return the raw u16 code â€” zero-copy for firmware parsing.
     pub fn code(self) -> u16 {
         self as u16
     }
@@ -243,7 +243,7 @@ pub struct ContinuousFlow {
     pub buffer_balance: i128,     // 16 bytes - pre-paid buffer balance (24 hours of flow)
     pub buffer_warning_sent: bool, // 1 byte - whether buffer warning has been sent
     pub payer: Address,           // 32 bytes - payer address for buffer refunds
-    /// Issue #251 — `enterprise::PriorityTier` discriminant stored as `u32`.
+    /// Issue #251 â€” `enterprise::PriorityTier` discriminant stored as `u32`.
     pub priority_tier: u32,
     pub grid_epoch_seen: u64,
     /// Ed25519 public key mapped from device MAC identity; zero means heartbeat not enforced on-chain.
@@ -718,7 +718,7 @@ pub struct AdminTransferProposal {
 #[contracttype]
 #[derive(Clone)]
 pub struct UpgradeMultiSigConfig {
-    /// Addresses authorized to propose and approve WASM upgrades (2–7 signers).
+    /// Addresses authorized to propose and approve WASM upgrades (2â€“7 signers).
     pub signers: Vec<Address>,
     /// Minimum number of approvals required before an upgrade can execute.
     pub required_approvals: u32,
@@ -1095,31 +1095,31 @@ pub enum ContractError {
     SubDaoNotConfigured = 71,
     SubDaoBudgetExceeded = 72,
     UnauthorizedContributor = 73,
-    // Issue #255 — Post-Paid escrow
+    // Issue #255 â€” Post-Paid escrow
     GuarantorDepositNotFound = 74,
     InsufficientCollateral = 75,
     DepositAlreadySlashed = 76,
-    // Issue #256 — SAC clawback
+    // Issue #256 â€” SAC clawback
     ClawbackBalanceMismatch = 77,
-    // Issue #259 — Reputation
+    // Issue #259 â€” Reputation
     ReputationQueryFailed = 78,
-    // Issue #260 — Nonce Sync
+    // Issue #260 â€” Nonce Sync
     NonceDesyncDetected = 79,
     NonceResetUnauthorized = 80,
     DeviceMarkedSuspicious = 81,
     NonceWindowExceeded = 82,
-    // Issue #261 — Tariff Oracle
+    // Issue #261 â€” Tariff Oracle
     InvalidTariffSchedule = 83,
     TariffUpdateNotReady = 84,
-    // Issue #272 — Reentrancy protection
+    // Issue #272 â€” Reentrancy protection
     ReentrancyDetected = 85,
     TariffOracleNotConfigured = 86,
     InvalidTariffHour = 87,
-    // Issue #262 — Ghost Sweeper
+    // Issue #262 â€” Ghost Sweeper
     StreamNotEligibleForPruning = 88,
     StreamHasPendingBuffer = 89,
     ArchiveCorrupted = 90,
-    // Issue #277 — Emergency Drain Recovery
+    // Issue #277 â€” Emergency Drain Recovery
     EmergencyDrainNotAuthorized = 91,
     EmergencyDrainCooldownActive = 92,
     EmergencyDrainInsufficientBalance = 93,
@@ -1997,7 +1997,7 @@ fn verify_groth16_proof(env: &Env, vk: &Groth16VerificationKey, proof: &Groth16P
     // Build the hash input by concatenating all components into a single Bytes buffer.
     // Size is known: domain separator (18) + 4 VK fields + 3 proof fields + variable public inputs.
     // Using direct Bytes concatenation avoids a heap-allocated Vec<Bytes> intermediary.
-    let mut data = Bytes::from_slice(env, b"UTILITY_DRIP_ZK_V1");
+    let mut data = Bytes::from_slice(env, b"equipchain_ZK_V1");
 
     // Verification key components (fixed, 4 fields)
     data.append(&vk.alpha_g1);
@@ -2034,7 +2034,7 @@ fn verify_zk_proof(env: &Env, proof_hash: BytesN<32>, challenge_data: &BytesN<32
 
     // Build hash input by concatenating 3 fixed-size components directly into Bytes.
     // Avoids a heap-allocated Vec<Bytes> intermediary since the size is always 3 items.
-    let mut data = Bytes::from_slice(env, b"UTILITY_DRIP_ZK_VERIFY");
+    let mut data = Bytes::from_slice(env, b"equipchain_ZK_VERIFY");
     data.append(&Bytes::from_slice(env, &proof_hash.to_array()));
     data.append(&Bytes::from_slice(env, &challenge_data.to_array()));
 
@@ -2050,7 +2050,7 @@ fn verify_zk_proof(env: &Env, proof_hash: BytesN<32>, challenge_data: &BytesN<32
 fn generate_commitment(env: &Env, usage_amount: i128, randomness: BytesN<32>) -> BytesN<32> {
     // Build commitment input by concatenating 4 fixed-size components directly into Bytes.
     // Avoids a heap-allocated Vec<Bytes> intermediary since the structure is always 4 items.
-    let mut data = Bytes::from_slice(env, b"UTILITY_DRIP_COMMITMENT_V1");
+    let mut data = Bytes::from_slice(env, b"equipchain_COMMITMENT_V1");
 
     // Add usage amount with proper encoding
     data.append(&Bytes::from_slice(env, &usage_amount.to_be_bytes()));
@@ -2207,7 +2207,7 @@ fn update_continuous_flow(
         .instance()
         .get(&DataKey::PlatformFeeBps)
         .unwrap_or(0);
-    // fee = floor(accumulation * bps / 10000) — truncation never favors attacker (rounds down)
+    // fee = floor(accumulation * bps / 10000) â€” truncation never favors attacker (rounds down)
     let fee_amount = if platform_fee_bps > 0 && accumulation > 0 {
         accumulation.saturating_mul(platform_fee_bps) / 10000
     } else {
@@ -4070,7 +4070,7 @@ impl UtilityContract {
         }
         
         // Create a transfer ID based on device hash and new owner (for uniqueness).
-        // Concatenate 2 fixed components directly into Bytes — no Vec intermediary needed.
+        // Concatenate 2 fixed components directly into Bytes â€” no Vec intermediary needed.
         let mut transfer_data = Bytes::from_slice(&env, &device_hash.to_array());
         transfer_data.append(&new_owner.to_xdr(&env));
         let transfer_id = env.crypto().sha256(&transfer_data);
@@ -4131,7 +4131,7 @@ impl UtilityContract {
         // Let's verify that the provided transfer_id matches what we expect
         
         // Recreate expected transfer ID from device hash and new owner.
-        // Concatenate 2 fixed components directly into Bytes — no Vec intermediary needed.
+        // Concatenate 2 fixed components directly into Bytes â€” no Vec intermediary needed.
         let mut expected_transfer_data = Bytes::from_slice(&env, &device_hash.to_array());
         expected_transfer_data.append(&new_owner.to_xdr(&env));
         let expected_transfer_id = env.crypto().sha256(&expected_transfer_data);
@@ -7718,7 +7718,7 @@ fn attempt_partial_routing(env: &Env, amount: i128) -> Result<i128, ContractErro
 }
 
 impl UtilityContract {
-    // --- Issues #248–#251 (enterprise) thin entrypoints ---
+    // --- Issues #248â€“#251 (enterprise) thin entrypoints ---
     pub fn set_provider_fleet_cap(env: Env, provider: Address, new_cap: i128, authority: Address) {
         crate::enterprise::set_fleet_cap_super_admin(&env, provider, new_cap, authority);
     }
@@ -7810,7 +7810,7 @@ impl UtilityContract {
     /// or device MAC**.  Defaults to a neutral `NewUser` score when history has
     /// been pruned or the user is unknown.
     ///
-    /// Designed for high-frequency cross-contract queries — all storage reads are
+    /// Designed for high-frequency cross-contract queries â€” all storage reads are
     /// single-key lookups to minimise CPU instruction count.
     pub fn get_utility_reputation(env: Env, user: Address) -> ReputationScore {
         let now = env.ledger().timestamp();
@@ -7863,7 +7863,7 @@ impl UtilityContract {
             }
         }
 
-        // No meters found → neutral new-user score.
+        // No meters found â†’ neutral new-user score.
         if total_meters == 0 {
             return ReputationScore {
                 score_bps: 5_000,
@@ -7955,7 +7955,7 @@ impl UtilityContract {
         let token_client = token::Client::new(&env, &token);
         let actual_balance = token_client.balance(&env.current_contract_address());
 
-        // If actual >= expected there is no discrepancy — nothing to do.
+        // If actual >= expected there is no discrepancy â€” nothing to do.
         if actual_balance >= expected_tvl {
             return;
         }

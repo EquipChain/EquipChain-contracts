@@ -1,10 +1,10 @@
-# Audit-Ready Runbook — Utility Drip Contracts
+﻿# Audit-Ready Runbook â€” Equipchain Contracts
 
 **Contract ID (Testnet):** `CB7PSJZALNWNX7NLOAM6LOEL4OJZMFPQZJMIYO522ZSACYWXTZIDEDSS`  
-**Network:** Stellar Testnet — replace `--network testnet` with `--network mainnet` for production  
+**Network:** Stellar Testnet â€” replace `--network testnet` with `--network mainnet` for production  
 **Last updated:** 2026-04-28  
-**Classification:** CONFIDENTIAL — DAO Core Team Only  
-**Audit Status:** ✅ Ready for Zealynx Security Audit  
+**Classification:** CONFIDENTIAL â€” DAO Core Team Only  
+**Audit Status:** âœ… Ready for Zealynx Security Audit  
 
 ---
 
@@ -14,19 +14,19 @@
 2. [Security Architecture Overview](#2-security-architecture-overview)
 3. [Roles and Responsibilities](#3-roles-and-responsibilities)
 4. [Pre-Incident Checklist](#4-pre-incident-checklist)
-5. [Scenario A — Active Exploit / Hack in Progress](#5-scenario-a--active-exploit--hack-in-progress)
-6. [Scenario B — Protocol Pause (Planned or Precautionary)](#6-scenario-b--protocol-pause-planned-or-precautionary)
-7. [Scenario C — Wasm Hash Upgrade](#7-scenario-c--wasm-hash-upgrade)
-8. [Scenario D — Migrating Trapped State](#8-scenario-d--migrating-trapped-state)
-9. [Scenario E — Multi-Sig Withdrawal Freeze](#9-scenario-e--multi-sig-withdrawal-freeze)
-10. [Scenario F — Legal Freeze](#10-scenario-f--legal-freeze)
-11. [Scenario G — Gas Buffer Exhaustion](#11-scenario-g--gas-buffer-exhaustion)
-12. [Scenario H — Admin Key Compromise](#12-scenario-h--admin-key-compromise)
-13. [Scenario I — Oracle Failure](#13-scenario-i--oracle-failure)
-14. [Scenario J — Velocity Limit Breach / Flash Drain](#14-scenario-j--velocity-limit-breach--flash-drain)
-15. [Scenario K — Nonce Desync Attack (New)](#15-scenario-k--nonce-desync-attack-new)
-16. [Scenario L — Tariff Oracle Compromise (New)](#16-scenario-l--tariff-oracle-compromise-new)
-17. [Scenario M — Ghost Stream Cleanup (New)](#17-scenario-m--ghost-stream-cleanup-new)
+5. [Scenario A â€” Active Exploit / Hack in Progress](#5-scenario-a--active-exploit--hack-in-progress)
+6. [Scenario B â€” Protocol Pause (Planned or Precautionary)](#6-scenario-b--protocol-pause-planned-or-precautionary)
+7. [Scenario C â€” Wasm Hash Upgrade](#7-scenario-c--wasm-hash-upgrade)
+8. [Scenario D â€” Migrating Trapped State](#8-scenario-d--migrating-trapped-state)
+9. [Scenario E â€” Multi-Sig Withdrawal Freeze](#9-scenario-e--multi-sig-withdrawal-freeze)
+10. [Scenario F â€” Legal Freeze](#10-scenario-f--legal-freeze)
+11. [Scenario G â€” Gas Buffer Exhaustion](#11-scenario-g--gas-buffer-exhaustion)
+12. [Scenario H â€” Admin Key Compromise](#12-scenario-h--admin-key-compromise)
+13. [Scenario I â€” Oracle Failure](#13-scenario-i--oracle-failure)
+14. [Scenario J â€” Velocity Limit Breach / Flash Drain](#14-scenario-j--velocity-limit-breach--flash-drain)
+15. [Scenario K â€” Nonce Desync Attack (New)](#15-scenario-k--nonce-desync-attack-new)
+16. [Scenario L â€” Tariff Oracle Compromise (New)](#16-scenario-l--tariff-oracle-compromise-new)
+17. [Scenario M â€” Ghost Stream Cleanup (New)](#17-scenario-m--ghost-stream-cleanup-new)
 18. [Post-Incident Procedures](#18-post-incident-procedures)
 19. [Multi-Sig Signer Reference Card](#19-multi-sig-signer-reference-card)
 20. [Contact Tree](#20-contact-tree)
@@ -36,7 +36,7 @@
 
 ## 1. Executive Summary
 
-The Utility Drip Contracts platform provides a decentralized utility streaming protocol with comprehensive security measures including:
+The Equipchain Contracts platform provides a decentralized utility streaming protocol with comprehensive security measures including:
 
 - **Tamper-proof nonce synchronization** for IoT device liveness verification
 - **Time-of-Use tariff pricing** with 24-hour schedules
@@ -104,31 +104,31 @@ The Utility Drip Contracts platform provides a decentralized utility streaming p
 |---|---|---|---|
 | **DAO Admin** | `DataKey::CurrentAdmin` | Propose/finalize Wasm upgrades, set compliance officer, grant provider verification, set velocity limits | Tariff oracle admin, Nonce reset authorization |
 | **Compliance Officer** | `DataKey::ComplianceOfficer` | Trigger and release legal freezes | Ghost stream emergency cleanup |
-| **Finance Wallet (×3–5)** | `MultiSigConfig.finance_wallets` | Propose, approve, revoke, and cancel large withdrawal requests; quorum = `required_signatures` | Ghost stream gas bounty approval |
+| **Finance Wallet (Ã—3â€“5)** | `MultiSigConfig.finance_wallets` | Propose, approve, revoke, and cancel large withdrawal requests; quorum = `required_signatures` | Ghost stream gas bounty approval |
 | **Oracle / Resolver** | `DataKey::Oracle` | Resolve service challenges (`resolve_challenge`) | Tariff oracle signing |
 | **Grid Administrator** | `DataKey::TariffOracleAdmin` | Manage tariff schedules | **New** - Issue #261 |
 | **Nonce Reset Authority** | `DataKey::AuthorizedNonceResetters` | Reset compromised device nonces | **New** - Issue #260 |
 | **Provider** | Per-meter `provider` field | Pause/shutdown individual meters, initiate firmware updates, manage gas buffer | Device nonce management |
 | **Ghost Sweeper** | Decentralized relayer | Prune abandoned streams | **New** - Issue #262 |
-| **Compliance Council** | Off-chain multi-sig (≥2) | Release legal freezes | Emergency tariff overrides |
+| **Compliance Council** | Off-chain multi-sig (â‰¥2) | Release legal freezes | Emergency tariff overrides |
 
 ### Multi-sig quorum rule
 
-Any action requiring `required_signatures` approvals **must be coordinated off-chain first** (Signal group, emergency Telegram, or PagerDuty). Confirm quorum is available before submitting the first on-chain transaction. The contract enforces the threshold — a request with insufficient approvals will revert on execution.
+Any action requiring `required_signatures` approvals **must be coordinated off-chain first** (Signal group, emergency Telegram, or PagerDuty). Confirm quorum is available before submitting the first on-chain transaction. The contract enforces the threshold â€” a request with insufficient approvals will revert on execution.
 
 ### Key storage locations (for incident verification)
 
 ```
-DataKey::CurrentAdmin          → DAO Admin address
-DataKey::ComplianceOfficer     → Compliance Officer address
-DataKey::Oracle                → Oracle/Resolver address
-DataKey::TariffOracleAdmin     → Grid Administrator address (New)
-DataKey::MultiSigConfig(addr)  → Per-provider multi-sig config
-DataKey::VetoDeadline          → Active upgrade veto deadline (Unix timestamp)
-DataKey::ProposedUpgrade       → Active UpgradeProposal struct
-DataKey::DeviceNonce(mac)      → Device nonce state (New)
-DataKey::CurrentTariffSchedule → Active tariff schedule (New)
-DataKey::StreamArchive(id)     → Pruned stream archive (New)
+DataKey::CurrentAdmin          â†’ DAO Admin address
+DataKey::ComplianceOfficer     â†’ Compliance Officer address
+DataKey::Oracle                â†’ Oracle/Resolver address
+DataKey::TariffOracleAdmin     â†’ Grid Administrator address (New)
+DataKey::MultiSigConfig(addr)  â†’ Per-provider multi-sig config
+DataKey::VetoDeadline          â†’ Active upgrade veto deadline (Unix timestamp)
+DataKey::ProposedUpgrade       â†’ Active UpgradeProposal struct
+DataKey::DeviceNonce(mac)      â†’ Device nonce state (New)
+DataKey::CurrentTariffSchedule â†’ Active tariff schedule (New)
+DataKey::StreamArchive(id)     â†’ Pruned stream archive (New)
 ```
 
 ---
@@ -201,7 +201,7 @@ stellar contract invoke \
 
 ---
 
-## 5. Scenario A — Active Exploit / Hack in Progress
+## 5. Scenario A â€” Active Exploit / Hack in Progress
 
 ### Immediate Actions (Execute in Order)
 
@@ -271,7 +271,7 @@ stellar contract invoke \
 
 ---
 
-## 15. Scenario K — Nonce Desync Attack (New)
+## 15. Scenario K â€” Nonce Desync Attack (New)
 
 ### Detection Indicators
 - Multiple `NonceDesyncAlert` events in short succession
@@ -348,7 +348,7 @@ stellar contract invoke \
 
 ---
 
-## 16. Scenario L — Tariff Oracle Compromise (New)
+## 16. Scenario L â€” Tariff Oracle Compromise (New)
 
 ### Detection Indicators
 - Invalid tariff rates being applied
@@ -400,7 +400,7 @@ stellar contract invoke \
 
 ---
 
-## 17. Scenario M — Ghost Stream Cleanup (New)
+## 17. Scenario M â€” Ghost Stream Cleanup (New)
 
 ### Detection Indicators
 - High storage usage on contract
@@ -535,15 +535,15 @@ Level 4 (1 hour): Community, Public Relations
 ```
 
 **Emergency Channels:**
-- Signal Group: `utility-drip-emergency`
-- Telegram: `@utilitydrip_emergency`
-- PagerDuty: `utility-drip-security`
+- Signal Group: `Equipchain-emergency`
+- Telegram: `@equipchain_emergency`
+- PagerDuty: `Equipchain-security`
 
 ---
 
 ## 21. Audit Checklist
 
-### ✅ Documentation Requirements
+### âœ… Documentation Requirements
 - [ ] All public functions have comprehensive doc-comments
 - [ ] All arguments and return values documented
 - [ ] All authorized roles explicitly documented
@@ -552,7 +552,7 @@ Level 4 (1 hour): Community, Public Relations
 - [ ] Security considerations documented
 - [ ] Error codes and handling documented
 
-### ✅ Code Quality Standards
+### âœ… Code Quality Standards
 - [ ] No hardcoded secrets or credentials
 - [ ] All external dependencies audited
 - [ ] Input validation on all public functions
@@ -561,7 +561,7 @@ Level 4 (1 hour): Community, Public Relations
 - [ ] Fuzz testing for critical components
 - [ ] Gas optimization where appropriate
 
-### ✅ Security Verification
+### âœ… Security Verification
 - [ ] Replay attack protection implemented
 - [ ] Rate limiting and velocity controls
 - [ ] Multi-sig requirements for critical operations
@@ -570,7 +570,7 @@ Level 4 (1 hour): Community, Public Relations
 - [ ] Cryptographic integrity verification
 - [ ] Key compromise procedures
 
-### ✅ Operational Readiness
+### âœ… Operational Readiness
 - [ ] Monitoring and alerting configured
 - [ ] Backup and recovery procedures
 - [ ] Incident response runbook tested
@@ -582,7 +582,7 @@ Level 4 (1 hour): Community, Public Relations
 
 ## Conclusion
 
-This runbook provides comprehensive procedures for managing the Utility Drip Contracts platform with the new security improvements implemented in Issues #260-263. The platform is now audit-ready with enterprise-grade documentation, comprehensive security measures, and operational procedures that meet the highest standards for decentralized utility management.
+This runbook provides comprehensive procedures for managing the Equipchain Contracts platform with the new security improvements implemented in Issues #260-263. The platform is now audit-ready with enterprise-grade documentation, comprehensive security measures, and operational procedures that meet the highest standards for decentralized utility management.
 
 **Next Steps:**
 1. Schedule external security audit with Zealynx

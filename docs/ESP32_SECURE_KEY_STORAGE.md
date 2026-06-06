@@ -1,10 +1,10 @@
-# 🔐 Secure Key Storage on ESP32
+﻿# ðŸ” Secure Key Storage on ESP32
 
 A comprehensive guide for contributors on securely storing Ed25519 keys on ESP32 devices using NVS (Non-Volatile Storage) and Secure Elements.
 
 ## Overview
 
-The Utility Drip system requires each ESP32 device to:
+The Equipchain system requires each ESP32 device to:
 1. Generate an Ed25519 key pair
 2. Store the private key securely
 3. Use the private key to sign usage data
@@ -60,7 +60,7 @@ Choose the appropriate level based on your threat model:
 
 ## Level 1: Basic NVS Storage
 
-**⚠️ WARNING**: Only suitable for development. Not secure for production.
+**âš ï¸ WARNING**: Only suitable for development. Not secure for production.
 
 ### Setup
 
@@ -70,7 +70,7 @@ Choose the appropriate level based on your threat model:
 #include <mbedtls/ed25519.h>
 
 // NVS namespace for key storage
-static const char* KEY_NAMESPACE = "utility_drip";
+static const char* KEY_NAMESPACE = "equipchain";
 static const char* PRIVATE_KEY_KEY = "priv_key";
 static const char* PUBLIC_KEY_KEY = "pub_key";
 
@@ -125,7 +125,7 @@ public:
     }
 
     esp_err_t save_keys() {
-        // Save private key (⚠️ NOT ENCRYPTED)
+        // Save private key (âš ï¸ NOT ENCRYPTED)
         esp_err_t err = nvs_set_blob(my_handle, PRIVATE_KEY_KEY, 
                                       private_key, 32);
         if (err != ESP_OK) return err;
@@ -202,11 +202,11 @@ void setup() {
         ESP_ERROR_CHECK(keyStorage.generate_keys());
         ESP_ERROR_CHECK(keyStorage.save_keys());
         
-        Serial.println("✅ Keys generated and saved!");
+        Serial.println("âœ… Keys generated and saved!");
     } else {
         Serial.println("Loading existing keys...");
         ESP_ERROR_CHECK(keyStorage.load_keys());
-        Serial.println("✅ Keys loaded!");
+        Serial.println("âœ… Keys loaded!");
     }
 
     // Display public key (for registration)
@@ -224,12 +224,12 @@ void loop() {
 
 ### Security Considerations
 
-❌ **Risks:**
+âŒ **Risks:**
 - Private key stored in plain text in flash
 - Anyone with physical access can read it
 - No protection against firmware extraction
 
-✅ **Mitigations:**
+âœ… **Mitigations:**
 - Enable flash readout protection (if available)
 - Use only for development/testing
 - Never use in production without encryption
@@ -369,7 +369,7 @@ idf.py build
 # 2. Burn encryption key to eFuse (ONE-TIME OPERATION)
 espsecure.py burn_flash_encryption_key --port /dev/ttyUSB0 enc_key.bin
 
-# ⚠️ WARNING: This is irreversible!
+# âš ï¸ WARNING: This is irreversible!
 # Device will only boot with encrypted firmware from now on
 
 # 3. Flash encrypted firmware
@@ -380,13 +380,13 @@ esptool.py --chip esp32 --port /dev/ttyUSB0 \
 
 ### Security Benefits
 
-✅ **Advantages:**
+âœ… **Advantages:**
 - All data encrypted with hardware key
 - Key burned into eFuses (cannot be read back)
 - Transparent to application code
 - Good balance of security and complexity
 
-⚠️ **Limitations:**
+âš ï¸ **Limitations:**
 - Still software-based security
 - Vulnerable to sophisticated attacks
 - Requires careful key backup
@@ -410,7 +410,7 @@ GPIO22 (I2C SCL) ---- SCL
 GND          ---- GND
 ```
 
-Pull-up resistors (4.7kΩ) required on SDA and SCL lines.
+Pull-up resistors (4.7kÎ©) required on SDA and SCL lines.
 
 ### Library Installation
 
@@ -555,9 +555,9 @@ void setup() {
     bool has_keys = check_if_keys_exist();
     
     if (!has_keys) {
-        Serial.println("🔑 Generating keys in secure element...");
+        Serial.println("ðŸ”‘ Generating keys in secure element...");
         ESP_ERROR_CHECK(secureKeys.generate_keypair(0));
-        Serial.println("✅ Keys generated!");
+        Serial.println("âœ… Keys generated!");
         
         // Lock the device (optional but recommended)
         // ESP_ERROR_CHECK(secureKeys.configure_security());
@@ -586,24 +586,24 @@ void sign_and_send_usage_data() {
     );
     
     if (err == ESP_OK) {
-        Serial.println("✅ Data signed securely");
+        Serial.println("âœ… Data signed securely");
         send_to_contract(message, signature, sig_len);
     } else {
-        Serial.println("❌ Signing failed");
+        Serial.println("âŒ Signing failed");
     }
 }
 ```
 
 ### Security Benefits
 
-✅ **Maximum Security:**
+âœ… **Maximum Security:**
 - Private key NEVER leaves the chip
 - Hardware-based true random number generator
 - Tamper-resistant
 - Side-channel attack resistant
 - Key slots can be permanently locked
 
-⚠️ **Considerations:**
+âš ï¸ **Considerations:**
 - Additional hardware cost (~$1-3)
 - More complex PCB design
 - Requires secure supply chain
@@ -722,8 +722,8 @@ public:
 #include <WiFi.h>
 #include <HTTPClient.h>
 
-// Utility Drip contract integration
-#include "utility_drip_types.h"
+// Equipchain contract integration
+#include "equipchain_types.h"
 
 class SecureMeter {
 private:
@@ -769,7 +769,7 @@ public:
     bool generateKeys() {
         if (!initialized) return false;
 
-        Serial.println("🔑 Generating Ed25519 key pair...");
+        Serial.println("ðŸ”‘ Generating Ed25519 key pair...");
         
         // Use hardware RNG
         uint8_t seed[32];
@@ -792,7 +792,7 @@ public:
         nvs_set_blob(nvs_handle, "pub", public_key, 32);
         nvs_commit(nvs_handle);
 
-        Serial.println("✅ Keys generated and saved!");
+        Serial.println("âœ… Keys generated and saved!");
         return true;
     }
 
@@ -809,7 +809,7 @@ public:
         err = nvs_get_blob(nvs_handle, "pub", public_key, &size);
         if (err != ESP_OK) return false;
 
-        Serial.println("✅ Keys loaded from NVS");
+        Serial.println("âœ… Keys loaded from NVS");
         return true;
     }
 
@@ -846,25 +846,25 @@ void setup() {
     Serial.begin(115200);
     delay(1000);
 
-    Serial.println("\n🚀 Utility Drip Meter Starting...");
+    Serial.println("\nðŸš€ Equipchain Meter Starting...");
 
     // Initialize secure storage
     if (!meter.begin()) {
-        Serial.println("❌ Failed to initialize meter");
+        Serial.println("âŒ Failed to initialize meter");
         return;
     }
 
     // Check/generate keys
     if (!meter.hasKeys()) {
-        Serial.println("📝 No keys found, generating...");
+        Serial.println("ðŸ“ No keys found, generating...");
         if (!meter.generateKeys()) {
-            Serial.println("❌ Key generation failed!");
+            Serial.println("âŒ Key generation failed!");
             return;
         }
     } else {
-        Serial.println("📖 Loading existing keys...");
+        Serial.println("ðŸ“– Loading existing keys...");
         if (!meter.loadKeys()) {
-            Serial.println("❌ Failed to load keys!");
+            Serial.println("âŒ Failed to load keys!");
             return;
         }
     }
@@ -873,7 +873,7 @@ void setup() {
     uint8_t pub_key[32];
     meter.getPublicKey(pub_key);
 
-    Serial.print("🔑 Public Key: 0x");
+    Serial.print("ðŸ”‘ Public Key: 0x");
     for (int i = 0; i < 32; i++) {
         Serial.printf("%02X", pub_key[i]);
     }
@@ -903,9 +903,9 @@ void loop() {
                             signature, &sig_len)) {
         // Send to backend
         sendSignedUsage(data, signature, sig_len);
-        Serial.println("✅ Usage data signed and sent");
+        Serial.println("âœ… Usage data signed and sent");
     } else {
-        Serial.println("❌ Signing failed!");
+        Serial.println("âŒ Signing failed!");
     }
 
     delay(60000); // Report every minute
@@ -1013,23 +1013,23 @@ void setup() {
 ## Summary & Recommendations
 
 ### For Development
-- ✅ Use **Level 1 (Basic NVS)**
+- âœ… Use **Level 1 (Basic NVS)**
 - Easy to implement and debug
-- ❌ Never deploy to production
+- âŒ Never deploy to production
 
 ### For Pilot Deployments
-- ✅ Use **Level 2 (Encrypted NVS)**
+- âœ… Use **Level 2 (Encrypted NVS)**
 - Good security/comformance balance
 - Suitable for trusted environments
 
 ### For Commercial Production
-- ✅ Use **Level 3 (Secure Element)**
+- âœ… Use **Level 3 (Secure Element)**
 - Hardware-backed security
 - Industry best practice
 - Worth the additional cost
 
 ### For High Volume
-- ✅ Use **Level 4 (ESP32-S3 Secure Flash)**
+- âœ… Use **Level 4 (ESP32-S3 Secure Flash)**
 - Maximum integration
 - Higher unit cost but lower assembly complexity
 
@@ -1041,7 +1041,7 @@ void setup() {
 - [ATECC608A Datasheet](https://ww1.microchip.com/downloads/en/DeviceDoc/20005926A.pdf)
 - [CryptoAuthLib Documentation](https://microchipcrypto.gitlab.io/avr-crypto-lib/)
 - [Ed25519 Specification](https://ed25519.cr.yp.to/)
-- [Utility Drip Contract Docs](../README.md)
+- [Equipchain Contract Docs](../README.md)
 
 ---
 

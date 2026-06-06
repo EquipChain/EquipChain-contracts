@@ -1,10 +1,10 @@
-# Contributing to Utility-Drip-Contracts
+﻿# Contributing to EquipChain-contracts
 
-Welcome to the Utility-Drip-Contracts project! This guide will help you contribute effectively, whether you're working on hardware (C++/Arduino) or smart contracts (Soroban/Rust).
+Welcome to the EquipChain-contracts project! This guide will help you contribute effectively, whether you're working on hardware (C++/Arduino) or smart contracts (Soroban/Rust).
 
 ## Project Overview
 
-Utility-Drip-Contracts is a utility billing system built on Stellar that allows:
+EquipChain-contracts is a utility billing system built on Stellar that allows:
 - Individual meter billing and management
 - Group billing for property managers
 - Real-time balance monitoring
@@ -12,17 +12,17 @@ Utility-Drip-Contracts is a utility billing system built on Stellar that allows:
 
 ## Development Areas
 
-### 🔌 Hardware Development (C++/Arduino)
+### ðŸ”Œ Hardware Development (C++/Arduino)
 Hardware components handle the physical meter readings and communicate with the blockchain.
 
-### ⚡ Smart Contract Development (Rust/Soroban)
+### âš¡ Smart Contract Development (Rust/Soroban)
 Smart contracts handle billing logic, payment processing, and account management.
 
 ---
 
 ## Hardware Development Guidelines
 
-### 🛠️ Development Environment
+### ðŸ› ï¸ Development Environment
 
 **Required Tools:**
 - Arduino IDE 2.0+ or PlatformIO
@@ -37,11 +37,11 @@ pio project init --board esp32dev
 pio lib install "Stellar SDK"
 ```
 
-### 📋 Hardware Standards
+### ðŸ“‹ Hardware Standards
 
 **Meter Reading Specifications:**
 - Sample rate: Minimum 1 reading per second
-- Accuracy: ±1% for power measurements
+- Accuracy: Â±1% for power measurements
 - Data format: JSON over MQTT/HTTP
 - Power consumption: < 100mA during operation
 
@@ -56,7 +56,7 @@ pio lib install "Stellar SDK"
 }
 ```
 
-### 🔧 Code Standards
+### ðŸ”§ Code Standards
 
 **C++ Guidelines:**
 - Use `camelCase` for variables
@@ -81,7 +81,7 @@ public:
 };
 ```
 
-### 🧪 Testing Hardware
+### ðŸ§ª Testing Hardware
 
 **Unit Testing:**
 - Use ArduinoUnit or GoogleTest framework
@@ -95,7 +95,7 @@ public:
 - Test network connectivity issues
 - Power consumption validation
 
-### 📦 Hardware Deployment
+### ðŸ“¦ Hardware Deployment
 
 **Pre-deployment Checklist:**
 - [ ] Meter calibration completed
@@ -109,7 +109,7 @@ public:
 
 ## Smart Contract Development Guidelines
 
-### 🛠️ Development Environment
+### ðŸ› ï¸ Development Environment
 
 **Required Tools:**
 - Rust 1.70+
@@ -128,7 +128,7 @@ make build
 make test
 ```
 
-### 📋 Contract Standards
+### ðŸ“‹ Contract Standards
 
 **Gas Optimization:**
 - Minimize storage operations
@@ -142,7 +142,7 @@ make test
 - Implement reentrancy protection
 - Audit critical functions
 
-### 🧪 Testing Contracts
+### ðŸ§ª Testing Contracts
 
 **Test Coverage:**
 - Unit tests for all functions
@@ -152,12 +152,12 @@ make test
 
 ---
 
-## 🚀 Contribution Workflow
+## ðŸš€ Contribution Workflow
 
 ### 1. Fork and Clone
 ```bash
-git clone https://github.com/your-username/Utility-Drip-Contracts.git
-cd Utility-Drip-Contracts
+git clone https://github.com/your-username/EquipChain-contracts.git
+cd EquipChain-contracts
 ```
 
 ### 2. Create Feature Branch
@@ -203,7 +203,7 @@ make integration-test
 - Include test results
 - Tag relevant reviewers
 
-## 🏷️ Label Guidelines
+## ðŸ·ï¸ Label Guidelines
 
 **Hardware PRs:**
 - `hardware`: For hardware-related changes
@@ -221,7 +221,7 @@ make integration-test
 - `documentation`: For documentation updates
 - `testing`: For test improvements
 
-## 🐛 Bug Reports
+## ðŸ› Bug Reports
 
 **Hardware Bugs:**
 Include:
@@ -239,7 +239,7 @@ Include:
 - Error message
 - Expected vs actual behavior
 
-## 💡 Feature Requests
+## ðŸ’¡ Feature Requests
 
 **Hardware Features:**
 - Describe the hardware capability
@@ -253,7 +253,7 @@ Include:
 - Consider gas implications
 - Include API design suggestions
 
-## 🤝 Community Guidelines
+## ðŸ¤ Community Guidelines
 
 - Be respectful and inclusive
 - Provide constructive feedback
@@ -261,17 +261,17 @@ Include:
 - Follow the code of conduct
 - Focus on what's best for the community
 
-## 📞 Get Help
+## ðŸ“ž Get Help
 
-- **Discord**: [Utility-Drip Community](https://discord.gg/utilitydrip)
+- **Discord**: [Equipchain Community](https://discord.gg/equipchain)
 - **GitHub Issues**: For bug reports and feature requests
 - **Documentation**: Check the `/docs` directory
 - **Examples**: See `/examples` directory
 
-## 📜 License
+## ðŸ“œ License
 
 By contributing, you agree that your contributions will be licensed under the same license as the project.
 
 ---
 
-Thank you for contributing to Utility-Drip-Contracts! 🎉
+Thank you for contributing to EquipChain-contracts! ðŸŽ‰

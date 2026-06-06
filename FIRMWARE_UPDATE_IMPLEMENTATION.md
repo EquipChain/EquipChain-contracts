@@ -1,7 +1,7 @@
-# Issue #178: Firmware-Update Authorization Gate Implementation
+﻿# Issue #178: Firmware-Update Authorization Gate Implementation
 
 ## Overview
-This document describes the implementation of the Firmware-Update Authorization Gate feature for Utility-Drip-Contracts. This feature enables secure, time-limited firmware updates on IoT devices while protecting against billing manipulation during the update window.
+This document describes the implementation of the Firmware-Update Authorization Gate feature for EquipChain-contracts. This feature enables secure, time-limited firmware updates on IoT devices while protecting against billing manipulation during the update window.
 
 ## Problem Statement
 IoT devices require periodic firmware updates for security and functionality improvements. However, firmware updates create a unique billing challenge:
@@ -124,7 +124,7 @@ pub enum ContractError {
 **Behavior**:
 1. Retrieves meter; checks if currently updating
 2. Verifies update window hasn't expired:
-   - Current time - update_start_timestamp ≤ 7200 seconds (2 hours)
+   - Current time - update_start_timestamp â‰¤ 7200 seconds (2 hours)
 3. Verifies update_start_timestamp matches meter's timestamp
 4. Verifies device_public_key matches meter's registered device_public_key
 5. Verifies Ed25519 signature of UpdateCompleteData
@@ -161,7 +161,7 @@ if meter.is_updating {
 
 ## Acceptance Criteria Mapping
 
-### Acceptance 1: Billing pauses precisely during authorized update window ✓
+### Acceptance 1: Billing pauses precisely during authorized update window âœ“
 - **Implementation**: 
   - `is_updating` flag added to Meter struct
   - `initiate_firmware_update()` sets flag when called
@@ -169,14 +169,14 @@ if meter.is_updating {
   - `complete_firmware_update()` clears flag to resume
 - **Verification**: Test `test_firmware_update_acceptance_1_billing_pauses_during_window`
 
-### Acceptance 2: Time limits prevent perpetual suspension ✓
+### Acceptance 2: Time limits prevent perpetual suspension âœ“
 - **Implementation**:
   - `complete_firmware_update()` enforces 2-hour maximum window
   - Window calculated: `now - update_start_timestamp > FIRMWARE_UPDATE_WINDOW_SECS`
   - Returns `FirmwareUpdateWindowExpired` error if exceeded
 - **Verification**: Test `test_firmware_update_acceptance_2_time_limits_prevent_perpetual_suspension`
 
-### Acceptance 3: Hardware cryptographic signatures required to resume ✓
+### Acceptance 3: Hardware cryptographic signatures required to resume âœ“
 - **Implementation**:
   - `complete_firmware_update()` requires valid Ed25519 signature
   - Signature verified against `device_public_key` registered with meter
@@ -289,7 +289,7 @@ Device calls: complete_firmware_update({
 
 Steps:
 1. Verifies device_public_key matches meter's registered key
-2. Checks 1600 - 1000 = 600 seconds (within 7200 limit) ✓
+2. Checks 1600 - 1000 = 600 seconds (within 7200 limit) âœ“
 3. Verifies Ed25519 signature
 4. Sets is_updating = false
 5. Emits FirmwareUpdateFinishedEvent with 600 second duration
@@ -304,15 +304,15 @@ Now deduct_units() succeeds because:
 
 ## Implementation Status
 
-✓ Meter struct extended with firmware update fields
-✓ Event structures defined (FirmwareUpdateStartedEvent, FirmwareUpdateFinishedEvent)
-✓ Error codes added (FirmwareUpdateInProgress, FirmwareUpdateWindowExpired, InvalidFirmwareUpdateSignature)
-✓ initiate_firmware_update() function implemented
-✓ complete_firmware_update() function with signature verification
-✓ deduct_units() modified to enforce update pause
-✓ Constants defined (FIRMWARE_UPDATE_WINDOW_SECS = 7200)
-✓ Comprehensive test suite created
-✓ Documentation completed
+âœ“ Meter struct extended with firmware update fields
+âœ“ Event structures defined (FirmwareUpdateStartedEvent, FirmwareUpdateFinishedEvent)
+âœ“ Error codes added (FirmwareUpdateInProgress, FirmwareUpdateWindowExpired, InvalidFirmwareUpdateSignature)
+âœ“ initiate_firmware_update() function implemented
+âœ“ complete_firmware_update() function with signature verification
+âœ“ deduct_units() modified to enforce update pause
+âœ“ Constants defined (FIRMWARE_UPDATE_WINDOW_SECS = 7200)
+âœ“ Comprehensive test suite created
+âœ“ Documentation completed
 
 ## File Changes
 

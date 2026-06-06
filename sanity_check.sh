@@ -1,6 +1,6 @@
-#!/bin/bash
+﻿#!/bin/bash
 # ==============================================================================
-# UTILITY-DRIP PRE-FLIGHT SANITY CHECK SUITE (Issue #111)
+# Equipchain PRE-FLIGHT SANITY CHECK SUITE (Issue #111)
 # Description: Dry-run simulation for mainnet deployment validation.
 # ==============================================================================
 
@@ -39,7 +39,7 @@ deploy_contract() {
     cargo build --target wasm32-unknown-unknown --release
 
     CONTRACT_ID=$(soroban contract deploy \
-        --wasm target/wasm32-unknown-unknown/release/utility_drip.wasm \
+        --wasm target/wasm32-unknown-unknown/release/equipchain.wasm \
         --source $ADMIN_ALIAS \
         --network $NETWORK)
 
@@ -139,7 +139,7 @@ main() {
     audit_balances
 
     echo -e "${GREEN}=========================================${NC}"
-    echo -e "${GREEN} ✅ SANITY CHECK PASSED: READY FOR MAINNET${NC}"
+    echo -e "${GREEN} âœ… SANITY CHECK PASSED: READY FOR MAINNET${NC}"
     echo -e "${GREEN}=========================================${NC}"
 }
 

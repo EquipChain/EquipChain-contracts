@@ -1,8 +1,8 @@
-# TypeScript Bindings Guide
+﻿# TypeScript Bindings Guide
 
 ## Overview
 
-The Utility Drip smart contract now includes comprehensive TypeScript bindings that provide type-safe interfaces for the Node.js gateway. These bindings ensure perfect synchronization between the smart contract and frontend code.
+The Equipchain smart contract now includes comprehensive TypeScript bindings that provide type-safe interfaces for the Node.js gateway. These bindings ensure perfect synchronization between the smart contract and frontend code.
 
 ## Installation
 
@@ -17,12 +17,12 @@ This installs TypeScript and the necessary type definitions.
 
 ```
 meter-simulator/
-├── src/
-│   ├── types.ts                      # Type definitions
-│   ├── typed-contract-interface.ts   # Type-safe implementation
-│   └── contract-interface.js         # Legacy JavaScript interface
-├── tsconfig.json                     # TypeScript configuration
-└── package.json
+â”œâ”€â”€ src/
+â”‚   â”œâ”€â”€ types.ts                      # Type definitions
+â”‚   â”œâ”€â”€ typed-contract-interface.ts   # Type-safe implementation
+â”‚   â””â”€â”€ contract-interface.js         # Legacy JavaScript interface
+â”œâ”€â”€ tsconfig.json                     # TypeScript configuration
+â””â”€â”€ package.json
 ```
 
 ## Usage Examples
@@ -143,7 +143,7 @@ await contract.withdraw_earnings({
 ```typescript
 const isOffline = await contract.is_meter_offline(1);
 if (isOffline) {
-  console.log('⚠️ Meter has not reported in over 1 hour');
+  console.log('âš ï¸ Meter has not reported in over 1 hour');
 }
 ```
 
@@ -193,13 +193,13 @@ try {
   if (error instanceof ContractError) {
     switch (error.code) {
       case ContractErrorCode.InvalidSignature:
-        console.error('❌ Signature verification failed');
+        console.error('âŒ Signature verification failed');
         break;
       case ContractErrorCode.MeterNotFound:
-        console.error('❌ Meter not found');
+        console.error('âŒ Meter not found');
         break;
       case ContractErrorCode.TimestampTooOld:
-        console.error('❌ Timestamp is too old (replay attack prevention)');
+        console.error('âŒ Timestamp is too old (replay attack prevention)');
         break;
       default:
         console.error('Contract error:', error.message);
@@ -259,11 +259,11 @@ await contract.top_up({ meter_id: 1, amount: BigInt(1000000) });
 ```
 
 Benefits of TypeScript bindings:
-- ✅ Compile-time type checking
-- ✅ IntelliSense autocomplete
-- ✅ Automatic documentation
-- ✅ Catch errors before runtime
-- ✅ Better refactoring support
+- âœ… Compile-time type checking
+- âœ… IntelliSense autocomplete
+- âœ… Automatic documentation
+- âœ… Catch errors before runtime
+- âœ… Better refactoring support
 
 ## Building for Production
 

@@ -1,8 +1,8 @@
-/**
- * TypeScript bindings for Utility Drip Smart Contract
+﻿/**
+ * TypeScript bindings for Equipchain Smart Contract
  * These types are auto-generated from the Soroban contract definitions
  * 
- * @fileoverview Type-safe interfaces for interacting with the Utility Drip contract
+ * @fileoverview Type-safe interfaces for interacting with the Equipchain contract
  * @version 1.0.0
  */
 
@@ -261,7 +261,7 @@ export interface TransferMeterOwnershipParams {
 // ============================================================================
 
 /**
- * Utility Drip Contract Interface
+ * Equipchain Contract Interface
  * Provides type-safe methods for interacting with the smart contract
  */
 export interface UtilityContract {

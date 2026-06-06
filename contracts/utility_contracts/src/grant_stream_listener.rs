@@ -1,4 +1,4 @@
-#![no_std]
+﻿#![no_std]
 use soroban_sdk::{
     contract, contracterror, contractimpl, contracttype, panic_with_error,
     symbol_short, token, Address, Env, String, Symbol, Vec, BytesN,
@@ -6,7 +6,7 @@ use soroban_sdk::{
 use super::secure_call_interface::{SecureCallManager, SecureCallError};
 
 // --- Grant Stream Listener Contract ---
-// This contract listens for GoalReached events from Utility Drips and processes grant matches
+// This contract listens for GoalReached events from Equipchains and processes grant matches
 
 #[contracttype]
 #[derive(Clone)]
@@ -83,8 +83,8 @@ impl GrantStreamListener {
         );
     }
 
-    /// Called by Utility Drips when a conservation goal is reached
-    pub fn on_goal_reached(env: Env, utility_drip_contract: Address, goal_event: super::GoalReachedEvent) {
+    /// Called by Equipchains when a conservation goal is reached
+    pub fn on_goal_reached(env: Env, equipchain_contract: Address, goal_event: super::GoalReachedEvent) {
         let config: GrantConfig = env.storage()
             .instance()
             .get(&GrantDataKey::GrantConfig)
@@ -101,13 +101,13 @@ impl GrantStreamListener {
             }
         }
 
-        // Verify the goal event by calling back to the utility drip contract using secure interface
+        // Verify the goal event by calling back to the Equipchain contract using secure interface
         let mut args = Vec::new(&env);
         args.push_back(goal_event.goal_id.into());
         
         match SecureCallManager::secure_call::<super::ConservationGoal>(
             &env,
-            &utility_drip_contract,
+            &equipchain_contract,
             &Symbol::new(&env, "get_conservation_goal"),
             args,
             Some(20_000_000), // Conservative gas limit for goal verification

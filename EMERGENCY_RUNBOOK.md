@@ -1,9 +1,9 @@
-# Emergency Runbook — Utility Drip Contracts
+﻿# Emergency Runbook â€” Equipchain Contracts
 
 **Contract ID (Testnet):** `CB7PSJZALNWNX7NLOAM6LOEL4OJZMFPQZJMIYO522ZSACYWXTZIDEDSS`  
-**Network:** Stellar Testnet — replace `--network testnet` with `--network mainnet` for production  
+**Network:** Stellar Testnet â€” replace `--network testnet` with `--network mainnet` for production  
 **Last updated:** 2026-04-26  
-**Classification:** CONFIDENTIAL — DAO Core Team Only
+**Classification:** CONFIDENTIAL â€” DAO Core Team Only
 
 ---
 
@@ -11,16 +11,16 @@
 
 1. [Roles and Responsibilities](#1-roles-and-responsibilities)
 2. [Pre-Incident Checklist](#2-pre-incident-checklist)
-3. [Scenario A — Active Exploit / Hack in Progress](#3-scenario-a--active-exploit--hack-in-progress)
-4. [Scenario B — Protocol Pause (Planned or Precautionary)](#4-scenario-b--protocol-pause-planned-or-precautionary)
-5. [Scenario C — Wasm Hash Upgrade](#5-scenario-c--wasm-hash-upgrade)
-6. [Scenario D — Migrating Trapped State](#6-scenario-d--migrating-trapped-state)
-7. [Scenario E — Multi-Sig Withdrawal Freeze](#7-scenario-e--multi-sig-withdrawal-freeze)
-8. [Scenario F — Legal Freeze](#8-scenario-f--legal-freeze)
-9. [Scenario G — Gas Buffer Exhaustion](#9-scenario-g--gas-buffer-exhaustion)
-10. [Scenario H — Admin Key Compromise](#10-scenario-h--admin-key-compromise)
-11. [Scenario I — Oracle Failure](#11-scenario-i--oracle-failure)
-12. [Scenario J — Velocity Limit Breach / Flash Drain](#12-scenario-j--velocity-limit-breach--flash-drain)
+3. [Scenario A â€” Active Exploit / Hack in Progress](#3-scenario-a--active-exploit--hack-in-progress)
+4. [Scenario B â€” Protocol Pause (Planned or Precautionary)](#4-scenario-b--protocol-pause-planned-or-precautionary)
+5. [Scenario C â€” Wasm Hash Upgrade](#5-scenario-c--wasm-hash-upgrade)
+6. [Scenario D â€” Migrating Trapped State](#6-scenario-d--migrating-trapped-state)
+7. [Scenario E â€” Multi-Sig Withdrawal Freeze](#7-scenario-e--multi-sig-withdrawal-freeze)
+8. [Scenario F â€” Legal Freeze](#8-scenario-f--legal-freeze)
+9. [Scenario G â€” Gas Buffer Exhaustion](#9-scenario-g--gas-buffer-exhaustion)
+10. [Scenario H â€” Admin Key Compromise](#10-scenario-h--admin-key-compromise)
+11. [Scenario I â€” Oracle Failure](#11-scenario-i--oracle-failure)
+12. [Scenario J â€” Velocity Limit Breach / Flash Drain](#12-scenario-j--velocity-limit-breach--flash-drain)
 13. [Post-Incident Procedures](#13-post-incident-procedures)
 14. [Multi-Sig Signer Reference Card](#14-multi-sig-signer-reference-card)
 15. [Contact Tree](#15-contact-tree)
@@ -33,24 +33,24 @@
 |---|---|---|
 | **DAO Admin** | `DataKey::CurrentAdmin` | Propose/finalize Wasm upgrades, set compliance officer, grant provider verification, set velocity limits |
 | **Compliance Officer** | `DataKey::ComplianceOfficer` | Trigger and release legal freezes |
-| **Finance Wallet (×3–5)** | `MultiSigConfig.finance_wallets` | Propose, approve, revoke, and cancel large withdrawal requests; quorum = `required_signatures` |
+| **Finance Wallet (Ã—3â€“5)** | `MultiSigConfig.finance_wallets` | Propose, approve, revoke, and cancel large withdrawal requests; quorum = `required_signatures` |
 | **Oracle / Resolver** | `DataKey::Oracle` | Resolve service challenges (`resolve_challenge`) |
 | **Provider** | Per-meter `provider` field | Pause/shutdown individual meters, initiate firmware updates, manage gas buffer |
-| **Compliance Council** | Off-chain multi-sig (≥2) | Release legal freezes |
+| **Compliance Council** | Off-chain multi-sig (â‰¥2) | Release legal freezes |
 
 ### Multi-sig quorum rule
 
-Any action requiring `required_signatures` approvals **must be coordinated off-chain first** (Signal group, emergency Telegram, or PagerDuty). Confirm quorum is available before submitting the first on-chain transaction. The contract enforces the threshold — a request with insufficient approvals will revert on execution.
+Any action requiring `required_signatures` approvals **must be coordinated off-chain first** (Signal group, emergency Telegram, or PagerDuty). Confirm quorum is available before submitting the first on-chain transaction. The contract enforces the threshold â€” a request with insufficient approvals will revert on execution.
 
 ### Key storage locations (for incident verification)
 
 ```
-DataKey::CurrentAdmin          → DAO Admin address
-DataKey::ComplianceOfficer     → Compliance Officer address
-DataKey::Oracle                → Oracle/Resolver address
-DataKey::MultiSigConfig(addr)  → Per-provider multi-sig config
-DataKey::VetoDeadline          → Active upgrade veto deadline (Unix timestamp)
-DataKey::ProposedUpgrade       → Active UpgradeProposal struct
+DataKey::CurrentAdmin          â†’ DAO Admin address
+DataKey::ComplianceOfficer     â†’ Compliance Officer address
+DataKey::Oracle                â†’ Oracle/Resolver address
+DataKey::MultiSigConfig(addr)  â†’ Per-provider multi-sig config
+DataKey::VetoDeadline          â†’ Active upgrade veto deadline (Unix timestamp)
+DataKey::ProposedUpgrade       â†’ Active UpgradeProposal struct
 ```
 
 ---
@@ -101,7 +101,7 @@ stellar keys address $ADMIN_KEY
 
 ---
 
-## 3. Scenario A — Active Exploit / Hack in Progress
+## 3. Scenario A â€” Active Exploit / Hack in Progress
 
 **Trigger:** Anomalous withdrawals detected, funds draining faster than expected, or a known vulnerability is being actively exploited.
 
@@ -109,7 +109,7 @@ stellar keys address $ADMIN_KEY
 
 **Time budget:** Act within 5 minutes of detection. Every ledger (~5 seconds) is a potential loss.
 
-### Step 1 — Pause affected meters (Provider key)
+### Step 1 â€” Pause affected meters (Provider key)
 
 `challenge_service` sets `is_disputed = true` and `is_paused = true`, blocking all `claim` and `deduct_units` calls immediately.
 
@@ -139,7 +139,7 @@ for i in $(seq 1 $METER_COUNT); do
 done
 ```
 
-### Step 2 — Hard shutdown (Provider key)
+### Step 2 â€” Hard shutdown (Provider key)
 
 If `challenge_service` is insufficient (e.g., the exploit bypasses the dispute flag), use the unconditional hard stop:
 
@@ -155,7 +155,7 @@ stellar contract invoke \
 
 `emergency_shutdown` sets `is_active = false` regardless of balance or dispute state.
 
-### Step 3 — Pause all continuous flow streams (Provider key)
+### Step 3 â€” Pause all continuous flow streams (Provider key)
 
 ```bash
 # Pause each stream by setting flow rate to 0
@@ -168,7 +168,7 @@ stellar contract invoke \
   --stream_id <STREAM_ID>
 ```
 
-### Step 4 — Revoke any active velocity overrides (Admin key)
+### Step 4 â€” Revoke any active velocity overrides (Admin key)
 
 If an attacker obtained an admin override to bypass velocity limits:
 
@@ -194,7 +194,7 @@ stellar contract invoke \
   --meter_id <METER_ID>
 ```
 
-### Step 5 — Enable global velocity limiting (Admin key)
+### Step 5 â€” Enable global velocity limiting (Admin key)
 
 Cap all outflows system-wide while the incident is investigated:
 
@@ -213,7 +213,7 @@ stellar contract invoke \
 
 Adjust `global_limit` and `per_stream_limit` (in stroops) to the minimum needed for legitimate operations.
 
-### Step 6 — Cancel all pending multi-sig withdrawal requests (Provider key)
+### Step 6 â€” Cancel all pending multi-sig withdrawal requests (Provider key)
 
 ```bash
 # Get the total request count first
@@ -235,13 +235,13 @@ stellar contract invoke \
   --request_id <REQUEST_ID>
 ```
 
-### Step 7 — Notify the DAO and begin post-mortem
+### Step 7 â€” Notify the DAO and begin post-mortem
 
 See [Section 13](#13-post-incident-procedures).
 
 ---
 
-## 4. Scenario B — Protocol Pause (Planned or Precautionary)
+## 4. Scenario B â€” Protocol Pause (Planned or Precautionary)
 
 **Trigger:** Scheduled maintenance, oracle outage, or precautionary halt before a known vulnerability is patched.
 
@@ -323,13 +323,13 @@ stellar contract invoke \
 
 ---
 
-## 5. Scenario C — Wasm Hash Upgrade
+## 5. Scenario C â€” Wasm Hash Upgrade
 
 **Trigger:** A critical bug is patched and a new Wasm binary is ready to deploy.
 
-**Timelock:** The contract enforces a veto window (`UPGRADE_VETO_PERIOD_SECONDS`). Users may veto during this window. The upgrade only finalizes if the veto count stays below the threshold (`VETO_THRESHOLD_BPS`). There is **no on-chain bypass** of the timelock — it is a safety feature.
+**Timelock:** The contract enforces a veto window (`UPGRADE_VETO_PERIOD_SECONDS`). Users may veto during this window. The upgrade only finalizes if the veto count stays below the threshold (`VETO_THRESHOLD_BPS`). There is **no on-chain bypass** of the timelock â€” it is a safety feature.
 
-### Step 1 — Build and upload the new Wasm
+### Step 1 â€” Build and upload the new Wasm
 
 ```bash
 # Build the contract (from repo root)
@@ -339,7 +339,7 @@ cargo build --target wasm32-unknown-unknown --release
 # Verify the binary size is reasonable (Soroban limit is 64 KB)
 ls -lh target/wasm32-unknown-unknown/release/utility_contracts.wasm
 
-# Upload the Wasm to the network — this registers the binary but does NOT deploy it
+# Upload the Wasm to the network â€” this registers the binary but does NOT deploy it
 stellar contract upload \
   --network testnet \
   --source $ADMIN_KEY \
@@ -356,7 +356,7 @@ echo "New Wasm hash: $NEW_WASM_HASH"
 > sha256sum target/wasm32-unknown-unknown/release/utility_contracts.wasm
 > ```
 
-### Step 2 — Propose the upgrade (Admin key)
+### Step 2 â€” Propose the upgrade (Admin key)
 
 ```bash
 stellar contract invoke \
@@ -370,7 +370,7 @@ stellar contract invoke \
 
 The contract emits an `UpgrdPrp` event and stores the proposal at `DataKey::ProposedUpgrade`. The veto window starts immediately. **Announce the proposal to the DAO governance forum and all stakeholders now.**
 
-### Step 3 — Communicate the veto window
+### Step 3 â€” Communicate the veto window
 
 Post the following information to the DAO forum:
 
@@ -380,7 +380,7 @@ Post the following information to the DAO forum:
 - Veto deadline (read from `DataKey::VetoDeadline`)
 - Instructions for users who wish to veto (see below)
 
-### Step 4 — Monitor the veto window
+### Step 4 â€” Monitor the veto window
 
 ```bash
 # Read the veto deadline from contract storage (via block explorer or CLI)
@@ -393,7 +393,7 @@ Post the following information to the DAO forum:
 
 **Do NOT call `finalize_upgrade` before the deadline expires.**
 
-### Step 5 — Finalize the upgrade (Admin key)
+### Step 5 â€” Finalize the upgrade (Admin key)
 
 Only after the veto window has passed and the veto count is below the threshold:
 
@@ -408,7 +408,7 @@ stellar contract invoke \
 
 The contract emits `UpgrdFin`, clears the proposal, and the contract now runs the new Wasm.
 
-### Step 6 — Verify the upgrade
+### Step 6 â€” Verify the upgrade
 
 ```bash
 # Confirm the contract is responsive under the new Wasm
@@ -433,7 +433,7 @@ If the veto window is too long for a zero-day patch:
 
 1. The DAO must vote off-chain (governance forum + Signal) to accept the risk.
 2. Document the decision with a timestamped record before calling `finalize_upgrade`.
-3. There is **no on-chain bypass** — the timelock must expire naturally.
+3. There is **no on-chain bypass** â€” the timelock must expire naturally.
 4. If the window is truly unacceptable, consider pausing all meters (Scenario B) while waiting for the window to expire.
 
 ### Rollback procedure
@@ -441,12 +441,12 @@ If the veto window is too long for a zero-day patch:
 If the new Wasm introduces a regression:
 
 1. Build and upload the previous known-good Wasm binary.
-2. Repeat Steps 1–5 with the rollback hash.
+2. Repeat Steps 1â€“5 with the rollback hash.
 3. The same veto window applies to rollbacks.
 
 ---
 
-## 6. Scenario D — Migrating Trapped State
+## 6. Scenario D â€” Migrating Trapped State
 
 **Trigger:** A bug causes state to become inaccessible or corrupted, and a migration contract is needed to rescue funds or re-initialize storage.
 
@@ -456,7 +456,7 @@ If the new Wasm introduces a regression:
 
 Soroban contracts cannot iterate all storage keys natively. Migration must be performed key-by-key using known meter IDs and stream IDs obtained from the `Count` storage key.
 
-### Step 1 — Pause the old contract (prevent state changes during migration)
+### Step 1 â€” Pause the old contract (prevent state changes during migration)
 
 ```bash
 # Pause every meter
@@ -473,7 +473,7 @@ for i in $(seq 1 $METER_COUNT); do
 done
 ```
 
-### Step 2 — Enumerate and dump all meter state
+### Step 2 â€” Enumerate and dump all meter state
 
 ```bash
 # Get the total meter count
@@ -496,7 +496,7 @@ for i in $(seq 1 $METER_COUNT); do
 done
 ```
 
-### Step 3 — Dump continuous flow stream state
+### Step 3 â€” Dump continuous flow stream state
 
 ```bash
 # Stream IDs share the same counter as meters (DataKey::Count)
@@ -510,7 +510,7 @@ for i in $(seq 1 $METER_COUNT); do
 done
 ```
 
-### Step 4 — Dump gas buffer state for each provider
+### Step 4 â€” Dump gas buffer state for each provider
 
 ```bash
 # Collect unique provider addresses from the meter dumps, then:
@@ -522,7 +522,7 @@ stellar contract invoke \
   --provider <PROVIDER_ADDRESS> > migration_state/gas_buffer_<PROVIDER_ADDRESS>.json
 ```
 
-### Step 5 — Deploy the migration contract
+### Step 5 â€” Deploy the migration contract
 
 The migration contract must be:
 - Pre-audited by an independent security firm
@@ -549,7 +549,7 @@ stellar contract invoke \
   --new_contract <NEW_CONTRACT_ADDRESS>
 ```
 
-### Step 6 — Execute migration meter by meter
+### Step 6 â€” Execute migration meter by meter
 
 ```bash
 for i in $(seq 1 $METER_COUNT); do
@@ -564,7 +564,7 @@ for i in $(seq 1 $METER_COUNT); do
 done
 ```
 
-### Step 7 — Verify migrated state
+### Step 7 â€” Verify migrated state
 
 For each meter, compare the balance and key fields between the state dump and the new contract:
 
@@ -586,7 +586,7 @@ echo "Verification complete"
 
 **Do not decommission the old contract until all diffs are clean.**
 
-### Step 8 — Transfer token balances
+### Step 8 â€” Transfer token balances
 
 Token balances held by the old contract must be transferred to the new contract. This requires a separate token transfer transaction authorized by the old contract's admin:
 
@@ -605,17 +605,17 @@ stellar contract invoke \
 
 ---
 
-## 7. Scenario E — Multi-Sig Withdrawal Freeze
+## 7. Scenario E â€” Multi-Sig Withdrawal Freeze
 
 **Trigger:** A suspicious large withdrawal request is detected, a finance wallet is compromised, or a request was submitted with incorrect parameters.
 
 ### Understand the multi-sig lifecycle
 
 ```
-propose_multisig_withdrawal  →  approve_multisig_withdrawal (×N)  →  execute_multisig_withdrawal
-                                         ↕
+propose_multisig_withdrawal  â†’  approve_multisig_withdrawal (Ã—N)  â†’  execute_multisig_withdrawal
+                                         â†•
                               revoke_multisig_approval (undo one approval)
-                                         ↕
+                                         â†•
                               cancel_multisig_withdrawal (cancel entire request)
 ```
 
@@ -695,11 +695,11 @@ stellar contract invoke \
 
 ### Multi-sig signer duties during a freeze
 
-See [Section 14 — Multi-Sig Signer Reference Card](#14-multi-sig-signer-reference-card) for the complete step-by-step guide for finance wallet holders.
+See [Section 14 â€” Multi-Sig Signer Reference Card](#14-multi-sig-signer-reference-card) for the complete step-by-step guide for finance wallet holders.
 
 ---
 
-## 8. Scenario F — Legal Freeze
+## 8. Scenario F â€” Legal Freeze
 
 **Trigger:** Regulatory order, court injunction, AML/KYC flag, or law enforcement request.
 
@@ -713,7 +713,7 @@ stellar contract invoke \
   -- \
   legal_freeze \
   --meter_id <METER_ID> \
-  --reason "Regulatory order #<CASE_NUMBER> — <JURISDICTION>"
+  --reason "Regulatory order #<CASE_NUMBER> â€” <JURISDICTION>"
 ```
 
 Funds are transferred to the `LegalVault` address. The meter is paused immediately. The `LegalFreeze` struct is stored at `DataKey::LegalFreeze(meter_id)`.
@@ -731,7 +731,7 @@ stellar contract invoke \
 
 Confirm `is_released = false` and `frozen_amount` matches expectations.
 
-### Release a freeze (Compliance Council — minimum 2 signatures)
+### Release a freeze (Compliance Council â€” minimum 2 signatures)
 
 Both council members must coordinate off-chain before submitting. The transaction requires `require_auth` from each address in `council_signatures`.
 
@@ -764,7 +764,7 @@ stellar contract invoke \
 
 ---
 
-## 9. Scenario G — Gas Buffer Exhaustion
+## 9. Scenario G â€” Gas Buffer Exhaustion
 
 **Trigger:** Provider withdrawals are failing due to network congestion and the gas buffer is depleted or below the minimum threshold (100 XLM).
 
@@ -807,7 +807,7 @@ stellar contract invoke \
 - Minimum buffer: **100 XLM**
 - Maximum buffer: **10,000 XLM**
 - Auto-top-up trigger threshold: **200 XLM**
-- Recommended top-up during congestion: **500–1,000 XLM**
+- Recommended top-up during congestion: **500â€“1,000 XLM**
 
 ### Initialize a new gas buffer if none exists (Provider key)
 
@@ -840,13 +840,13 @@ stellar contract invoke \
 
 ---
 
-## 10. Scenario H — Admin Key Compromise
+## 10. Scenario H â€” Admin Key Compromise
 
 **Trigger:** The DAO Admin private key is suspected or confirmed to be compromised.
 
-**Time budget:** Initiate the admin transfer immediately. The 48-hour timelock means you have a window — but so does the attacker.
+**Time budget:** Initiate the admin transfer immediately. The 48-hour timelock means you have a window â€” but so does the attacker.
 
-### Step 1 — Initiate admin transfer to a new key (Current Admin key)
+### Step 1 â€” Initiate admin transfer to a new key (Current Admin key)
 
 ```bash
 stellar contract invoke \
@@ -860,14 +860,14 @@ stellar contract invoke \
 
 The contract stores an `AdminTransferProposal` with a 48-hour execution window. An `AdminXfer` event is emitted.
 
-### Step 2 — Announce to the DAO
+### Step 2 â€” Announce to the DAO
 
 Post to the governance forum immediately with:
 - The new admin address
 - Reason for the transfer
 - Veto instructions (users can call `veto_admin_transfer` if they object)
 
-### Step 3 — Execute the transfer after 48 hours (Current Admin key)
+### Step 3 â€” Execute the transfer after 48 hours (Current Admin key)
 
 ```bash
 stellar contract invoke \
@@ -880,7 +880,7 @@ stellar contract invoke \
 
 The transfer is blocked if the veto count reaches the threshold (10% of active users). If vetoed, coordinate with the DAO to resolve the dispute before retrying.
 
-### Step 4 — Rotate all dependent keys
+### Step 4 â€” Rotate all dependent keys
 
 After the admin transfer, rotate:
 - Compliance Officer (`set_compliance_officer`)
@@ -891,13 +891,13 @@ After the admin transfer, rotate:
 
 If the attacker uses the compromised key to initiate their own admin transfer:
 
-1. Mobilize the DAO to call `veto_admin_transfer` immediately — 10% of active users vetoing will block the transfer.
+1. Mobilize the DAO to call `veto_admin_transfer` immediately â€” 10% of active users vetoing will block the transfer.
 2. Simultaneously, if the attacker has not yet changed the admin, use the legitimate key to cancel by initiating a competing transfer.
 3. Contact Stellar Foundation Security (see [Section 15](#15-contact-tree)).
 
 ---
 
-## 11. Scenario I — Oracle Failure
+## 11. Scenario I â€” Oracle Failure
 
 **Trigger:** The price oracle is returning stale data, returning zero, or is unreachable, causing USD/XLM conversions to fail or produce incorrect billing amounts.
 
@@ -948,7 +948,7 @@ stellar contract invoke \
 
 ---
 
-## 12. Scenario J — Velocity Limit Breach / Flash Drain
+## 12. Scenario J â€” Velocity Limit Breach / Flash Drain
 
 **Trigger:** The velocity limit circuit breaker fires, blocking legitimate withdrawals, or a flash drain is detected that is consuming the daily withdrawal allowance.
 
@@ -977,7 +977,7 @@ stellar contract invoke \
   --reason "maintenance"
 ```
 
-Set `meter_id = 0` for a global override. Set `expires_at` to the minimum time needed — do not leave overrides open indefinitely.
+Set `meter_id = 0` for a global override. Set `expires_at` to the minimum time needed â€” do not leave overrides open indefinitely.
 
 ### Tighten velocity limits during a suspected flash drain (Admin key)
 
@@ -1098,17 +1098,17 @@ This section is written for **Finance Wallet holders** who may not be familiar w
 
 ### Your role
 
-You are one of 3–5 authorized Finance Department wallet holders for your provider. Large withdrawals (above `threshold_amount` in USD cents) require `required_signatures` approvals from this group before they can execute. Your job is to:
+You are one of 3â€“5 authorized Finance Department wallet holders for your provider. Large withdrawals (above `threshold_amount` in USD cents) require `required_signatures` approvals from this group before they can execute. Your job is to:
 
 1. Verify that a withdrawal request is legitimate before approving it.
 2. Revoke your approval immediately if you suspect fraud.
 3. Cancel the request if you are the provider and the request is fraudulent.
 
-### Before approving any request — verification checklist
+### Before approving any request â€” verification checklist
 
 - [ ] You received the request notification through the agreed secure channel (not email alone).
 - [ ] The `amount_usd_cents` matches the amount discussed off-chain.
-- [ ] The `destination` address is the known treasury address — verify character by character.
+- [ ] The `destination` address is the known treasury address â€” verify character by character.
 - [ ] The `meter_id` is a meter you recognize as belonging to your provider.
 - [ ] The `expires_at` timestamp gives you enough time to coordinate with other signers.
 - [ ] At least one other signer has independently verified the above.
@@ -1196,7 +1196,7 @@ stellar contract invoke \
 | Priority | Role | Contact Method |
 |---|---|---|
 | 1 | DAO Admin | Signal / PagerDuty (primary) |
-| 2 | Finance Wallet Holders (×3–5) | Signal group |
+| 2 | Finance Wallet Holders (Ã—3â€“5) | Signal group |
 | 3 | Compliance Officer | Signal + Email |
 | 4 | Oracle Operator | PagerDuty |
 | 5 | Stellar Foundation Security | security@stellar.org |
@@ -1207,10 +1207,10 @@ stellar contract invoke \
 
 | Severity | Criteria | Response time | Escalate to |
 |---|---|---|---|
-| **P1 — Critical** | Active exploit, funds draining | < 5 minutes | All roles simultaneously |
-| **P2 — High** | Suspected exploit, oracle down, key compromise | < 15 minutes | DAO Admin + Finance Wallets |
-| **P3 — Medium** | Planned pause, upgrade, legal freeze | < 1 hour | DAO Admin |
-| **P4 — Low** | Gas buffer low, velocity limit false positive | < 4 hours | Provider |
+| **P1 â€” Critical** | Active exploit, funds draining | < 5 minutes | All roles simultaneously |
+| **P2 â€” High** | Suspected exploit, oracle down, key compromise | < 15 minutes | DAO Admin + Finance Wallets |
+| **P3 â€” Medium** | Planned pause, upgrade, legal freeze | < 1 hour | DAO Admin |
+| **P4 â€” Low** | Gas buffer low, velocity limit false positive | < 4 hours | Provider |
 
 ---
 

@@ -1,7 +1,7 @@
-#!/bin/bash
+﻿#!/bin/bash
 
 ################################################################################
-# Utility Drip Contract Deployment Script
+# Equipchain Contract Deployment Script
 # 
 # This script pulls the Stellar Docker image and deploys the Utility contract
 # to either testnet or mainnet with a single command.
@@ -42,28 +42,28 @@ CONTRACT_ID=""
 ################################################################################
 
 print_info() {
-    echo -e "${BLUE}ℹ️  $1${NC}"
+    echo -e "${BLUE}â„¹ï¸  $1${NC}"
 }
 
 print_success() {
-    echo -e "${GREEN}✅ $1${NC}"
+    echo -e "${GREEN}âœ… $1${NC}"
 }
 
 print_warning() {
-    echo -e "${YELLOW}⚠️  $1${NC}"
+    echo -e "${YELLOW}âš ï¸  $1${NC}"
 }
 
 print_error() {
-    echo -e "${RED}❌ $1${NC}"
+    echo -e "${RED}âŒ $1${NC}"
 }
 
 print_step() {
-    echo -e "\n${GREEN}▶️  Step $1: $2${NC}\n"
+    echo -e "\n${GREEN}â–¶ï¸  Step $1: $2${NC}\n"
 }
 
 usage() {
     cat << EOF
-Utility Drip Contract Deployment Script
+Equipchain Contract Deployment Script
 
 Usage:
   $0 --network <testnet|mainnet> [--key <secret-key>]
@@ -381,31 +381,31 @@ display_summary() {
     
     cat << EOF
 
-╔═══════════════════════════════════════════════════════════╗
-║                                                           ║
-║          🎉 UTILITY DRIP DEPLOYMENT COMPLETE 🎉           ║
-║                                                           ║
-╠═══════════════════════════════════════════════════════════╣
-║                                                           ║
-║  Network:          $NETWORK
-║  Contract ID:      $CONTRACT_ID
-║  Deployer Account: $PUBLIC_KEY
-║  Container Name:   $CONTAINER_NAME
-║                                                           ║
-║  Block Explorer:                                          
-║  $(printf "%-55s" "$explorer_url")
-║                                                           ║
-║  Next Steps:                                              
-║  1. Register a meter:                                      
-║     node meter-simulator/src/index.js register             
-║                                                           ║
-║  2. View contract on explorer:                             
-║     Open the URL above in your browser                    
-║                                                           ║
-║  3. Monitor transactions:                                  
-║     docker logs -f $CONTAINER_NAME                         
-║                                                           ║
-╚═══════════════════════════════════════════════════════════╝
+â•”â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•—
+â•‘                                                           â•‘
+â•‘          ðŸŽ‰ Equipchain DEPLOYMENT COMPLETE ðŸŽ‰           â•‘
+â•‘                                                           â•‘
+â• â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•£
+â•‘                                                           â•‘
+â•‘  Network:          $NETWORK
+â•‘  Contract ID:      $CONTRACT_ID
+â•‘  Deployer Account: $PUBLIC_KEY
+â•‘  Container Name:   $CONTAINER_NAME
+â•‘                                                           â•‘
+â•‘  Block Explorer:                                          
+â•‘  $(printf "%-55s" "$explorer_url")
+â•‘                                                           â•‘
+â•‘  Next Steps:                                              
+â•‘  1. Register a meter:                                      
+â•‘     node meter-simulator/src/index.js register             
+â•‘                                                           â•‘
+â•‘  2. View contract on explorer:                             
+â•‘     Open the URL above in your browser                    
+â•‘                                                           â•‘
+â•‘  3. Monitor transactions:                                  
+â•‘     docker logs -f $CONTAINER_NAME                         
+â•‘                                                           â•‘
+â•šâ•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
 EOF
 }
@@ -460,7 +460,7 @@ fi
 
 # Warn if mainnet
 if [ "$NETWORK" == "mainnet" ]; then
-    print_warning "⚠️  DEPLOYING TO MAINNET - REAL MONEY WILL BE USED ⚠️"
+    print_warning "âš ï¸  DEPLOYING TO MAINNET - REAL MONEY WILL BE USED âš ï¸"
     read -p "Are you sure you want to continue? (yes/no): " -r
     echo
     if [[ ! $REPLY =~ ^[Yy][Ee][Ss]$ ]]; then
@@ -483,6 +483,6 @@ display_summary
 # Trap cleanup on exit
 trap cleanup EXIT
 
-print_success "\n🚀 Deployment completed successfully!"
+print_success "\nðŸš€ Deployment completed successfully!"
 
 exit 0

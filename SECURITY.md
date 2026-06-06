@@ -1,9 +1,9 @@
-# Security Policy & Formal Verification Results
+﻿# Security Policy & Formal Verification Results
 
 ## Reporting a Vulnerability
 
 Please report security vulnerabilities by opening a **private** GitHub Security Advisory at:
-`https://github.com/Utility-Drip/Utility-Drip-Contracts/security/advisories/new`
+`https://github.com/EquipChain/EquipChain-contracts/security/advisories/new`
 
 Do **not** open a public issue for security-sensitive findings.
 
@@ -14,7 +14,7 @@ Do **not** open a public issue for security-sensitive findings.
 ### Invariant Statement
 
 > **For every active stream:**
-> `current_time ≤ start_time + ⌊initial_balance / flow_rate⌋`
+> `current_time â‰¤ start_time + âŒŠinitial_balance / flow_rateâŒ‹`
 >
 > Equivalently, `calculate_remaining_balance(balance, rate, elapsed)` **never returns a negative value**.
 
@@ -25,18 +25,18 @@ This invariant guarantees that the contract is **insolvent-proof** with respect 
 Let:
 - `B` = initial balance (integer, stroops or token units)
 - `R` = flow rate (integer, units per second, `R > 0`)
-- `T_max` = `⌊B / R⌋` (maximum seconds the stream can run)
-- `C(t)` = consumed at time `t` = `R × t` (integer multiplication)
+- `T_max` = `âŒŠB / RâŒ‹` (maximum seconds the stream can run)
+- `C(t)` = consumed at time `t` = `R Ã— t` (integer multiplication)
 
-**Claim:** `B - C(T_max) ≥ 0`
+**Claim:** `B - C(T_max) â‰¥ 0`
 
 **Proof:**
 ```
-T_max = ⌊B / R⌋
-⟹ T_max ≤ B / R
-⟹ R × T_max ≤ B          (multiply both sides by R > 0)
-⟹ B - R × T_max ≥ 0      (rearrange)
-⟹ B - C(T_max) ≥ 0       ∎
+T_max = âŒŠB / RâŒ‹
+âŸ¹ T_max â‰¤ B / R
+âŸ¹ R Ã— T_max â‰¤ B          (multiply both sides by R > 0)
+âŸ¹ B - R Ã— T_max â‰¥ 0      (rearrange)
+âŸ¹ B - C(T_max) â‰¥ 0       âˆŽ
 ```
 
 **Rounding direction:** All divisions use Rust integer truncation (rounds toward zero / floor for positive values), which always rounds **down in favour of the contract**. This means the contract never charges for a fractional second it has not earned.
@@ -49,22 +49,22 @@ The following tests in `contracts/utility_contracts/src/fuzz_tests.rs` verify th
 
 | Test | Description | Inputs |
 |------|-------------|--------|
-| `test_stream_exhaustion_invariant_randomised` | 100 000 randomised (balance, rate) pairs via deterministic LCG | balance ∈ [1, 10¹²], rate ∈ [1, 10⁶] |
+| `test_stream_exhaustion_invariant_randomised` | 100 000 randomised (balance, rate) pairs via deterministic LCG | balance âˆˆ [1, 10Â¹Â²], rate âˆˆ [1, 10â¶] |
 | `test_stream_never_negative_after_pause_resume` | 10-year simulation with pause/resume and partial top-ups | Fixed scenario, 315 M seconds |
 | `test_rounding_always_favours_solvency` | Verifies floor-division rounding direction | Hand-crafted edge cases |
-| `test_calculate_remaining_balance_never_negative` | Grid search over (balance, rate, elapsed) | 6 × 5 × 5 = 150 combinations including extremes |
+| `test_calculate_remaining_balance_never_negative` | Grid search over (balance, rate, elapsed) | 6 Ã— 5 Ã— 5 = 150 combinations including extremes |
 
 All tests run on every Pull Request via the CI workflow (`.github/workflows/test.yml`).
 
 ### Scope of the Guarantee
 
-- ✅ Single-stream balance exhaustion
-- ✅ Pause / resume cycles
-- ✅ Partial top-ups mid-stream
-- ✅ Rounding-error accumulation over 10-year durations
-- ✅ Overflow / underflow protection via saturating arithmetic
-- ⚠️ Multi-stream interactions (covered by integration tests, not this invariant)
-- ⚠️ Oracle price conversion rounding (separate audit scope)
+- âœ… Single-stream balance exhaustion
+- âœ… Pause / resume cycles
+- âœ… Partial top-ups mid-stream
+- âœ… Rounding-error accumulation over 10-year durations
+- âœ… Overflow / underflow protection via saturating arithmetic
+- âš ï¸ Multi-stream interactions (covered by integration tests, not this invariant)
+- âš ï¸ Oracle price conversion rounding (separate audit scope)
 
 ### Auditor Notes
 

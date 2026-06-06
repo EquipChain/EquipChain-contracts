@@ -1,4 +1,4 @@
-# 🌍 Utility Drip Multi-Language Error Mapping
+﻿# ðŸŒ Equipchain Multi-Language Error Mapping
 
 This document provides a mapping of on-chain error codes to human-readable descriptions in multiple languages. This ensures accessibility for users in rural areas and non-English speaking regions (Issue #122).
 
@@ -6,16 +6,16 @@ This document provides a mapping of on-chain error codes to human-readable descr
 
 | Code | ID | Description | Yoruba | Hausa | Igbo | Spanish | French |
 |------|----|-------------|--------|-------|------|---------|--------|
-| 1 | `MeterNotFound` | Meter not registered. | A kò rí mita yìí. | Ba a sami mita ba. | Ahụghị mita a. | Medidor no encontrado. | Compteur non trouvé. |
-| 5 | `InvalidTokenAmount` | Invalid token amount. | Iye owó kò tọ́. | Adadin kuɗi ba daidai ba. | Ego ezughị oke. | Cantidad de tokens inválida. | Montant de jetons invalide. |
-| 11 | `TimestampTooOld` | Transaction expired. | Àkókò ti kọjá. | Lokaci ya ƙare. | Oge agwụla. | Transacción expirada. | Transaction expirée. |
-| 15 | `MeterNotPaired` | Device not paired. | Ẹ̀rọ kò tíì so pọ̀. | Ba a haɗa na'ura ba. | Ejikọtaghị mita. | Dispositivo no vinculado. | Appareil non appairé. |
-| 16 | `MeterPaused` | Meter is paused. | Mita ti dádúró. | An dakatar da mita. | Akwụsịrị mita a. | Medidor pausado. | Compteur en pause. |
-| 19 | `AccountAlreadyClosed` | Account is closed. | Àkàǹtì ti tì. | An rufe asusu. | Emechiela akaụntụ a. | Cuenta ya cerrada. | Compte déjà fermé. |
-| 20 | `InsufficientBalance` | Low balance. | Owó kò tó. | Kuɗi ba su isa ba. | Ego ezughị. | Saldo insuficiente. | Solde insuffisant. |
-| 22 | `InDispute` | Service in dispute. | Àríyànjiyàn wà. | Akwai jayayya. | E nwere esemokwu. | Servicio en disputa. | Service en litige. |
-| 44 | `ProviderNotVerified` | Provider not verified. | Olùpèsè kò fẹsẹ̀ múlẹ̀. | Ba a tabbatar da mai samarwa ba. | Akwadoghị onye na-enye ọrụ. | Proveedor no verificado. | Fournisseur non vérifié. |
-| 49 | `InsufficientXlmReserve` | Gas reserve low. | Owó gas kò tó. | Gas ya yi ƙasa. | Ego gas dị ala. | Reserva de gas insuficiente. | Réserve de gas insuffisante. |
+| 1 | `MeterNotFound` | Meter not registered. | A kÃ² rÃ­ mita yÃ¬Ã­. | Ba a sami mita ba. | Ahá»¥ghá»‹ mita a. | Medidor no encontrado. | Compteur non trouvÃ©. |
+| 5 | `InvalidTokenAmount` | Invalid token amount. | Iye owÃ³ kÃ² tá»Ì. | Adadin kuÉ—i ba daidai ba. | Ego ezughá»‹ oke. | Cantidad de tokens invÃ¡lida. | Montant de jetons invalide. |
+| 11 | `TimestampTooOld` | Transaction expired. | Ã€kÃ³kÃ² ti ká»jÃ¡. | Lokaci ya Æ™are. | Oge agwá»¥la. | TransacciÃ³n expirada. | Transaction expirÃ©e. |
+| 15 | `MeterNotPaired` | Device not paired. | áº¸Ì€rá» kÃ² tÃ­Ã¬ so pá»Ì€. | Ba a haÉ—a na'ura ba. | Ejiká»taghá»‹ mita. | Dispositivo no vinculado. | Appareil non appairÃ©. |
+| 16 | `MeterPaused` | Meter is paused. | Mita ti dÃ¡dÃºrÃ³. | An dakatar da mita. | Akwá»¥sá»‹rá»‹ mita a. | Medidor pausado. | Compteur en pause. |
+| 19 | `AccountAlreadyClosed` | Account is closed. | Ã€kÃ Ç¹tÃ¬ ti tÃ¬. | An rufe asusu. | Emechiela akaá»¥ntá»¥ a. | Cuenta ya cerrada. | Compte dÃ©jÃ  fermÃ©. |
+| 20 | `InsufficientBalance` | Low balance. | OwÃ³ kÃ² tÃ³. | KuÉ—i ba su isa ba. | Ego ezughá»‹. | Saldo insuficiente. | Solde insuffisant. |
+| 22 | `InDispute` | Service in dispute. | Ã€rÃ­yÃ njiyÃ n wÃ . | Akwai jayayya. | E nwere esemokwu. | Servicio en disputa. | Service en litige. |
+| 44 | `ProviderNotVerified` | Provider not verified. | OlÃ¹pÃ¨sÃ¨ kÃ² fáº¹sáº¹Ì€ mÃºláº¹Ì€. | Ba a tabbatar da mai samarwa ba. | Akwadoghá»‹ onye na-enye á»rá»¥. | Proveedor no verificado. | Fournisseur non vÃ©rifiÃ©. |
+| 49 | `InsufficientXlmReserve` | Gas reserve low. | OwÃ³ gas kÃ² tÃ³. | Gas ya yi Æ™asa. | Ego gas dá»‹ ala. | Reserva de gas insuficiente. | RÃ©serve de gas insuffisante. |
 
 ## Backend Integration
 
@@ -26,9 +26,9 @@ The backend service should intercept contract reverts, extract the `u32` error c
 {
   "20": {
     "en": "Insufficient balance to continue service.",
-    "yo": "Owó kò tó láti tẹ̀síwájú.",
-    "ha": "Kuɗi ba su isa su ci gaba da sabis ba.",
-    "ig": "Ego ezughị iji gaa n'ihu.",
+    "yo": "OwÃ³ kÃ² tÃ³ lÃ¡ti táº¹Ì€sÃ­wÃ¡jÃº.",
+    "ha": "KuÉ—i ba su isa su ci gaba da sabis ba.",
+    "ig": "Ego ezughá»‹ iji gaa n'ihu.",
     "es": "Saldo insuficiente para continuar el servicio.",
     "fr": "Solde insuffisant pour continuer le service."
   }

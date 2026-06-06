@@ -1,23 +1,23 @@
-# Meter Simulator CLI
+﻿# Meter Simulator CLI
 
-A Node.js CLI tool that mimics an ESP32 sending usage data to the Utility Drip smart contracts for local development and testing.
+A Node.js CLI tool that mimics an ESP32 sending usage data to the Equipchain smart contracts for local development and testing.
 
 ## Features
 
-- 🔐 **Ed25519 Key Generation**: Generate cryptographic key pairs for device authentication
-- 📝 **Meter Registration**: Register new meters with the smart contract
-- 📊 **Realistic Usage Simulation**: Simulate energy consumption patterns with peak/off-peak pricing
-- 📡 **MQTT Support**: Publish usage data via MQTT (matching ESP32 behavior)
-- 🔗 **Direct Contract Integration**: Submit data directly to Soroban contracts
-- ⚡ **Multiple Simulation Modes**: Realistic, surge, and low consumption patterns
-- 📈 **Real-time Monitoring**: Track meter status and usage statistics
+- ðŸ” **Ed25519 Key Generation**: Generate cryptographic key pairs for device authentication
+- ðŸ“ **Meter Registration**: Register new meters with the smart contract
+- ðŸ“Š **Realistic Usage Simulation**: Simulate energy consumption patterns with peak/off-peak pricing
+- ðŸ“¡ **MQTT Support**: Publish usage data via MQTT (matching ESP32 behavior)
+- ðŸ”— **Direct Contract Integration**: Submit data directly to Soroban contracts
+- âš¡ **Multiple Simulation Modes**: Realistic, surge, and low consumption patterns
+- ðŸ“ˆ **Real-time Monitoring**: Track meter status and usage statistics
 
 ## Installation
 
 ```bash
 # Clone the repository
-git clone https://github.com/akordavid373/Utility-Drip-Contracts.git
-cd Utility-Drip-Contracts/meter-simulator
+git clone https://github.com/EquipChain/EquipChain-contracts.git
+cd EquipChain-contracts/meter-simulator
 
 # Install dependencies
 npm install
@@ -146,7 +146,7 @@ The simulator can publish usage data via MQTT to match real ESP32 behavior:
 
 ## Contract Integration
 
-The simulator integrates with the Utility Drip smart contract:
+The simulator integrates with the Equipchain smart contract:
 
 ### Signed Usage Data
 
@@ -168,15 +168,15 @@ All usage data is cryptographically signed using Ed25519:
 
 ```
 meter-simulator/
-├── src/
-│   ├── index.js          # Main CLI entry point
-│   ├── config.js         # Configuration management
-│   ├── meter-device.js   # Device simulation logic
-│   ├── contract-interface.js # Contract interaction
-│   └── mqtt-publisher.js # MQTT client
-├── package.json
-├── .env.example
-└── README.md
+â”œâ”€â”€ src/
+â”‚   â”œâ”€â”€ index.js          # Main CLI entry point
+â”‚   â”œâ”€â”€ config.js         # Configuration management
+â”‚   â”œâ”€â”€ meter-device.js   # Device simulation logic
+â”‚   â”œâ”€â”€ contract-interface.js # Contract interaction
+â”‚   â””â”€â”€ mqtt-publisher.js # MQTT client
+â”œâ”€â”€ package.json
+â”œâ”€â”€ .env.example
+â””â”€â”€ README.md
 ```
 
 ### Testing
@@ -201,11 +201,11 @@ npm run lint
 
 ## Security Considerations
 
-- 🔐 Private keys are stored locally and never transmitted
-- ✅ All usage data is cryptographically signed
-- 🕐 Timestamp validation prevents replay attacks
-- 🚫 Maximum usage limits prevent abuse
-- 🔑 Device authentication via public key verification
+- ðŸ” Private keys are stored locally and never transmitted
+- âœ… All usage data is cryptographically signed
+- ðŸ• Timestamp validation prevents replay attacks
+- ðŸš« Maximum usage limits prevent abuse
+- ðŸ”‘ Device authentication via public key verification
 
 ## Troubleshooting
 
@@ -249,6 +249,6 @@ MIT License - see LICENSE file for details.
 
 ## Support
 
-- 📖 [Utility Drip Documentation](../README.md)
-- 🐛 [Issues](https://github.com/akordavid373/Utility-Drip-Contracts/issues)
-- 💬 [Discussions](https://github.com/akordavid373/Utility-Drip-Contracts/discussions)
+- ðŸ“– [Equipchain Documentation](../README.md)
+- ðŸ› [Issues](https://github.com/EquipChain/EquipChain-contracts/issues)
+- ðŸ’¬ [Discussions](https://github.com/EquipChain/EquipChain-contracts/discussions)

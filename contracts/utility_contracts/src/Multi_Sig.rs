@@ -1,4 +1,4 @@
-#![no_std]
+﻿#![no_std]
 use soroban_sdk::{
     contract, contractclient, contracterror, contractimpl, contracttype, panic_with_error,
     symbol_short, token, Address, Env, String, Symbol, Vec, BytesN,
@@ -11,7 +11,7 @@ use std::collections::HashMap;
 #[derive(Clone)]
 pub struct MasterStream {
     pub account: Address,
-    pub sensors: HashMap<String, i128>, // MAC address → latest consumption payload
+    pub sensors: HashMap<String, i128>, // MAC address â†’ latest consumption payload
     pub balance: i128,
 }
 
@@ -80,7 +80,7 @@ pub fn validate_invariants(env: &Env, account: Address) {
 
 
 // --- Grant Stream Listener Contract ---
-// This contract listens for GoalReached events from Utility Drips and processes grant matches
+// This contract listens for GoalReached events from Equipchains and processes grant matches
 
 #[contracttype]
 #[derive(Clone)]
@@ -161,7 +161,7 @@ impl GrantStreamListener {
         );
     }
 
-    /// Called by Utility Drips when a conservation goal is reached
+    /// Called by Equipchains when a conservation goal is reached
     pub fn on_goal_reached(env: Env, goal_event: super::GoalReachedEvent) {
         let config: GrantConfig = env.storage()
             .instance()

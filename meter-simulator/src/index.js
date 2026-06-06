@@ -1,4 +1,4 @@
-#!/usr/bin/env node
+﻿#!/usr/bin/env node
 
 const { Command } = require('commander');
 const chalk = require('chalk');
@@ -18,7 +18,7 @@ const program = new Command();
 
 program
   .name('meter-simulator')
-  .description('ESP32 meter simulator for Utility Drip smart contracts')
+  .description('ESP32 meter simulator for Equipchain smart contracts')
   .version('1.0.0');
 
 // Generate device key pair
@@ -28,7 +28,7 @@ program
   .option('-o, --output <file>', 'Output file for keys', 'device-keys.json')
   .action(async (options) => {
     try {
-      console.log(chalk.blue('🔑 Generating new device key pair...'));
+      console.log(chalk.blue('ðŸ”‘ Generating new device key pair...'));
       
       const keyPair = nacl.sign.keyPair();
       const keys = {
@@ -42,13 +42,13 @@ program
 
       await fs.writeFile(options.output, JSON.stringify(keys, null, 2));
       
-      console.log(chalk.green('✅ Keys generated successfully!'));
-      console.log(chalk.yellow(`📁 Saved to: ${options.output}`));
-      console.log(chalk.cyan(`🔐 Public Key: ${keys.public_key}`));
-      console.log(chalk.red(`⚠️  Keep the private key secure!`));
+      console.log(chalk.green('âœ… Keys generated successfully!'));
+      console.log(chalk.yellow(`ðŸ“ Saved to: ${options.output}`));
+      console.log(chalk.cyan(`ðŸ” Public Key: ${keys.public_key}`));
+      console.log(chalk.red(`âš ï¸  Keep the private key secure!`));
       
     } catch (error) {
-      console.error(chalk.red('❌ Error generating keys:'), error.message);
+      console.error(chalk.red('âŒ Error generating keys:'), error.message);
       process.exit(1);
     }
   });
@@ -64,7 +64,7 @@ program
   .option('-t, --token <address>', 'Token address (native XLM if not specified)')
   .action(async (options) => {
     try {
-      console.log(chalk.blue('📝 Registering meter with contract...'));
+      console.log(chalk.blue('ðŸ“ Registering meter with contract...'));
       
       const keysData = await fs.readFile(options.keys, 'utf8');
       const keys = JSON.parse(keysData);
@@ -103,8 +103,8 @@ program
         devicePublicKey: keys.public_key_base64
       });
 
-      console.log(chalk.green(`✅ Meter registered successfully!`));
-      console.log(chalk.cyan(`🔢 Meter ID: ${meterId}`));
+      console.log(chalk.green(`âœ… Meter registered successfully!`));
+      console.log(chalk.cyan(`ðŸ”¢ Meter ID: ${meterId}`));
       
       // Save meter configuration
       const meterConfig = {
@@ -118,10 +118,10 @@ program
       };
       
       await fs.writeFile('meter-config.json', JSON.stringify(meterConfig, null, 2));
-      console.log(chalk.yellow(`📁 Meter config saved to: meter-config.json`));
+      console.log(chalk.yellow(`ðŸ“ Meter config saved to: meter-config.json`));
       
     } catch (error) {
-      console.error(chalk.red('❌ Error registering meter:'), error.message);
+      console.error(chalk.red('âŒ Error registering meter:'), error.message);
       process.exit(1);
     }
   });
@@ -137,7 +137,7 @@ program
   .option('--zk', 'Enable Zero-Knowledge privacy mode')
   .action(async (options) => {
     try {
-      console.log(chalk.blue('🚀 Starting meter simulation...'));
+      console.log(chalk.blue('ðŸš€ Starting meter simulation...'));
       
       const configData = await fs.readFile(options.config, 'utf8');
       const meterConfig = JSON.parse(configData);
@@ -149,11 +149,11 @@ program
       if (options.mqtt) {
         publisher = new MQTTPublisher(config.mqtt);
         await publisher.connect();
-        console.log(chalk.green('📡 Connected to MQTT broker'));
+        console.log(chalk.green('ðŸ“¡ Connected to MQTT broker'));
       }
       
-      console.log(chalk.cyan(`📊 Simulation mode: ${options.mode}`));
-      console.log(chalk.cyan(`⏱️  Reporting interval: ${options.interval} seconds`));
+      console.log(chalk.cyan(`ðŸ“Š Simulation mode: ${options.mode}`));
+      console.log(chalk.cyan(`â±ï¸  Reporting interval: ${options.interval} seconds`));
       console.log(chalk.yellow('Press Ctrl+C to stop simulation\n'));
       
       const interval = setInterval(async () => {
@@ -161,38 +161,38 @@ program
           if (options.mqtt) {
             const usageData = device.generateUsageData(options.mode);
             await publisher.publishUsageData(usageData);
-            console.log(chalk.green(`📡 Published usage: ${usageData.watt_hours_consumed}Wh, ${usageData.units_consumed} units`));
+            console.log(chalk.green(`ðŸ“¡ Published usage: ${usageData.watt_hours_consumed}Wh, ${usageData.units_consumed} units`));
           } else if (options.zk) {
             const zkData = device.generateZkUsageData(options.mode);
             await contract.submitZkUsageData(zkData);
-            console.log(chalk.green(`🛡️  Submitted ZK Privacy Report: ${zkData.units_consumed} units (Verified via Groth16)`));
+            console.log(chalk.green(`ðŸ›¡ï¸  Submitted ZK Privacy Report: ${zkData.units_consumed} units (Verified via Groth16)`));
           } else {
             const usageData = device.generateUsageData(options.mode);
             await contract.submitUsageData(usageData);
-            console.log(chalk.green(`📤 Submitted usage: ${usageData.watt_hours_consumed}Wh, ${usageData.units_consumed} units`));
+            console.log(chalk.green(`ðŸ“¤ Submitted usage: ${usageData.watt_hours_consumed}Wh, ${usageData.units_consumed} units`));
           }
           
         } catch (error) {
-          console.error(chalk.red('❌ Error in simulation cycle:'), error.message);
+          console.error(chalk.red('âŒ Error in simulation cycle:'), error.message);
         }
       }, options.interval * 1000);
       
       // Handle graceful shutdown
       process.on('SIGINT', async () => {
-        console.log(chalk.yellow('\n🛑 Stopping simulation...'));
+        console.log(chalk.yellow('\nðŸ›‘ Stopping simulation...'));
         clearInterval(interval);
         
         if (publisher) {
           await publisher.disconnect();
-          console.log(chalk.green('📡 Disconnected from MQTT broker'));
+          console.log(chalk.green('ðŸ“¡ Disconnected from MQTT broker'));
         }
         
-        console.log(chalk.blue('👋 Simulation stopped'));
+        console.log(chalk.blue('ðŸ‘‹ Simulation stopped'));
         process.exit(0);
       });
       
     } catch (error) {
-      console.error(chalk.red('❌ Error starting simulation:'), error.message);
+      console.error(chalk.red('âŒ Error starting simulation:'), error.message);
       process.exit(1);
     }
   });
@@ -207,7 +207,7 @@ program
   .option('--mqtt', 'Use MQTT for publishing')
   .action(async (options) => {
     try {
-      console.log(chalk.blue('📤 Sending single reading...'));
+      console.log(chalk.blue('ðŸ“¤ Sending single reading...'));
       
       const configData = await fs.readFile(options.config, 'utf8');
       const meterConfig = JSON.parse(configData);
@@ -225,14 +225,14 @@ program
         await publisher.connect();
         await publisher.publishUsageData(usageData);
         await publisher.disconnect();
-        console.log(chalk.green(`📡 Published via MQTT: ${usageData.watt_hours_consumed}Wh, ${usageData.units_consumed} units`));
+        console.log(chalk.green(`ðŸ“¡ Published via MQTT: ${usageData.watt_hours_consumed}Wh, ${usageData.units_consumed} units`));
       } else {
         await contract.submitUsageData(usageData);
-        console.log(chalk.green(`📤 Submitted to contract: ${usageData.watt_hours_consumed}Wh, ${usageData.units_consumed} units`));
+        console.log(chalk.green(`ðŸ“¤ Submitted to contract: ${usageData.watt_hours_consumed}Wh, ${usageData.units_consumed} units`));
       }
       
     } catch (error) {
-      console.error(chalk.red('❌ Error sending reading:'), error.message);
+      console.error(chalk.red('âŒ Error sending reading:'), error.message);
       process.exit(1);
     }
   });
@@ -250,20 +250,20 @@ program
       const contract = new ContractInterface(config.contract);
       const meter = await contract.getMeter(meterConfig.meter_id);
       
-      console.log(chalk.blue('📊 Meter Status:'));
-      console.log(chalk.cyan(`🔢 Meter ID: ${meterConfig.meter_id}`));
-      console.log(chalk.cyan(`👤 User: ${meter.user}`));
-      console.log(chalk.cyan(`🏢 Provider: ${meter.provider}`));
-      console.log(chalk.cyan(`💰 Balance: ${meter.balance}`));
-      console.log(chalk.cyan(`💳 Debt: ${meter.debt}`));
-      console.log(chalk.cyan(`⚡ Active: ${meter.is_active ? 'Yes' : 'No'}`));
-      console.log(chalk.cyan(`🔗 Paired: ${meter.is_paired ? 'Yes' : 'No'}`));
-      console.log(chalk.cyan(`⏰ Last Update: ${new Date(meter.last_update * 1000).toLocaleString()}`));
-      console.log(chalk.cyan(`📈 Total Usage: ${meter.usage_data.total_watt_hours} Wh`));
-      console.log(chalk.cyan(`🔥 Peak Usage: ${meter.usage_data.peak_usage_watt_hours} Wh`));
+      console.log(chalk.blue('ðŸ“Š Meter Status:'));
+      console.log(chalk.cyan(`ðŸ”¢ Meter ID: ${meterConfig.meter_id}`));
+      console.log(chalk.cyan(`ðŸ‘¤ User: ${meter.user}`));
+      console.log(chalk.cyan(`ðŸ¢ Provider: ${meter.provider}`));
+      console.log(chalk.cyan(`ðŸ’° Balance: ${meter.balance}`));
+      console.log(chalk.cyan(`ðŸ’³ Debt: ${meter.debt}`));
+      console.log(chalk.cyan(`âš¡ Active: ${meter.is_active ? 'Yes' : 'No'}`));
+      console.log(chalk.cyan(`ðŸ”— Paired: ${meter.is_paired ? 'Yes' : 'No'}`));
+      console.log(chalk.cyan(`â° Last Update: ${new Date(meter.last_update * 1000).toLocaleString()}`));
+      console.log(chalk.cyan(`ðŸ“ˆ Total Usage: ${meter.usage_data.total_watt_hours} Wh`));
+      console.log(chalk.cyan(`ðŸ”¥ Peak Usage: ${meter.usage_data.peak_usage_watt_hours} Wh`));
       
     } catch (error) {
-      console.error(chalk.red('❌ Error fetching status:'), error.message);
+      console.error(chalk.red('âŒ Error fetching status:'), error.message);
       process.exit(1);
     }
   });

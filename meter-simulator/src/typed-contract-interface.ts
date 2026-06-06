@@ -1,8 +1,8 @@
-/**
- * Type-safe Contract Interface for Utility Drip Smart Contract
+﻿/**
+ * Type-safe Contract Interface for Equipchain Smart Contract
  * 
  * This module provides a fully-typed interface for interacting with the
- * Utility Drip Soroban smart contract on Stellar.
+ * Equipchain Soroban smart contract on Stellar.
  */
 
 import {
@@ -181,7 +181,7 @@ export class TypedContractInterface implements UtilityContract {
 
   async register_meter(params: RegisterMeterParams): Promise<RegisterMeterResult> {
     try {
-      console.log('🔧 Registering meter...');
+      console.log('ðŸ”§ Registering meter...');
       
       // Build transaction to call register_meter
       const txHash = await this.buildAndSubmitTransaction('register_meter', params);
@@ -189,7 +189,7 @@ export class TypedContractInterface implements UtilityContract {
       // Generate or extract meter ID from transaction result
       const meter_id = this.generateMeterId();
       
-      console.log(`✅ Meter registered with ID: ${meter_id}`);
+      console.log(`âœ… Meter registered with ID: ${meter_id}`);
       
       return {
         meter_id,
@@ -206,12 +206,12 @@ export class TypedContractInterface implements UtilityContract {
 
   async register_meter_with_mode(params: RegisterMeterWithModeParams): Promise<RegisterMeterResult> {
     try {
-      console.log(`🔧 Registering meter with mode: ${params.billing_type}...`);
+      console.log(`ðŸ”§ Registering meter with mode: ${params.billing_type}...`);
       
       const txHash = await this.buildAndSubmitTransaction('register_meter_with_mode', params);
       const meter_id = this.generateMeterId();
       
-      console.log(`✅ Meter registered with ID: ${meter_id}`);
+      console.log(`âœ… Meter registered with ID: ${meter_id}`);
       
       return {
         meter_id,
@@ -228,11 +228,11 @@ export class TypedContractInterface implements UtilityContract {
 
   async top_up(params: TopUpParams): Promise<void> {
     try {
-      console.log(`💰 Topping up meter ${params.meter_id} with ${params.amount} tokens...`);
+      console.log(`ðŸ’° Topping up meter ${params.meter_id} with ${params.amount} tokens...`);
       
       await this.buildAndSubmitTransaction('top_up', params);
       
-      console.log('✅ Top-up successful');
+      console.log('âœ… Top-up successful');
     } catch (error) {
       throw new ContractError(
         'Failed to top up meter',
@@ -243,14 +243,14 @@ export class TypedContractInterface implements UtilityContract {
 
   async deduct_units(params: DeductUnitsParams): Promise<void> {
     try {
-      console.log('📤 Submitting signed usage data...');
+      console.log('ðŸ“¤ Submitting signed usage data...');
       
       // Validate signature format
       this.validateSignature(params.signed_data);
       
       await this.buildAndSubmitTransaction('deduct_units', params);
       
-      console.log('✅ Usage data submitted successfully');
+      console.log('âœ… Usage data submitted successfully');
     } catch (error) {
       throw new ContractError(
         'Failed to deduct units',
@@ -261,11 +261,11 @@ export class TypedContractInterface implements UtilityContract {
 
   async claim(params: ClaimParams): Promise<void> {
     try {
-      console.log(`💰 Claiming earnings from meter ${params.meter_id}...`);
+      console.log(`ðŸ’° Claiming earnings from meter ${params.meter_id}...`);
       
       await this.buildAndSubmitTransaction('claim', params);
       
-      console.log('✅ Claim successful');
+      console.log('âœ… Claim successful');
     } catch (error) {
       throw new ContractError(
         'Failed to claim earnings',
@@ -276,11 +276,11 @@ export class TypedContractInterface implements UtilityContract {
 
   async withdraw_earnings(params: WithdrawEarningsParams): Promise<void> {
     try {
-      console.log(`💸 Withdrawing ${params.amount_usd_cents} USD cents from meter ${params.meter_id}...`);
+      console.log(`ðŸ’¸ Withdrawing ${params.amount_usd_cents} USD cents from meter ${params.meter_id}...`);
       
       await this.buildAndSubmitTransaction('withdraw_earnings', params);
       
-      console.log('✅ Withdrawal successful');
+      console.log('âœ… Withdrawal successful');
     } catch (error) {
       throw new ContractError(
         'Failed to withdraw earnings',
@@ -291,11 +291,11 @@ export class TypedContractInterface implements UtilityContract {
 
   async update_usage(params: UpdateUsageParams): Promise<void> {
     try {
-      console.log(`📊 Updating usage for meter ${params.meter_id}...`);
+      console.log(`ðŸ“Š Updating usage for meter ${params.meter_id}...`);
       
       await this.buildAndSubmitTransaction('update_usage', params);
       
-      console.log('✅ Usage updated');
+      console.log('âœ… Usage updated');
     } catch (error) {
       throw new ContractError(
         'Failed to update usage',
@@ -306,11 +306,11 @@ export class TypedContractInterface implements UtilityContract {
 
   async reset_cycle_usage(meter_id: MeterId): Promise<void> {
     try {
-      console.log(`🔄 Resetting cycle usage for meter ${meter_id}...`);
+      console.log(`ðŸ”„ Resetting cycle usage for meter ${meter_id}...`);
       
       await this.buildAndSubmitTransaction('reset_cycle_usage', { meter_id });
       
-      console.log('✅ Cycle usage reset');
+      console.log('âœ… Cycle usage reset');
     } catch (error) {
       throw new ContractError(
         'Failed to reset cycle usage',
@@ -321,11 +321,11 @@ export class TypedContractInterface implements UtilityContract {
 
   async set_max_flow_rate(params: SetMaxFlowRateParams): Promise<void> {
     try {
-      console.log(`⚙️ Setting max flow rate for meter ${params.meter_id}...`);
+      console.log(`âš™ï¸ Setting max flow rate for meter ${params.meter_id}...`);
       
       await this.buildAndSubmitTransaction('set_max_flow_rate', params);
       
-      console.log('✅ Max flow rate updated');
+      console.log('âœ… Max flow rate updated');
     } catch (error) {
       throw new ContractError(
         'Failed to set max flow rate',
@@ -336,11 +336,11 @@ export class TypedContractInterface implements UtilityContract {
 
   async update_heartbeat(meter_id: MeterId): Promise<void> {
     try {
-      console.log(`💓 Updating heartbeat for meter ${meter_id}...`);
+      console.log(`ðŸ’“ Updating heartbeat for meter ${meter_id}...`);
       
       await this.buildAndSubmitTransaction('update_heartbeat', { meter_id });
       
-      console.log('✅ Heartbeat updated');
+      console.log('âœ… Heartbeat updated');
     } catch (error) {
       throw new ContractError(
         'Failed to update heartbeat',
@@ -351,11 +351,11 @@ export class TypedContractInterface implements UtilityContract {
 
   async emergency_shutdown(meter_id: MeterId): Promise<void> {
     try {
-      console.log(`🚨 Emergency shutdown for meter ${meter_id}...`);
+      console.log(`ðŸš¨ Emergency shutdown for meter ${meter_id}...`);
       
       await this.buildAndSubmitTransaction('emergency_shutdown', { meter_id });
       
-      console.log('✅ Meter shut down');
+      console.log('âœ… Meter shut down');
     } catch (error) {
       throw new ContractError(
         'Failed to emergency shutdown',
@@ -366,11 +366,11 @@ export class TypedContractInterface implements UtilityContract {
 
   async transfer_meter_ownership(params: TransferMeterOwnershipParams): Promise<void> {
     try {
-      console.log(`🔄 Transferring meter ${params.meter_id} ownership to ${params.new_user}...`);
+      console.log(`ðŸ”„ Transferring meter ${params.meter_id} ownership to ${params.new_user}...`);
       
       await this.buildAndSubmitTransaction('transfer_meter_ownership', params);
       
-      console.log('✅ Ownership transferred');
+      console.log('âœ… Ownership transferred');
     } catch (error) {
       throw new ContractError(
         'Failed to transfer ownership',
@@ -385,9 +385,9 @@ export class TypedContractInterface implements UtilityContract {
 
   async set_oracle(oracle_address: StellarAddress): Promise<void> {
     try {
-      console.log(`🔮 Setting oracle address: ${oracle_address}...`);
+      console.log(`ðŸ”® Setting oracle address: ${oracle_address}...`);
       await this.buildAndSubmitTransaction('set_oracle', { oracle_address });
-      console.log('✅ Oracle set');
+      console.log('âœ… Oracle set');
     } catch (error) {
       throw new ContractError('Failed to set oracle', ContractErrorCode.OracleNotSet);
     }
@@ -395,9 +395,9 @@ export class TypedContractInterface implements UtilityContract {
 
   async set_maintenance_config(wallet: StellarAddress, fee_bps: bigint): Promise<void> {
     try {
-      console.log(`⚙️ Setting maintenance config...`);
+      console.log(`âš™ï¸ Setting maintenance config...`);
       await this.buildAndSubmitTransaction('set_maintenance_config', { wallet, fee_bps });
-      console.log('✅ Maintenance config set');
+      console.log('âœ… Maintenance config set');
     } catch (error) {
       throw new ContractError('Failed to set maintenance config', ContractErrorCode.MeterNotFound);
     }
@@ -405,9 +405,9 @@ export class TypedContractInterface implements UtilityContract {
 
   async add_supported_token(token: TokenAddress): Promise<void> {
     try {
-      console.log(`➕ Adding supported token: ${token}...`);
+      console.log(`âž• Adding supported token: ${token}...`);
       await this.buildAndSubmitTransaction('add_supported_token', { token });
-      console.log('✅ Token added');
+      console.log('âœ… Token added');
     } catch (error) {
       throw new ContractError('Failed to add token', ContractErrorCode.InvalidTokenAmount);
     }
@@ -415,9 +415,9 @@ export class TypedContractInterface implements UtilityContract {
 
   async remove_supported_token(token: TokenAddress): Promise<void> {
     try {
-      console.log(`➖ Removing supported token: ${token}...`);
+      console.log(`âž– Removing supported token: ${token}...`);
       await this.buildAndSubmitTransaction('remove_supported_token', { token });
-      console.log('✅ Token removed');
+      console.log('âœ… Token removed');
     } catch (error) {
       throw new ContractError('Failed to remove token', ContractErrorCode.InvalidTokenAmount);
     }
@@ -429,12 +429,12 @@ export class TypedContractInterface implements UtilityContract {
 
   async initiate_pairing(meter_id: MeterId): Promise<string> {
     try {
-      console.log(`🔐 Initiating pairing for meter ${meter_id}...`);
+      console.log(`ðŸ” Initiating pairing for meter ${meter_id}...`);
       
       const response = await this.buildAndSubmitTransaction('initiate_pairing', { meter_id });
       const challenge = response as string;
       
-      console.log('✅ Pairing initiated');
+      console.log('âœ… Pairing initiated');
       return challenge;
     } catch (error) {
       throw new ContractError('Failed to initiate pairing', ContractErrorCode.ChallengeNotFound);
@@ -443,11 +443,11 @@ export class TypedContractInterface implements UtilityContract {
 
   async complete_pairing(meter_id: MeterId, signature: string): Promise<void> {
     try {
-      console.log(`🔐 Completing pairing for meter ${meter_id}...`);
+      console.log(`ðŸ” Completing pairing for meter ${meter_id}...`);
       
       await this.buildAndSubmitTransaction('complete_pairing', { meter_id, signature });
       
-      console.log('✅ Pairing completed');
+      console.log('âœ… Pairing completed');
     } catch (error) {
       throw new ContractError('Failed to complete pairing', ContractErrorCode.InvalidPairingSignature);
     }
@@ -455,11 +455,11 @@ export class TypedContractInterface implements UtilityContract {
 
   async update_device_public_key(meter_id: MeterId, new_public_key: string): Promise<void> {
     try {
-      console.log(`🔑 Updating device public key for meter ${meter_id}...`);
+      console.log(`ðŸ”‘ Updating device public key for meter ${meter_id}...`);
       
       await this.buildAndSubmitTransaction('update_device_public_key', { meter_id, new_public_key });
       
-      console.log('✅ Public key updated');
+      console.log('âœ… Public key updated');
     } catch (error) {
       throw new ContractError('Failed to update public key', ContractErrorCode.PublicKeyMismatch);
     }
@@ -472,7 +472,7 @@ export class TypedContractInterface implements UtilityContract {
   private async simulateRead(method: string, params: Record<string, any>): Promise<any> {
     // In production, this would use Soroban RPC simulation
     // For now, simulate responses based on method
-    console.log(`📖 Simulating read: ${method}`, params);
+    console.log(`ðŸ“– Simulating read: ${method}`, params);
     
     // Simulated response - replace with actual RPC calls in production
     return null;
@@ -489,7 +489,7 @@ export class TypedContractInterface implements UtilityContract {
     // 4. Submit to Stellar network
     // 5. Wait for transaction confirmation
     
-    console.log(`📝 Building transaction: ${method}`, params);
+    console.log(`ðŸ“ Building transaction: ${method}`, params);
     
     // Simulated transaction hash
     return 'simulated_tx_hash_' + Date.now();

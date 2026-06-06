@@ -1,10 +1,10 @@
-# Firmware Update Authorization Gate - Implementation Summary
+﻿# Firmware Update Authorization Gate - Implementation Summary
 
-## Issue #178 Implementation Complete ✓
+## Issue #178 Implementation Complete âœ“
 
 ### What Was Implemented
 
-A complete authorization gate system for managing IoT device firmware updates in the Utility-Drip-Contracts smart contract, ensuring billing is paused during updates and prevents indefinite suspension.
+A complete authorization gate system for managing IoT device firmware updates in the EquipChain-contracts smart contract, ensuring billing is paused during updates and prevents indefinite suspension.
 
 ---
 
@@ -33,7 +33,7 @@ pub fn initiate_firmware_update(env: Env, meter_id: u64)
 
 **Behavior:**
 1. Retrieves meter and verifies provider authentication
-2. Checks if already updating → rejects with `FirmwareUpdateInProgress`
+2. Checks if already updating â†’ rejects with `FirmwareUpdateInProgress`
 3. Sets `is_updating = true`
 4. Records `update_start_timestamp = current_time`
 5. Stores updated meter state
@@ -161,7 +161,7 @@ Three new error codes added to `ContractError` enum:
 ## Constants
 
 **FIRMWARE_UPDATE_WINDOW_SECS: u64 = 7200**
-- Represents 2 hours (2 × 3600 seconds per hour)
+- Represents 2 hours (2 Ã— 3600 seconds per hour)
 - Maximum allowed duration for a firmware update
 - Prevents indefinite billing suspension
 
@@ -169,17 +169,17 @@ Three new error codes added to `ContractError` enum:
 
 ## Acceptance Criteria Compliance
 
-### ✓ Acceptance 1: Billing Pauses During Update Window
+### âœ“ Acceptance 1: Billing Pauses During Update Window
 - **How:** `is_updating` flag blocks `deduct_units()`
 - **Verification:** Updated meter has `is_updating = true` between `initiate_firmware_update()` and `complete_firmware_update()`
 - **Test:** `test_firmware_update_acceptance_1_billing_pauses_during_window`
 
-### ✓ Acceptance 2: Time Limits Prevent Perpetual Suspension
+### âœ“ Acceptance 2: Time Limits Prevent Perpetual Suspension
 - **How:** Maximum 2-hour window enforced in `complete_firmware_update()`
 - **Verification:** Attempts to complete after 7200 seconds fail with `FirmwareUpdateWindowExpired`
 - **Test:** `test_firmware_update_acceptance_2_time_limits_prevent_perpetual_suspension`
 
-### ✓ Acceptance 3: Hardware Signatures Required
+### âœ“ Acceptance 3: Hardware Signatures Required
 - **How:** Ed25519 signature verification with device public key
 - **Verification:** `complete_firmware_update()` verifies signature via `env.crypto().ed25519_verify()`
 - **Test:** `test_firmware_update_acceptance_3_hardware_signatures_required`
@@ -202,11 +202,11 @@ Three new error codes added to `ContractError` enum:
 `contracts/utility_contracts/tests/firmware_update_tests.rs`
 
 ### Test Coverage
-- ✓ Acceptance criteria tests (3)
-- ✓ Integration workflow test
-- ✓ Edge case tests (multiple updates, boundary, timestamp mismatch)
-- ✓ Authorization tests
-- ✓ Event emission tests
+- âœ“ Acceptance criteria tests (3)
+- âœ“ Integration workflow test
+- âœ“ Edge case tests (multiple updates, boundary, timestamp mismatch)
+- âœ“ Authorization tests
+- âœ“ Event emission tests
 
 ### Running Tests
 ```bash
@@ -338,13 +338,13 @@ cargo test --test firmware_update_tests -- --nocapture
 
 ## Summary
 
-✓ **Issue #178 - Complete Implementation**
+âœ“ **Issue #178 - Complete Implementation**
 
 The Firmware Update Authorization Gate feature is fully implemented and tested, meeting all acceptance criteria:
 
-1. ✓ Billing pauses during authorized update window
-2. ✓ Time limits prevent perpetual suspension (2-hour max)
-3. ✓ Hardware cryptographic signatures required to resume
+1. âœ“ Billing pauses during authorized update window
+2. âœ“ Time limits prevent perpetual suspension (2-hour max)
+3. âœ“ Hardware cryptographic signatures required to resume
 
 The implementation provides:
 - Secure state management for firmware updates

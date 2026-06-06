@@ -1,6 +1,6 @@
-#!/usr/bin/env rust-script
+﻿#!/usr/bin/env rust-script
 
-//! Doc-Comment Validation Script for Utility Drip Contracts
+//! Doc-Comment Validation Script for Equipchain Contracts
 //! 
 //! This script validates that all public functions, structs, and enums
 //! have comprehensive documentation as required for audit readiness.
@@ -12,7 +12,7 @@ use std::fs;
 use std::path::Path;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    println!("🔍 Validating doc-comment coverage for Utility Drip Contracts...\n");
+    println!("ðŸ” Validating doc-comment coverage for Equipchain Contracts...\n");
     
     let contracts_dir = Path::new("contracts/utility_contracts/src");
     let mut total_items = 0;
@@ -58,21 +58,21 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         0.0
     };
     
-    println!("\n📊 Documentation Coverage Report:");
+    println!("\nðŸ“Š Documentation Coverage Report:");
     println!("   Total items: {}", total_items);
     println!("   Documented: {}", documented_items);
     println!("   Coverage: {:.1}%", coverage_percentage);
     
     if !undocumented_items.is_empty() {
-        println!("\n❌ Undocumented items:");
+        println!("\nâŒ Undocumented items:");
         for item in &undocumented_items {
             println!("   - {}", item);
         }
-        println!("\n💡 Please add doc-comments to all undocumented items.");
+        println!("\nðŸ’¡ Please add doc-comments to all undocumented items.");
         std::process::exit(1);
     } else {
-        println!("\n✅ All items have proper documentation!");
-        println!("🎉 Ready for security audit!");
+        println!("\nâœ… All items have proper documentation!");
+        println!("ðŸŽ‰ Ready for security audit!");
     }
     
     Ok(())
@@ -88,7 +88,7 @@ fn validate_file(
         return Ok(());
     }
     
-    println!("🔍 Checking: {}", file_path.display());
+    println!("ðŸ” Checking: {}", file_path.display());
     
     let content = fs::read_to_string(file_path)?;
     let lines: Vec<&str> = content.lines().collect();

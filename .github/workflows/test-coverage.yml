@@ -1,4 +1,4 @@
-name: Test Coverage Check
+﻿name: Test Coverage Check
 
 on:
   pull_request:
@@ -45,7 +45,7 @@ jobs:
       with:
         file: target/coverage/cobertura.xml
         flags: unittests
-        name: utility-drip-contracts
+        name: EquipChain-contracts
         fail_ci_if_error: false
         
     - name: Check coverage threshold
@@ -56,10 +56,10 @@ jobs:
         
         THRESHOLD=85
         if (( $(echo "$COVERAGE < $THRESHOLD" | bc -l) )); then
-          echo "❌ Coverage $COVERAGE% is below threshold $THRESHOLD%"
+          echo "âŒ Coverage $COVERAGE% is below threshold $THRESHOLD%"
           exit 1
         else
-          echo "✅ Coverage $COVERAGE% meets threshold $THRESHOLD%"
+          echo "âœ… Coverage $COVERAGE% meets threshold $THRESHOLD%"
         fi
         
     - name: Generate HTML coverage report

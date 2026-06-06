@@ -1,6 +1,6 @@
-# ZK-SNARK Circuits for Sensor Privacy
+﻿# ZK-SNARK Circuits for Sensor Privacy
 
-This document outlines the design and implementation of the ZK-SNARK circuits used by the Utility-Drip system to preserve sensor data privacy.
+This document outlines the design and implementation of the ZK-SNARK circuits used by the Equipchain system to preserve sensor data privacy.
 
 ## Overview
 

@@ -1,8 +1,8 @@
-// Simple validation script to check the meter simulator structure
+﻿// Simple validation script to check the meter simulator structure
 const fs = require('fs');
 const path = require('path');
 
-console.log('🔍 Validating Meter Simulator Structure...\n');
+console.log('ðŸ” Validating Meter Simulator Structure...\n');
 
 const requiredFiles = [
   'package.json',
@@ -26,97 +26,97 @@ let errors = [];
 let warnings = [];
 
 // Check required files
-console.log('📋 Checking required files:');
+console.log('ðŸ“‹ Checking required files:');
 requiredFiles.forEach(file => {
   if (fs.existsSync(file)) {
-    console.log(`✅ ${file}`);
+    console.log(`âœ… ${file}`);
   } else {
-    console.log(`❌ ${file} - Missing!`);
+    console.log(`âŒ ${file} - Missing!`);
     errors.push(`Missing required file: ${file}`);
   }
 });
 
 // Check optional files
-console.log('\n📋 Checking optional files:');
+console.log('\nðŸ“‹ Checking optional files:');
 optionalFiles.forEach(file => {
   if (fs.existsSync(file)) {
-    console.log(`✅ ${file}`);
+    console.log(`âœ… ${file}`);
   } else {
-    console.log(`⚠️  ${file} - Optional`);
+    console.log(`âš ï¸  ${file} - Optional`);
     warnings.push(`Missing optional file: ${file}`);
   }
 });
 
 // Validate package.json
-console.log('\n📦 Validating package.json:');
+console.log('\nðŸ“¦ Validating package.json:');
 try {
   const packageJson = JSON.parse(fs.readFileSync('package.json', 'utf8'));
   
-  if (packageJson.name === 'utility-drip-meter-simulator') {
-    console.log('✅ Package name correct');
+  if (packageJson.name === 'Equipchain-meter-simulator') {
+    console.log('âœ… Package name correct');
   } else {
-    console.log('❌ Package name incorrect');
+    console.log('âŒ Package name incorrect');
     errors.push('Invalid package name');
   }
   
   if (packageJson.bin && packageJson.bin['meter-simulator']) {
-    console.log('✅ CLI binary defined');
+    console.log('âœ… CLI binary defined');
   } else {
-    console.log('❌ CLI binary not defined');
+    console.log('âŒ CLI binary not defined');
     errors.push('CLI binary not defined');
   }
   
   const requiredDeps = ['commander', 'chalk', 'inquirer', 'mqtt', 'stellar-sdk', 'axios', 'tweetnacl'];
   requiredDeps.forEach(dep => {
     if (packageJson.dependencies && packageJson.dependencies[dep]) {
-      console.log(`✅ Dependency: ${dep}`);
+      console.log(`âœ… Dependency: ${dep}`);
     } else {
-      console.log(`❌ Missing dependency: ${dep}`);
+      console.log(`âŒ Missing dependency: ${dep}`);
       errors.push(`Missing dependency: ${dep}`);
     }
   });
   
 } catch (error) {
-  console.log('❌ Invalid package.json');
+  console.log('âŒ Invalid package.json');
   errors.push('Invalid package.json');
 }
 
 // Validate main CLI file
-console.log('\n🔧 Validating main CLI file:');
+console.log('\nðŸ”§ Validating main CLI file:');
 try {
   const cliContent = fs.readFileSync('src/index.js', 'utf8');
   
   if (cliContent.includes('#!/usr/bin/env node')) {
-    console.log('✅ Shebang present');
+    console.log('âœ… Shebang present');
   } else {
-    console.log('⚠️  Shebang missing');
+    console.log('âš ï¸  Shebang missing');
     warnings.push('Shebang missing');
   }
   
   if (cliContent.includes('program.version(\'1.0.0\')')) {
-    console.log('✅ Version defined');
+    console.log('âœ… Version defined');
   } else {
-    console.log('❌ Version not defined');
+    console.log('âŒ Version not defined');
     errors.push('Version not defined');
   }
   
   const requiredCommands = ['generate-keys', 'register', 'simulate', 'send-reading', 'status'];
   requiredCommands.forEach(cmd => {
     if (cliContent.includes(`.command('${cmd}')`)) {
-      console.log(`✅ Command: ${cmd}`);
+      console.log(`âœ… Command: ${cmd}`);
     } else {
-      console.log(`❌ Missing command: ${cmd}`);
+      console.log(`âŒ Missing command: ${cmd}`);
       errors.push(`Missing command: ${cmd}`);
     }
   });
   
 } catch (error) {
-  console.log('❌ Invalid CLI file');
+  console.log('âŒ Invalid CLI file');
   errors.push('Invalid CLI file');
 }
 
 // Validate source files
-console.log('\n📁 Validating source files:');
+console.log('\nðŸ“ Validating source files:');
 const sourceFiles = [
   'src/config.js',
   'src/meter-device.js',
@@ -128,37 +128,37 @@ sourceFiles.forEach(file => {
   try {
     const content = fs.readFileSync(file, 'utf8');
     if (content.includes('module.exports')) {
-      console.log(`✅ ${file} - Module exports present`);
+      console.log(`âœ… ${file} - Module exports present`);
     } else {
-      console.log(`❌ ${file} - No module exports`);
+      console.log(`âŒ ${file} - No module exports`);
       errors.push(`No module exports in ${file}`);
     }
   } catch (error) {
-    console.log(`❌ ${file} - Invalid file`);
+    console.log(`âŒ ${file} - Invalid file`);
     errors.push(`Invalid file: ${file}`);
   }
 });
 
 // Summary
-console.log('\n📊 Validation Summary:');
-console.log(`✅ Success: ${errors.length === 0 ? 'PASS' : 'FAIL'}`);
-console.log(`❌ Errors: ${errors.length}`);
-console.log(`⚠️  Warnings: ${warnings.length}`);
+console.log('\nðŸ“Š Validation Summary:');
+console.log(`âœ… Success: ${errors.length === 0 ? 'PASS' : 'FAIL'}`);
+console.log(`âŒ Errors: ${errors.length}`);
+console.log(`âš ï¸  Warnings: ${warnings.length}`);
 
 if (errors.length > 0) {
-  console.log('\n❌ Errors:');
+  console.log('\nâŒ Errors:');
   errors.forEach(error => console.log(`   - ${error}`));
 }
 
 if (warnings.length > 0) {
-  console.log('\n⚠️  Warnings:');
+  console.log('\nâš ï¸  Warnings:');
   warnings.forEach(warning => console.log(`   - ${warning}`));
 }
 
 if (errors.length === 0) {
-  console.log('\n🎉 Meter Simulator structure validation PASSED!');
+  console.log('\nðŸŽ‰ Meter Simulator structure validation PASSED!');
   process.exit(0);
 } else {
-  console.log('\n💥 Meter Simulator structure validation FAILED!');
+  console.log('\nðŸ’¥ Meter Simulator structure validation FAILED!');
   process.exit(1);
 }

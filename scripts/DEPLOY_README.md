@@ -1,16 +1,16 @@
-# 🚀 Utility Drip Deployment Script
+﻿# ðŸš€ Equipchain Deployment Script
 
-Quick and easy deployment of the Utility Drip smart contract to Stellar testnet or mainnet.
+Quick and easy deployment of the Equipchain smart contract to Stellar testnet or mainnet.
 
 ## Features
 
-✅ **One-Command Deployment** - Deploy with a single command  
-✅ **Docker-Based** - No need to install Soroban CLI locally  
-✅ **Testnet & Mainnet** - Support for both networks  
-✅ **Automatic Key Generation** - Creates new keypair or use existing  
-✅ **Friendbot Integration** - Auto-funds testnet accounts  
-✅ **Contract Building** - Automatically builds Rust contract if needed  
-✅ **Verification** - Verifies deployment and provides explorer links  
+âœ… **One-Command Deployment** - Deploy with a single command  
+âœ… **Docker-Based** - No need to install Soroban CLI locally  
+âœ… **Testnet & Mainnet** - Support for both networks  
+âœ… **Automatic Key Generation** - Creates new keypair or use existing  
+âœ… **Friendbot Integration** - Auto-funds testnet accounts  
+âœ… **Contract Building** - Automatically builds Rust contract if needed  
+âœ… **Verification** - Verifies deployment and provides explorer links  
 
 ---
 
@@ -76,7 +76,7 @@ Options:
 
 ### Contract Details
 
-- **Contract Name**: Utility Drip
+- **Contract Name**: Equipchain
 - **Network**: Stellar (Soroban)
 - **WASM Format**: WebAssembly
 - **Contract Size**: ~100-200 KB
@@ -84,9 +84,9 @@ Options:
 ### Supported Tokens
 
 The contract supports:
-- ✅ Native XLM
-- ✅ SPL tokens (SAC-compliant)
-- ✅ Custom tokens
+- âœ… Native XLM
+- âœ… SPL tokens (SAC-compliant)
+- âœ… Custom tokens
 
 ---
 
@@ -153,7 +153,7 @@ docker run -d \
 
 **Option B: Use Existing Key (Mainnet)**
 - Uses your provided secret key
-- ⚠️ Ensure sufficient balance
+- âš ï¸ Ensure sufficient balance
 
 ### Step 6: Contract Deployment
 
@@ -181,16 +181,16 @@ Verifies deployment and provides:
 After successful deployment, you'll receive:
 
 ```
-╔═══════════════════════════════════════════════════════════╗
-║          🎉 UTILITY DRIP DEPLOYMENT COMPLETE 🎉           ║
-╠═══════════════════════════════════════════════════════════╣
-║  Network:          testnet                                ║
-║  Contract ID:      CB7PSJZALNWNX7NLOAM6LOEL4OJZMFPQZJMIYO522ZSACYWXTZIDEDSS
-║  Deployer Account: GABC...XYZ                             ║
-║                                                           ║
-║  Block Explorer:                                          ║
-║  https://stellar.expert/explorer/testnet/contract/...    ║
-╚═══════════════════════════════════════════════════════════╝
+â•”â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•—
+â•‘          ðŸŽ‰ Equipchain DEPLOYMENT COMPLETE ðŸŽ‰           â•‘
+â• â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•£
+â•‘  Network:          testnet                                â•‘
+â•‘  Contract ID:      CB7PSJZALNWNX7NLOAM6LOEL4OJZMFPQZJMIYO522ZSACYWXTZIDEDSS
+â•‘  Deployer Account: GABC...XYZ                             â•‘
+â•‘                                                           â•‘
+â•‘  Block Explorer:                                          â•‘
+â•‘  https://stellar.expert/explorer/testnet/contract/...    â•‘
+â•šâ•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 ```
 
 ### Save Contract Information
@@ -287,7 +287,7 @@ curl https://horizon-testnet.stellar.org/accounts/YOUR_PUBLIC_KEY
 ### Issue: Deployment transaction fails
 
 **Check:**
-1. Account has sufficient balance (≥ 1 XLM)
+1. Account has sufficient balance (â‰¥ 1 XLM)
 2. Network is correct (testnet vs mainnet)
 3. Secret key is valid
 4. RPC endpoint is accessible
@@ -373,7 +373,7 @@ done
 
 ## Security Considerations
 
-### 🔐 Secret Key Management
+### ðŸ” Secret Key Management
 
 **Best Practices:**
 1. **Never commit keys to git**
@@ -399,7 +399,7 @@ done
 
 ---
 
-### ⚠️ Mainnet Warnings
+### âš ï¸ Mainnet Warnings
 
 Before deploying to mainnet:
 
@@ -539,7 +539,7 @@ rm -rf scripts/__pycache__
 - [Stellar Documentation](https://developers.stellar.org/)
 - [Soroban Documentation](https://soroban.stellar.org/)
 - [Stellar Expert Explorer](https://stellar.expert/)
-- [Utility Drip Docs](../README.md)
+- [Equipchain Docs](../README.md)
 
 ---
 
@@ -568,4 +568,4 @@ Need help?
 
 **Last Updated**: March 26, 2026  
 **Version**: 1.0.0  
-**Maintainer**: Utility Drip Team
+**Maintainer**: Equipchain Team

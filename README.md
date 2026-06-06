@@ -1,4 +1,4 @@
-# Utility Drip Contracts
+﻿# Equipchain Contracts
 
 A Soroban smart contract for utility metering and billing with gas buffer functionality to ensure reliable provider withdrawals during network congestion.
 
@@ -11,7 +11,7 @@ A Soroban smart contract for utility metering and billing with gas buffer functi
 - **Usage Tracking**: Detailed watt-hour consumption data
 - **Heartbeat Monitoring**: Detect offline meters automatically
 
-### 🆕 Gas Buffer Feature
+### ðŸ†• Gas Buffer Feature
 The Gas Buffer feature ensures **100% Service Availability** even during periods of extreme Stellar network congestion:
 
 - **Pre-paid Gas**: Providers can deposit XLM as a gas buffer during initialization
@@ -23,15 +23,15 @@ The Gas Buffer feature ensures **100% Service Availability** even during periods
 
 ```text
 .
-├── contracts
-│   └── utility_contracts
-│       ├── src
-│       │   ├── lib.rs         # Main contract implementation
-│       │   └── test.rs        # Comprehensive test suite
-│       └── Cargo.toml
-├── Cargo.toml
-├── README.md
-└── HARDWARE.md
+â”œâ”€â”€ contracts
+â”‚   â””â”€â”€ utility_contracts
+â”‚       â”œâ”€â”€ src
+â”‚       â”‚   â”œâ”€â”€ lib.rs         # Main contract implementation
+â”‚       â”‚   â””â”€â”€ test.rs        # Comprehensive test suite
+â”‚       â””â”€â”€ Cargo.toml
+â”œâ”€â”€ Cargo.toml
+â”œâ”€â”€ README.md
+â””â”€â”€ HARDWARE.md
 ```
 
 ## Gas Buffer Implementation

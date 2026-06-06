@@ -1,4 +1,4 @@
-//! # Tamper-Proof Hardware Nonce Sync Module
+﻿//! # Tamper-Proof Hardware Nonce Sync Module
 //!
 //! This module implements a strict Device_Nonce tracking system for IoT device liveness verification.
 //! It prevents man-in-the-middle attacks and replay attacks by requiring strictly incrementing
@@ -751,7 +751,7 @@ impl NonceSyncManager {
     fn verify_heartbeat_signature(env: &Env, heartbeat: &SignedHeartbeat) -> bool {
         // Build the signed message by concatenating 5 fixed-size components directly into Bytes.
         // Avoids a heap-allocated Vec<Bytes> intermediary since the structure is always 5 items.
-        let mut message_data = Bytes::from_slice(env, b"UTILITY_DRIP_HEARTBEAT_V1");
+        let mut message_data = Bytes::from_slice(env, b"equipchain_HEARTBEAT_V1");
         message_data.append(&Bytes::from_slice(env, &heartbeat.meter_id.to_be_bytes()));
         message_data.append(&Bytes::from_slice(env, &heartbeat.device_mac.to_array()));
         message_data.append(&Bytes::from_slice(env, &heartbeat.nonce.to_be_bytes()));

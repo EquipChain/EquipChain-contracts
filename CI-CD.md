@@ -1,14 +1,14 @@
-# CI/CD Pipeline for Utility Drip Contracts
+﻿# CI/CD Pipeline for Equipchain Contracts
 
-This document describes the automated testing pipeline implemented for the Utility Drip Contracts project.
+This document describes the automated testing pipeline implemented for the Equipchain Contracts project.
 
-## 🔄 Workflow Overview
+## ðŸ”„ Workflow Overview
 
 The GitHub Actions workflow (`.github/workflows/test.yml`) automatically runs on:
 - **Push to main branch** - Ensures main branch is always tested
 - **Pull Requests to main** - Prevents breaking changes from being merged
 
-## ✅ Testing Stages
+## âœ… Testing Stages
 
 ### 1. Environment Setup
 - **Rust Toolchain**: Installs stable Rust with WASM target
@@ -24,14 +24,14 @@ The GitHub Actions workflow (`.github/workflows/test.yml`) automatically runs on
 - **Unit Tests**: `cargo test` runs all unit tests including fuzz tests
 - **Fuzz Tests**: Detects and validates fuzz testing infrastructure
 
-## 🧪 Fuzz Testing Integration
+## ðŸ§ª Fuzz Testing Integration
 
 The pipeline includes automatic detection of fuzz tests:
 - Checks for `contracts/utility_contracts/fuzz/` directory
 - Installs `cargo-fuzz` if fuzz tests are present
 - Validates fuzz testing infrastructure availability
 
-## 📊 Test Coverage
+## ðŸ“Š Test Coverage
 
 ### Current Test Suites
 1. **Unit Tests**: Standard contract functionality tests
@@ -42,14 +42,14 @@ The pipeline includes automatic detection of fuzz tests:
    - Arithmetic overflow protection
 
 ### Acceptance Criteria Validation
-- ✅ Workflow runs on push to main
-- ✅ `cargo test` passes successfully  
-- ✅ Code formatting validated
-- ✅ Clippy linting passes
-- ✅ WASM build succeeds
-- ✅ Fuzz tests infrastructure available
+- âœ… Workflow runs on push to main
+- âœ… `cargo test` passes successfully  
+- âœ… Code formatting validated
+- âœ… Clippy linting passes
+- âœ… WASM build succeeds
+- âœ… Fuzz tests infrastructure available
 
-## 🔧 Pipeline Configuration
+## ðŸ”§ Pipeline Configuration
 
 ### Environment Variables
 - `CARGO_TERM_COLOR: always` - Ensures colored output in logs
@@ -59,7 +59,7 @@ The pipeline includes automatic detection of fuzz tests:
 - **Target**: wasm32-unknown-unknown (for Soroban contracts)
 - **Rust Version**: Stable with required components
 
-## 📈 Pipeline Benefits
+## ðŸ“ˆ Pipeline Benefits
 
 1. **Prevents Breaking Changes**: Every PR is automatically tested
 2. **Code Quality**: Enforces formatting and linting standards
@@ -67,7 +67,7 @@ The pipeline includes automatic detection of fuzz tests:
 4. **Comprehensive Testing**: Unit + fuzz testing coverage
 5. **WASM Compatibility**: Ensures contracts build for target platform
 
-## 🚀 Usage
+## ðŸš€ Usage
 
 ### Automatic Execution
 - No manual intervention required
@@ -87,13 +87,13 @@ cd contracts/utility_contracts/fuzz
 cargo fuzz run debt_calculation_fuzz -- -max_total_time 30
 ```
 
-## 📋 Test Results Summary
+## ðŸ“‹ Test Results Summary
 
 The pipeline generates a summary in GitHub Actions including:
-- ✅ Unit tests status
-- ✅ Clippy linting status  
-- ✅ Code formatting status
-- ✅ WASM build status
-- ✅ Fuzz tests availability
+- âœ… Unit tests status
+- âœ… Clippy linting status  
+- âœ… Code formatting status
+- âœ… WASM build status
+- âœ… Fuzz tests availability
 
 This ensures every pull request maintains code quality and prevents regressions in smart contract logic.

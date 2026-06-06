@@ -1,14 +1,14 @@
-# 🔍 Verifying Usage Drips on Stellar Block Explorer
+﻿# ðŸ” Verifying Usage Drips on Stellar Block Explorer
 
 This guide shows users how to verify their utility consumption data ("Usage Drips") directly on the Stellar block explorer. Every transaction and event is publicly verifiable on-chain.
 
 ## Overview
 
-The Utility Drip smart contract records all usage data on the Stellar blockchain, providing:
-- ✅ **Transparency** - All consumption data is publicly verifiable
-- ✅ **Immutability** - Data cannot be altered once recorded
-- ✅ **Audit Trail** - Complete history of all transactions
-- ✅ **Real-time Tracking** - Monitor usage as it happens
+The Equipchain smart contract records all usage data on the Stellar blockchain, providing:
+- âœ… **Transparency** - All consumption data is publicly verifiable
+- âœ… **Immutability** - Data cannot be altered once recorded
+- âœ… **Audit Trail** - Complete history of all transactions
+- âœ… **Real-time Tracking** - Monitor usage as it happens
 
 ## Supported Block Explorers
 
@@ -47,10 +47,10 @@ Replace `testnet` with `public` for mainnet deployments.
 #### Step 2: View Contract Details
 
 You'll see:
-- 📊 Contract overview
-- 💰 Recent transactions
-- 📝 Event logs
-- 👥 Contract holders
+- ðŸ“Š Contract overview
+- ðŸ’° Recent transactions
+- ðŸ“ Event logs
+- ðŸ‘¥ Contract holders
 
 #### Step 3: Filter Transactions
 
@@ -86,9 +86,9 @@ Meter ID: 1
 The contract emits events for each usage submission:
 ```
 Event: UsageReported
-├─ meter_id: 1
-├─ units_consumed: 250
-└─ cost: 2500 tokens
+â”œâ”€ meter_id: 1
+â”œâ”€ units_consumed: 250
+â””â”€ cost: 2500 tokens
 ```
 
 #### Step 3: Verify Consumption Data
@@ -120,13 +120,13 @@ You'll see all transactions involving your account:
 
 #### Step 3: Filter by Contract
 
-Filter transactions to show only those interacting with the Utility Drip contract.
+Filter transactions to show only those interacting with the Equipchain contract.
 
 ---
 
 ## Understanding Contract Events
 
-The Utility Drip contract emits several event types that you can track:
+The Equipchain contract emits several event types that you can track:
 
 ### 1. UsageReported Event
 
@@ -228,10 +228,10 @@ Emitted when meter status changes.
 4. Look for recent `top_up` operations
 5. Click on the transaction
 6. Verify:
-   - ✅ Amount matches what you sent
-   - ✅ Meter ID is correct
-   - ✅ Status is "Success"
-   - ✅ TokenUp event was emitted
+   - âœ… Amount matches what you sent
+   - âœ… Meter ID is correct
+   - âœ… Status is "Success"
+   - âœ… TokenUp event was emitted
 
 ---
 
@@ -275,12 +275,12 @@ Total       | 700   | 8750 tokens
 Off-peak example:
 - units_consumed: 100
 - cost: 1000 tokens
-- rate: 10 tokens/unit ✓
+- rate: 10 tokens/unit âœ“
 
 Peak hour example:
 - units_consumed: 100
 - cost: 1500 tokens
-- rate: 15 tokens/unit ✓ (1.5x multiplier applied)
+- rate: 15 tokens/unit âœ“ (1.5x multiplier applied)
 ```
 
 ---
@@ -291,7 +291,7 @@ Peak hour example:
 
 **Steps:**
 1. Search your provider address
-2. Filter transactions to Utility Drip contract
+2. Filter transactions to Equipchain contract
 3. Look for `withdraw_earnings` operations
 4. Check amounts and timestamps
 5. Verify against your records
@@ -313,19 +313,19 @@ Source Account: GD5DJQ...
 Fee Paid: 100 stroops
 
 Operations:
-  └─ Invoke Host Function
-      ├─ Contract ID: CB7PSJ...
-      ├─ Function: deduct_units
-      └─ Parameters:
-          ├─ meter_id: 1
-          ├─ watt_hours_consumed: 250
-          └─ units_consumed: 1
+  â””â”€ Invoke Host Function
+      â”œâ”€ Contract ID: CB7PSJ...
+      â”œâ”€ Function: deduct_units
+      â””â”€ Parameters:
+          â”œâ”€ meter_id: 1
+          â”œâ”€ watt_hours_consumed: 250
+          â””â”€ units_consumed: 1
 
 Events:
-  └─ UsageReported
-      ├─ meter_id: 1
-      ├─ units_consumed: 1
-      └─ cost: 2500
+  â””â”€ UsageReported
+      â”œâ”€ meter_id: 1
+      â”œâ”€ units_consumed: 1
+      â””â”€ cost: 2500
 ```
 
 ### Understanding Parameters
@@ -422,7 +422,7 @@ Some explorers show raw XDR data. To decode:
 
 ## Tips & Best Practices
 
-### 🔍 Bookmark Your Contract
+### ðŸ” Bookmark Your Contract
 
 Save direct links for quick access:
 ```
@@ -430,14 +430,14 @@ Testnet: https://stellar.expert/explorer/testnet/contract/CB7PSJZALNWNX7NLOAM6LO
 Mainnet: https://stellar.expert/explorer/public/contract/YOUR_CONTRACT_ID
 ```
 
-### 📱 Set Up Alerts
+### ðŸ“± Set Up Alerts
 
 Some explorers offer notification features:
 - New transaction alerts
 - Large top-up notifications
 - Meter status change alerts
 
-### 📊 Regular Audits
+### ðŸ“Š Regular Audits
 
 Recommended audit schedule:
 - **Daily**: Check active meters
@@ -445,7 +445,7 @@ Recommended audit schedule:
 - **Monthly**: Full reconciliation
 - **Quarterly**: Complete audit trail review
 
-### 🔐 Verify Signatures
+### ðŸ” Verify Signatures
 
 For maximum security:
 1. Note the signature in each UsageReported event
@@ -528,7 +528,7 @@ Example tools:
 - [Stellar Expert Documentation](https://stellar.expert/help)
 - [Stellar Developer Documentation](https://developers.stellar.org/)
 - [Soroban Documentation](https://soroban.stellar.org/)
-- [Utility Drip Contract Documentation](../README.md)
+- [Equipchain Contract Documentation](../README.md)
 
 ---
 
