@@ -43,16 +43,13 @@ jobs:
       - name: Run Clippy
         run: cargo clippy --target wasm32-unknown-unknown -- -D warnings
         
-      - name: Build Contract
-        run: cargo build --target wasm32-unknown-unknown --release
-
-      - name: Install dependencies for optimization
-        run: sudo apt-get update && sudo apt-get install -y binaryen
+      - name: Build Contracts
+        run: cargo build --manifest-path contracts/Cargo.toml --target wasm32-unknown-unknown --release
 
       - name: Optimize Wasm
         run: |
-          stellar contract optimize --wasm target/wasm32-unknown-unknown/release/price_oracle.wasm
-          stellar contract optimize --wasm target/wasm32-unknown-unknown/release/utility_contracts.wasm
+          stellar contract optimize --wasm contracts/target/wasm32-unknown-unknown/release/price_oracle.wasm
+          stellar contract optimize --wasm contracts/target/wasm32-unknown-unknown/release/utility_contracts.wasm
         
       - name: Run Unit Tests
         run: cargo test
