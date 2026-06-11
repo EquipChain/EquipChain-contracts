@@ -13,24 +13,21 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       
       - name: Install Rust
-        uses: actions-rs/toolchain@v1
+        uses: dtolnay/rust-toolchain@stable
         with:
-          toolchain: stable
-          target: wasm32-unknown-unknown
-          override: true
+          targets: wasm32-unknown-unknown
           components: rustfmt, clippy
           
       - name: Install Stellar CLI
         run: |
-          wget https://github.com/stellar/stellar-cli/releases/download/v25.1.0/stellar-cli-25.1.0-x86_64-unknown-linux-gnu.tar.gz
-          tar -xzf stellar-cli-25.1.0-x86_64-unknown-linux-gnu.tar.gz
-          sudo mv stellar-cli-25.1.0-x86_64-unknown-linux-gnu/stellar /usr/local/bin/
+          wget -q https://github.com/stellar/stellar-cli/releases/download/v25.1.0/stellar-cli-25.1.0-x86_64-unknown-linux-gnu.tar.gz
+          tar -xzf stellar-cli-25.1.0-x86_64-unknown-linux-gnu.tar.gz -C /usr/local/bin/ stellar
           
       - name: Cache Cargo dependencies
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: |
             ~/.cargo/registry
