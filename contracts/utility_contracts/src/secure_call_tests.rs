@@ -210,7 +210,7 @@ fn test_secure_call_success() {
     SecureCallManager::initialize(env.clone(), admin.clone());
     
     // Register mock contract
-    let contract_address = env.register_contract(None, MockTargetContract);
+    let contract_address = env.register(MockTargetContract, ());
     let mut allowed_functions = Vec::new(&env);
     allowed_functions.push_back(Symbol::new(&env, "test_function"));
     
@@ -249,7 +249,7 @@ fn test_secure_call_with_multiple_args() {
     SecureCallManager::initialize(env.clone(), admin.clone());
     
     // Register mock contract
-    let contract_address = env.register_contract(None, MockTargetContract);
+    let contract_address = env.register(MockTargetContract, ());
     let mut allowed_functions = Vec::new(&env);
     allowed_functions.push_back(Symbol::new(&env, "test_function_with_args"));
     
@@ -314,7 +314,7 @@ fn test_secure_call_unauthorized_function() {
     SecureCallManager::initialize(env.clone(), admin.clone());
     
     // Register contract but not the specific function
-    let contract_address = env.register_contract(None, MockTargetContract);
+    let contract_address = env.register(MockTargetContract, ());
     let mut allowed_functions = Vec::new(&env);
     allowed_functions.push_back(Symbol::new(&env, "other_function"));
     
@@ -351,7 +351,7 @@ fn test_secure_call_gas_limit_exceeded() {
     SecureCallManager::initialize(env.clone(), admin.clone());
     
     // Register contract with low gas limit
-    let contract_address = env.register_contract(None, MockTargetContract);
+    let contract_address = env.register(MockTargetContract, ());
     let mut allowed_functions = Vec::new(&env);
     allowed_functions.push_back(Symbol::new(&env, "test_function"));
     
@@ -388,7 +388,7 @@ fn test_secure_call_disabled_contract() {
     SecureCallManager::initialize(env.clone(), admin.clone());
     
     // Register contract but disable it
-    let contract_address = env.register_contract(None, MockTargetContract);
+    let contract_address = env.register(MockTargetContract, ());
     let mut allowed_functions = Vec::new(&env);
     allowed_functions.push_back(Symbol::new(&env, "test_function"));
     
@@ -435,7 +435,7 @@ fn test_emergency_disable_enable() {
     SecureCallManager::initialize(env.clone(), admin.clone());
     
     // Register a contract
-    let contract_address = env.register_contract(None, MockTargetContract);
+    let contract_address = env.register(MockTargetContract, ());
     let mut allowed_functions = Vec::new(&env);
     allowed_functions.push_back(Symbol::new(&env, "test_function"));
     
@@ -470,7 +470,7 @@ fn test_call_depth_protection() {
     env.storage().instance().set(&SecureCallDataKey::CallDepth, &MAX_CALL_DEPTH);
     
     // Register contract
-    let contract_address = env.register_contract(None, MockTargetContract);
+    let contract_address = env.register(MockTargetContract, ());
     let mut allowed_functions = Vec::new(&env);
     allowed_functions.push_back(Symbol::new(&env, "test_function"));
     
@@ -507,7 +507,7 @@ fn test_secure_call_error_handling() {
     SecureCallManager::initialize(env.clone(), admin.clone());
     
     // Register mock contract
-    let contract_address = env.register_contract(None, MockTargetContract);
+    let contract_address = env.register(MockTargetContract, ());
     let mut allowed_functions = Vec::new(&env);
     allowed_functions.push_back(Symbol::new(&env, "failing_function"));
     

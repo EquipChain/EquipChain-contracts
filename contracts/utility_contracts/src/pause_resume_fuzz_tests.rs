@@ -13,7 +13,7 @@ mod pause_resume_fuzz {
     #[test]
     fn test_rapid_pause_resume_cycles() {
         let env = Env::default();
-        let contract_id = env.register_contract(None, UtilityContract);
+        let contract_id = env.register(UtilityContract, ());
         let client = UtilityContractClient::new(&env, &contract_id);
 
         let provider = TestAddress::generate(&env);
@@ -31,7 +31,7 @@ mod pause_resume_fuzz {
 
             // Pause
             client.pause_stream(&stream_id);
-            
+
             // Verify paused state
             let paused_flow = client.get_continuous_flow(&stream_id).unwrap();
             assert_eq!(paused_flow.status, StreamStatus::Paused);
@@ -58,7 +58,7 @@ mod pause_resume_fuzz {
     #[test]
     fn test_concurrent_pause_attempts() {
         let env = Env::default();
-        let contract_id = env.register_contract(None, UtilityContract);
+        let contract_id = env.register(UtilityContract, ());
         let client = UtilityContractClient::new(&env, &contract_id);
 
         let provider = TestAddress::generate(&env);
@@ -89,7 +89,7 @@ mod pause_resume_fuzz {
     #[test]
     fn test_concurrent_resume_attempts() {
         let env = Env::default();
-        let contract_id = env.register_contract(None, UtilityContract);
+        let contract_id = env.register(UtilityContract, ());
         let client = UtilityContractClient::new(&env, &contract_id);
 
         let provider = TestAddress::generate(&env);
@@ -125,7 +125,7 @@ mod pause_resume_fuzz {
     #[test]
     fn test_rapid_timestamp_changes() {
         let env = Env::default();
-        let contract_id = env.register_contract(None, UtilityContract);
+        let contract_id = env.register(UtilityContract, ());
         let client = UtilityContractClient::new(&env, &contract_id);
 
         let provider = TestAddress::generate(&env);
@@ -164,7 +164,7 @@ mod pause_resume_fuzz {
     #[test]
     fn test_maximum_pause_duration() {
         let env = Env::default();
-        let contract_id = env.register_contract(None, UtilityContract);
+        let contract_id = env.register(UtilityContract, ());
         let client = UtilityContractClient::new(&env, &contract_id);
 
         let provider = TestAddress::generate(&env);
@@ -202,7 +202,7 @@ mod pause_resume_fuzz {
     #[test]
     fn test_zero_second_pause_resume() {
         let env = Env::default();
-        let contract_id = env.register_contract(None, UtilityContract);
+        let contract_id = env.register(UtilityContract, ());
         let client = UtilityContractClient::new(&env, &contract_id);
 
         let provider = TestAddress::generate(&env);
@@ -233,7 +233,7 @@ mod pause_resume_fuzz {
     #[test]
     fn test_boundary_conditions() {
         let env = Env::default();
-        let contract_id = env.register_contract(None, UtilityContract);
+        let contract_id = env.register(UtilityContract, ());
         let client = UtilityContractClient::new(&env, &contract_id);
 
         let provider = TestAddress::generate(&env);
@@ -266,7 +266,7 @@ mod pause_resume_fuzz {
     #[test]
     fn test_interleaved_operations() {
         let env = Env::default();
-        let contract_id = env.register_contract(None, UtilityContract);
+        let contract_id = env.register(UtilityContract, ());
         let client = UtilityContractClient::new(&env, &contract_id);
 
         let provider = TestAddress::generate(&env);

@@ -42,7 +42,7 @@ fn test_dust_aggregation_update() {
 #[test]
 fn test_admin_functions() {
     let env = Env::default();
-    let contract_id = env.register_contract(None, UtilityContract);
+    let contract_id = env.register(UtilityContract, ());
     let client = UtilityContractClient::new(&env, &contract_id);
 
     let admin = Address::generate(&env);
@@ -69,7 +69,7 @@ fn test_admin_functions() {
 #[test]
 fn test_stream_creation_and_dust_detection() {
     let env = Env::default();
-    let contract_id = env.register_contract(None, UtilityContract);
+    let contract_id = env.register(UtilityContract, ());
     let client = UtilityContractClient::new(&env, &contract_id);
 
     // Create a stream

@@ -9,7 +9,7 @@ use soroban_sdk::{
 #[test]
 fn test_pause_stream_stops_flow_calculation() {
     let env = Env::default();
-    let contract_id = env.register_contract(None, UtilityContract);
+    let contract_id = env.register(UtilityContract, ());
     let client = UtilityContractClient::new(&env, &contract_id);
 
     let provider = TestAddress::generate(&env);
@@ -44,7 +44,7 @@ fn test_pause_stream_stops_flow_calculation() {
 #[test]
 fn test_resume_stream_adjusts_timeline() {
     let env = Env::default();
-    let contract_id = env.register_contract(None, UtilityContract);
+    let contract_id = env.register(UtilityContract, ());
     let client = UtilityContractClient::new(&env, &contract_id);
 
     let provider = TestAddress::generate(&env);
@@ -88,7 +88,7 @@ fn test_resume_stream_adjusts_timeline() {
 #[test]
 fn test_provider_access_control() {
     let env = Env::default();
-    let contract_id = env.register_contract(None, UtilityContract);
+    let contract_id = env.register(UtilityContract, ());
     let client = UtilityContractClient::new(&env, &contract_id);
 
     let provider = TestAddress::generate(&env);
@@ -121,7 +121,7 @@ fn test_provider_access_control() {
 #[test]
 fn test_edge_case_depleted_during_pause() {
     let env = Env::default();
-    let contract_id = env.register_contract(None, UtilityContract);
+    let contract_id = env.register(UtilityContract, ());
     let client = UtilityContractClient::new(&env, &contract_id);
 
     let provider = TestAddress::generate(&env);
@@ -152,7 +152,7 @@ fn test_edge_case_depleted_during_pause() {
 #[test]
 fn test_pause_only_active_streams() {
     let env = Env::default();
-    let contract_id = env.register_contract(None, UtilityContract);
+    let contract_id = env.register(UtilityContract, ());
     let client = UtilityContractClient::new(&env, &contract_id);
 
     let provider = TestAddress::generate(&env);
@@ -181,7 +181,7 @@ fn test_pause_only_active_streams() {
 #[test]
 fn test_resume_only_paused_streams() {
     let env = Env::default();
-    let contract_id = env.register_contract(None, UtilityContract);
+    let contract_id = env.register(UtilityContract, ());
     let client = UtilityContractClient::new(&env, &contract_id);
 
     let provider = TestAddress::generate(&env);
@@ -211,7 +211,7 @@ fn test_resume_only_paused_streams() {
 #[test]
 fn test_flow_math_adjustment_post_resume() {
     let env = Env::default();
-    let contract_id = env.register_contract(None, UtilityContract);
+    let contract_id = env.register(UtilityContract, ());
     let client = UtilityContractClient::new(&env, &contract_id);
 
     let provider = TestAddress::generate(&env);
@@ -257,7 +257,7 @@ fn test_flow_math_adjustment_post_resume() {
 #[test]
 fn test_zero_flow_rate_resume_fails() {
     let env = Env::default();
-    let contract_id = env.register_contract(None, UtilityContract);
+    let contract_id = env.register(UtilityContract, ());
     let client = UtilityContractClient::new(&env, &contract_id);
 
     let provider = TestAddress::generate(&env);
@@ -287,7 +287,7 @@ fn test_zero_flow_rate_resume_fails() {
 #[test]
 fn test_pause_resume_events_emitted() {
     let env = Env::default();
-    let contract_id = env.register_contract(None, UtilityContract);
+    let contract_id = env.register(UtilityContract, ());
     let client = UtilityContractClient::new(&env, &contract_id);
 
     let provider = TestAddress::generate(&env);

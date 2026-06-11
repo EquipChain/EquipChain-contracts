@@ -25,15 +25,17 @@
 //! This module implements Issue #260: Tamper-Proof Hardware Nonce Sync
 
 use soroban_sdk::{
-    contracterror, contractimpl, contracttype, panic_with_error, symbol_short,
-    Address, Bytes, BytesN, Env, Symbol, Vec,
+    contract, contractimpl, contracttype, panic_with_error, symbol_short, Address, Bytes, BytesN,
+    Env, Vec,
 };
 
-use crate::{ContractError, DataKey};
+use crate::{
+    validate_ed25519_public_key, validate_ed25519_signature, validate_sha256_hash, ContractError,
+    DataKey,
+};
 
 /// Device nonce tracking for tamper-proof liveness verification
 /// Issue #260: Tamper-Proof Hardware Nonce Sync
-
 /// Maximum allowed nonce window to accommodate network jitter.
 ///
 /// This constant defines the maximum number of nonces ahead of the expected nonce
@@ -112,14 +114,14 @@ pub enum NonceAlertType {
     /// It strongly suggests a replay attack where captured heartbeats are
     /// being resent to fake device liveness.
     OldNonce = 0,
-    
+
     /// Nonce is too far in the future (possible clock manipulation).
     ///
     /// This occurs when a device sends a nonce more than NONCE_WINDOW_SIZE
     /// ahead of the expected value. It may indicate clock manipulation
     /// or severe device time drift.
     FutureNonce = 1,
-    
+
     /// Nonce within window but out of order (network jitter).
     ///
     /// This occurs when a device sends a nonce within the acceptable window
@@ -155,25 +157,25 @@ pub struct DeviceNonceState {
     /// This value represents the next nonce that should be received
     /// from the device. Valid heartbeats must contain exactly this value.
     pub current_nonce: u64,
-    
+
     /// Last heartbeat timestamp from this device.
     ///
     /// Unix timestamp of the last valid heartbeat received.
     /// Used to detect inactive devices and calculate uptime metrics.
     pub last_heartbeat: u64,
-    
+
     /// Number of desync alerts in the last 24 hours.
     ///
     /// Counter that resets daily. High values indicate either
     /// network problems or potential security attacks.
     pub desync_count_24h: u32,
-    
+
     /// Timestamp of last desync count reset.
     ///
     /// Unix timestamp when the 24-hour desync counter was last reset.
     /// Used to determine when to reset the daily counter.
     pub desync_count_reset: u64,
-    
+
     /// Whether device is marked as suspicious.
     ///
     /// Set to true when the device exhibits anomalous behavior
@@ -216,45 +218,45 @@ pub struct NonceResetRequest {
     ///
     /// Links the reset request to a specific meter/device.
     pub meter_id: u64,
-    
+
     /// MAC address of the IoT device (32-byte hash).
     ///
     /// Identifies the specific device requiring nonce reset.
     pub device_mac: BytesN<32>,
-    
+
     /// New nonce value to set for the device.
     ///
     /// The nonce will be reset to this value, and the next expected
     /// nonce will be this value + 1.
     pub new_nonce: u64,
-    
+
     /// Address of the resetter who initiated this request.
     ///
     /// Used for audit tracking and authorization verification.
     pub requested_by: Address,
-    
+
     /// List of authorized addresses that have approved this reset.
     ///
     /// Vector of signer addresses. When length reaches `required_signatures`,
     /// the reset can be executed.
     pub approvals: Vec<Address>,
-    
+
     /// Number of approvals required for execution.
     ///
     /// Typically set to 3 for 3-of-5 multi-signature scheme.
     pub required_approvals: u32,
-    
+
     /// When this reset request was created (Unix timestamp).
     ///
     /// Used for audit trail and request tracking.
     pub created_at: u64,
-    
+
     /// When this reset request expires (Unix timestamp).
     ///
     /// After this time, the request cannot be executed and must be recreated.
     /// Prevents stale approvals from being used.
     pub expires_at: u64,
-    
+
     /// Whether this reset request has been executed.
     ///
     /// Set to true when the nonce reset is completed.
@@ -294,29 +296,29 @@ pub struct SignedHeartbeat {
     ///
     /// Links the heartbeat to a specific meter account.
     pub meter_id: u64,
-    
+
     /// MAC address of the IoT device (32-byte hash).
     ///
     /// Used to retrieve the device's nonce state and public key.
     pub device_mac: BytesN<32>,
-    
+
     /// Strictly incrementing nonce for this heartbeat.
     ///
     /// Must be exactly current_nonce + 1 for the heartbeat to be valid.
     /// Values within +1 to +5 window are accepted for network jitter.
     pub nonce: u64,
-    
+
     /// When the heartbeat was generated (Unix timestamp).
     ///
     /// Used to detect stale heartbeats and analyze timing patterns.
     pub timestamp: u64,
-    
+
     /// Ed25519 signature of the heartbeat data.
     ///
     /// 64-byte signature covering meter_id, device_mac, nonce, and timestamp.
     /// Prevents tampering and proves device authenticity.
     pub signature: BytesN<64>,
-    
+
     /// Ed25519 public key of the device.
     ///
     /// 32-byte public key used to verify the signature.
@@ -393,12 +395,12 @@ impl DeviceNonceState {
     /// - May update `is_suspicious` based on new count
     pub fn update_desync_count(&mut self, current_time: u64) {
         const DAY_IN_SECONDS: u64 = 24 * 60 * 60;
-        
+
         if current_time - self.desync_count_reset > DAY_IN_SECONDS {
             self.desync_count_24h = 0;
             self.desync_count_reset = current_time;
         }
-        
+
         self.desync_count_24h += 1;
         self.is_suspicious = self.should_mark_suspicious();
     }
@@ -428,6 +430,7 @@ impl DeviceNonceState {
 /// # Issue Reference
 ///
 /// Implements Issue #260: Tamper-Proof Hardware Nonce Sync
+#[contract]
 pub struct NonceSyncManager;
 
 #[contractimpl]
@@ -466,10 +469,13 @@ impl NonceSyncManager {
     /// and network reordering, but still emit desync alerts for monitoring.
     pub fn verify_heartbeat_nonce(env: Env, heartbeat: SignedHeartbeat) -> bool {
         // Issue #279: Validate SignedHeartbeat byte arrays
-        validate_ed25519_signature(&heartbeat.signature)?;
-        validate_ed25519_public_key(&heartbeat.public_key)?;
-        validate_device_mac_hash(&heartbeat.device_mac)?;
-        
+        validate_ed25519_signature(&env, &heartbeat.signature)
+            .unwrap_or_else(|_| panic_with_error!(&env, ContractError::InvalidSignature));
+        validate_ed25519_public_key(&env, &heartbeat.public_key)
+            .unwrap_or_else(|_| panic_with_error!(&env, ContractError::PublicKeyMismatch));
+        validate_sha256_hash(&heartbeat.device_mac)
+            .unwrap_or_else(|_| panic_with_error!(&env, ContractError::InvalidSignature));
+
         // Verify signature first
         if !Self::verify_heartbeat_signature(&env, &heartbeat) {
             panic_with_error!(&env, ContractError::InvalidSignature);
@@ -487,31 +493,26 @@ impl NonceSyncManager {
         let expected_nonce = nonce_state.current_nonce;
 
         // Check nonce validity
-        let nonce_validation = Self::validate_nonce(
-            heartbeat.nonce,
-            expected_nonce,
-            NONCE_WINDOW_SIZE,
-        );
+        let nonce_validation =
+            Self::validate_nonce(heartbeat.nonce, expected_nonce, NONCE_WINDOW_SIZE);
 
         match nonce_validation {
             NonceValidationResult::Valid => {
                 // Update nonce state
                 nonce_state.current_nonce = heartbeat.nonce + 1;
                 nonce_state.last_heartbeat = current_time;
-                
+
                 // Reset suspicious flag on successful heartbeat
                 if nonce_state.desync_count_24h == 0 {
                     nonce_state.is_suspicious = false;
                 }
 
                 // Store updated state
-                env.storage()
-                    .persistent()
-                    .set(&device_key, &nonce_state);
+                env.storage().persistent().set(&device_key, &nonce_state);
 
                 // Emit success event
                 env.events().publish(
-                    (symbol_short!("HeartbeatValid"),),
+                    (symbol_short!("HbValid"),),
                     (heartbeat.meter_id, heartbeat.device_mac, heartbeat.nonce),
                 );
 
@@ -572,8 +573,9 @@ impl NonceSyncManager {
         approver: Address,
     ) {
         // Issue #279: Validate device_mac byte array
-        validate_device_mac_hash(&device_mac)?;
-        
+        validate_sha256_hash(&device_mac)
+            .unwrap_or_else(|_| panic_with_error!(&env, ContractError::InvalidSignature));
+
         // Verify approver is authorized
         if !Self::is_authorized_resetter(&env, &approver) {
             panic_with_error!(&env, ContractError::UnauthorizedDevice);
@@ -591,10 +593,10 @@ impl NonceSyncManager {
         }
 
         // Add approval
-        reset_request.approvals.push_back(approver);
+        reset_request.approvals.push_back(approver.clone());
 
         // Check if we have enough approvals
-        if reset_request.approvals.len() >= reset_request.required_approvals as usize {
+        if reset_request.approvals.len() >= reset_request.required_approvals {
             // Execute reset
             let device_key = DataKey::DeviceNonce(device_mac.clone());
             let mut nonce_state: DeviceNonceState = env
@@ -609,35 +611,34 @@ impl NonceSyncManager {
             nonce_state.desync_count_reset = current_time;
             nonce_state.is_suspicious = false;
 
-            env.storage()
-                .persistent()
-                .set(&device_key, &nonce_state);
+            env.storage().persistent().set(&device_key, &nonce_state);
 
             // Mark request as executed
             reset_request.is_executed = true;
 
             // Store updated request
             let request_key = DataKey::NonceResetRequest(meter_id);
-            env.storage()
-                .persistent()
-                .set(&request_key, &reset_request);
+            env.storage().persistent().set(&request_key, &reset_request);
 
             // Emit reset event
             env.events().publish(
-                (symbol_short!("NonceReset"),),
+                (symbol_short!("NoncRst"),),
                 (meter_id, device_mac, new_nonce, approver),
             );
         } else {
             // Store updated request with new approval
             let request_key = DataKey::NonceResetRequest(meter_id);
-            env.storage()
-                .persistent()
-                .set(&request_key, &reset_request);
+            env.storage().persistent().set(&request_key, &reset_request);
 
             // Emit approval event
             env.events().publish(
-                (symbol_short!("NonceResetApproved"),),
-                (meter_id, device_mac, approver, reset_request.approvals.len()),
+                (symbol_short!("NoncRstAp"),),
+                (
+                    meter_id,
+                    device_mac,
+                    approver,
+                    reset_request.approvals.len(),
+                ),
             );
         }
     }
@@ -726,22 +727,18 @@ impl NonceSyncManager {
     /// - Firmware reset with new nonce sequence
     /// - Recovery from extended network outages
     pub fn initialize_device_nonce(env: Env, device_mac: BytesN<32>, initial_nonce: u64) {
-        let device_key = DataKey::DeviceNonce(device_mac);
-        
+        let device_key = DataKey::DeviceNonce(device_mac.clone());
+
         // Check if already initialized
         if env.storage().persistent().has(&device_key) {
             return;
         }
 
         let nonce_state = DeviceNonceState::new(initial_nonce);
-        env.storage()
-            .persistent()
-            .set(&device_key, &nonce_state);
+        env.storage().persistent().set(&device_key, &nonce_state);
 
-        env.events().publish(
-            (symbol_short!("NonceInitialized"),),
-            (device_mac, initial_nonce),
-        );
+        env.events()
+            .publish((symbol_short!("NoncInit"),), (device_mac, initial_nonce));
     }
 }
 
@@ -756,23 +753,21 @@ impl NonceSyncManager {
         message_data.append(&Bytes::from_slice(env, &heartbeat.device_mac.to_array()));
         message_data.append(&Bytes::from_slice(env, &heartbeat.nonce.to_be_bytes()));
         message_data.append(&Bytes::from_slice(env, &heartbeat.timestamp.to_be_bytes()));
-        
+
         // Use native Soroban Ed25519 signature verification
         #[cfg(not(test))]
         {
-            env.crypto().ed25519_verify(
-                &heartbeat.public_key,
-                &message_data,
-                &heartbeat.signature,
-            )
+            env.crypto()
+                .ed25519_verify(&heartbeat.public_key, &message_data, &heartbeat.signature);
+            true
         }
-        
+
         // In test mode, use basic validation
         #[cfg(test)]
         {
             // Check for non-zero public key and signature
-            let zero_key = BytesN::from_array(&[0u8; 32]);
-            let zero_sig = BytesN::from_array(&[0u8; 64]);
+            let zero_key = BytesN::from_array(env, &[0u8; 32]);
+            let zero_sig = BytesN::from_array(env, &[0u8; 64]);
             heartbeat.public_key != zero_key && heartbeat.signature != zero_sig
         }
     }
@@ -805,7 +800,7 @@ impl NonceSyncManager {
         alert_type: NonceAlertType,
     ) {
         let current_time = env.ledger().timestamp();
-        
+
         // Update desync count
         nonce_state.update_desync_count(current_time);
 
@@ -819,23 +814,22 @@ impl NonceSyncManager {
             alert_type,
         };
 
-        env.events().publish(
-            (symbol_short!("NonceDesyncAlert"),),
-            alert,
-        );
+        env.events().publish((symbol_short!("NoncDsync"),), alert);
 
         // Store updated state
         let device_key = DataKey::DeviceNonce(heartbeat.device_mac.clone());
-        env.storage()
-            .persistent()
-            .set(&device_key, nonce_state);
+        env.storage().persistent().set(&device_key, nonce_state);
     }
 
     /// Check if address is authorized to reset nonces
     fn is_authorized_resetter(env: &Env, address: &Address) -> bool {
         // Check if address is in authorized resetters list
         let resetters_key = DataKey::AuthorizedNonceResetters;
-        if let Some(resetters) = env.storage().persistent().get::<Vec<Address>>(&resetters_key) {
+        if let Some(resetters) = env
+            .storage()
+            .persistent()
+            .get::<DataKey, Vec<Address>>(&resetters_key)
+        {
             resetters.contains(address)
         } else {
             false

@@ -12,6 +12,9 @@ env:
 jobs:
   test:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./contracts
     steps:
       - uses: actions/checkout@v4
       
@@ -32,8 +35,8 @@ jobs:
           path: |
             ~/.cargo/registry
             ~/.cargo/git
-            target
-          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+            contracts/target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('contracts/**/Cargo.lock') }}
           restore-keys: |
             ${{ runner.os }}-cargo-
             
@@ -56,8 +59,7 @@ jobs:
         
       - name: Run Fuzz Tests (if available)
         run: |
-          if [ -d "contracts/utility_contracts/fuzz" ]; then
-            cd contracts/utility_contracts
+          if [ -d "utility_contracts/fuzz" ]; then
             cargo install cargo-fuzz || true
             echo "Fuzz testing infrastructure available"
           else
@@ -71,7 +73,7 @@ jobs:
           echo "- ✅ Clippy linting: cargo clippy" >> $GITHUB_STEP_SUMMARY  
           echo "- ✅ Code formatting: cargo fmt --check" >> $GITHUB_STEP_SUMMARY
           echo "- ✅ WASM build: cargo build --target wasm32-unknown-unknown" >> $GITHUB_STEP_SUMMARY
-          if [ -d "contracts/utility_contracts/fuzz" ]; then
+          if [ -d "utility_contracts/fuzz" ]; then
             echo "- ✅ Fuzz tests: Available and configured" >> $GITHUB_STEP_SUMMARY
           fi
           echo "- ✅ Wasm Optimization: stellar contract optimize" >> $GITHUB_STEP_SUMMARY

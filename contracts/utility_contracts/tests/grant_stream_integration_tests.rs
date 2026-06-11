@@ -1,7 +1,7 @@
-use soroban_sdk::{symbol_short, Address, Env, BytesN};
+use soroban_sdk::{symbol_short, Address, BytesN, Env};
 use utility_contracts::{
-    grant_stream_listener::{GrantStreamListener, GrantConfig, GrantMatch},
-    UtilityContract, ConservationGoal, GoalReachedEvent, GrantDataKey,
+    grant_stream_listener::{GrantConfig, GrantMatch, GrantStreamListener},
+    ConservationGoal, GoalReachedEvent, GrantDataKey, UtilityContract,
 };
 
 #[test]
@@ -13,23 +13,19 @@ fn test_grant_stream_integration() {
     let admin = Address::generate(&env);
     let provider = Address::generate(&env);
     let treasury = Address::generate(&env);
-    let grant_stream_contract = env.register_contract(None, GrantStreamListener);
-    let utility_contract = env.register_contract(None, UtilityContract);
+    let grant_stream_contract = env.register(GrantStreamListener, ());
+    let utility_contract = env.register(UtilityContract, ());
 
     // Initialize grant stream listener
-    GrantStreamListener::initialize(
-        env.clone(),
-        admin.clone(),
-        treasury.clone(),
-    );
+    GrantStreamListener::init_listener(env.clone(), admin.clone(), treasury.clone());
 
     // Create a conservation goal
     let goal_id = UtilityContract::create_conservation_goal(
         env.clone(),
         provider.clone(),
-        1000, // 1000 liters target
+        1000,                                  // 1000 liters target
         env.ledger().timestamp() + 86400 * 30, // 30 days deadline
-        500_000_00, // $5000 grant in cents
+        500_000_00,                            // $5000 grant in cents
         treasury.clone(), // Grant token (using treasury as token for simplicity)
     );
 
@@ -42,11 +38,7 @@ fn test_grant_stream_integration() {
     assert!(goal.is_active);
 
     // Configure grant stream match
-    UtilityContract::configure_grant_stream_match(
-        env.clone(),
-        goal_id,
-        grant_stream_contract,
-    );
+    UtilityContract::configure_grant_stream_match(env.clone(), goal_id, grant_stream_contract);
 
     // Fund treasury with grant tokens
     let token_client = soroban_sdk::token::Client::new(&env, &treasury);
@@ -88,11 +80,11 @@ fn test_multiple_grant_matches() {
     let provider1 = Address::generate(&env);
     let provider2 = Address::generate(&env);
     let treasury = Address::generate(&env);
-    let grant_stream_contract = env.register_contract(None, GrantStreamListener);
-    let utility_contract = env.register_contract(None, UtilityContract);
+    let grant_stream_contract = env.register(GrantStreamListener, ());
+    let utility_contract = env.register(UtilityContract, ());
 
     // Initialize grant stream listener
-    GrantStreamListener::initialize(env.clone(), admin.clone(), treasury.clone());
+    GrantStreamListener::init_listener(env.clone(), admin.clone(), treasury.clone());
 
     // Fund treasury
     let token_client = soroban_sdk::token::Client::new(&env, &treasury);
@@ -135,7 +127,8 @@ fn test_multiple_grant_matches() {
     assert_eq!(grant2.provider, provider2);
 
     // Verify statistics
-    let (count, total_granted, max_monthly) = GrantStreamListener::get_grant_statistics(env.clone());
+    let (count, total_granted, max_monthly) =
+        GrantStreamListener::get_grant_statistics(env.clone());
     assert_eq!(count, 2);
     assert_eq!(total_granted, 3_500_000_00); // $35,000 total
 }
@@ -149,11 +142,11 @@ fn test_monthly_grant_limit() {
     let admin = Address::generate(&env);
     let provider = Address::generate(&env);
     let treasury = Address::generate(&env);
-    let grant_stream_contract = env.register_contract(None, GrantStreamListener);
-    let utility_contract = env.register_contract(None, UtilityContract);
+    let grant_stream_contract = env.register(GrantStreamListener, ());
+    let utility_contract = env.register(UtilityContract, ());
 
     // Initialize grant stream listener with low monthly limit
-    GrantStreamListener::initialize(env.clone(), admin.clone(), treasury.clone());
+    GrantStreamListener::init_listener(env.clone(), admin.clone(), treasury.clone());
     GrantStreamListener::update_grant_config(env.clone(), true, 1_000_000_00); // $10,000 monthly limit
 
     // Fund treasury
@@ -186,7 +179,7 @@ fn test_monthly_grant_limit() {
 
     // Achieve first goal (should succeed)
     UtilityContract::update_water_savings(env.clone(), goal1_id, 1000);
-    
+
     let grant1 = GrantStreamListener::get_grant_match(env.clone(), goal1_id);
     assert!(grant1.processed);
 
@@ -213,7 +206,7 @@ fn test_goal_expiry() {
     let admin = Address::generate(&env);
     let provider = Address::generate(&env);
     let treasury = Address::generate(&env);
-    let utility_contract = env.register_contract(None, UtilityContract);
+    let utility_contract = env.register(UtilityContract, ());
 
     // Create a goal with expired deadline
     let past_timestamp = env.ledger().timestamp() - 86400; // 1 day ago
@@ -253,11 +246,11 @@ fn test_insufficient_treasury_balance() {
     let admin = Address::generate(&env);
     let provider = Address::generate(&env);
     let treasury = Address::generate(&env);
-    let grant_stream_contract = env.register_contract(None, GrantStreamListener);
-    let utility_contract = env.register_contract(None, UtilityContract);
+    let grant_stream_contract = env.register(GrantStreamListener, ());
+    let utility_contract = env.register(UtilityContract, ());
 
     // Initialize grant stream listener
-    GrantStreamListener::initialize(env.clone(), admin.clone(), treasury.clone());
+    GrantStreamListener::init_listener(env.clone(), admin.clone(), treasury.clone());
 
     // Fund treasury with insufficient amount
     let token_client = soroban_sdk::token::Client::new(&env, &treasury);
@@ -300,7 +293,7 @@ fn test_grant_configuration_management() {
     let treasury = Address::generate(&env);
 
     // Initialize grant stream listener
-    GrantStreamListener::initialize(env.clone(), admin.clone(), treasury.clone());
+    GrantStreamListener::init_listener(env.clone(), admin.clone(), treasury.clone());
 
     // Get initial config
     let config = GrantStreamListener::get_grant_config(env.clone());
@@ -333,11 +326,11 @@ fn test_provider_grant_tracking() {
     let admin = Address::generate(&env);
     let provider = Address::generate(&env);
     let treasury = Address::generate(&env);
-    let grant_stream_contract = env.register_contract(None, GrantStreamListener);
-    let utility_contract = env.register_contract(None, UtilityContract);
+    let grant_stream_contract = env.register(GrantStreamListener, ());
+    let utility_contract = env.register(UtilityContract, ());
 
     // Initialize grant stream listener
-    GrantStreamListener::initialize(env.clone(), admin.clone(), treasury.clone());
+    GrantStreamListener::init_listener(env.clone(), admin.clone(), treasury.clone());
 
     // Fund treasury
     let token_client = soroban_sdk::token::Client::new(&env, &treasury);
@@ -371,7 +364,8 @@ fn test_provider_grant_tracking() {
     UtilityContract::update_water_savings(env.clone(), goal2_id, 750);
 
     // Verify provider's total grants
-    let total_grants = GrantStreamListener::get_provider_total_grants(env.clone(), provider.clone());
+    let total_grants =
+        GrantStreamListener::get_provider_total_grants(env.clone(), provider.clone());
     assert_eq!(total_grants, 2_500_000_00); // $25,000 total
 
     // Verify provider's grant list

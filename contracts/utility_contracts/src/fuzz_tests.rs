@@ -23,10 +23,16 @@ fn test_extreme_usage_values() {
     token_admin_client.mint(&user, &1_000_000_000_000i128);
 
     let device_public_key = BytesN::from_array(&env, &[1u8; 32]);
-    let meter_id =
-        client.register_meter(&user, &provider, &100, &token_address, &device_public_key);
+    let meter_id = client.register_meter(
+        &user,
+        &provider,
+        &100,
+        &token_address,
+        &device_public_key,
+        &0,
+    );
 
-    client.top_up(&meter_id, &1_000_000_000_000i128);
+    client.top_up(&meter_id, &1_000_000_000_000i128, &user);
 
     // Test large (but valid) usage updates
     let extreme_values: [i128; 3] = [1_000_000_000i128, 10_000_000_000i128, 100_000_000_000i128];
@@ -97,10 +103,16 @@ fn test_cumulative_extreme_usage() {
     token_admin_client.mint(&user, &i128::MAX);
 
     let device_public_key = BytesN::from_array(&env, &[1u8; 32]);
-    let meter_id =
-        client.register_meter(&user, &provider, &100, &token_address, &device_public_key);
+    let meter_id = client.register_meter(
+        &user,
+        &provider,
+        &100,
+        &token_address,
+        &device_public_key,
+        &0,
+    );
 
-    client.top_up(&meter_id, &1_000_000_000_000i128);
+    client.top_up(&meter_id, &1_000_000_000_000i128, &user);
 
     let extreme_usage = 1_000_000_000i128;
 
@@ -147,7 +159,7 @@ fn test_debt_calculation_underflow_protection() {
     );
 
     // Test 1: High rate, long duration, zero balance scenario
-    client.top_up(&meter_id, &1000000); // Initial collateral
+    client.top_up(&meter_id, &1000000, &user); // Initial collateral
 
     // Pair the meter for usage deduction
     let challenge = client.initiate_pairing(&meter_id);
@@ -180,7 +192,7 @@ fn test_debt_calculation_underflow_protection() {
     let debt_to_clear = meter.debt;
     token_admin_client.mint(&user, &debt_to_clear);
 
-    client.top_up(&meter_id, &debt_to_clear);
+    client.top_up(&meter_id, &debt_to_clear, &user);
 
     let meter_after_settlement = client.get_meter(&meter_id).unwrap();
 
@@ -290,26 +302,20 @@ fn test_epoch_timestamp_manipulation() {
     // Extreme timestamp values to fuzz: past, future, leap-year boundaries, u64 extremes
     let timestamp_cases: &[(u64, u64)] = &[
         // (last_flow_timestamp, current_timestamp)
-        (0, 0),                                    // zero-zero: no elapsed time
-        (0, u64::MAX),                             // max future jump
-        (u64::MAX, u64::MAX),                      // same extreme value
-        (u64::MAX - 1, u64::MAX),                  // one second forward at max
-        (1_000_000, 999_999),                      // backwards (current < last) → no accumulation
-        (0, 1_577_836_800),                        // epoch to 2020-01-01
-        (1_577_836_800, 1_577_836_800 + 86_400),   // normal 24h window
+        (0, 0),                                  // zero-zero: no elapsed time
+        (0, u64::MAX),                           // max future jump
+        (u64::MAX, u64::MAX),                    // same extreme value
+        (u64::MAX - 1, u64::MAX),                // one second forward at max
+        (1_000_000, 999_999),                    // backwards (current < last) → no accumulation
+        (0, 1_577_836_800),                      // epoch to 2020-01-01
+        (1_577_836_800, 1_577_836_800 + 86_400), // normal 24h window
         // Leap-year boundary: 2000-02-28 → 2000-03-01 (86400 * 2 seconds)
         (946_684_800, 946_684_800 + 172_800),
         // Far future: year ~2554
         (0, 18_446_744_073_709_551_614),
     ];
 
-    let flow_rates: &[i128] = &[
-        0,
-        1,
-        i128::MAX,
-        i128::MAX / 2,
-        1_000_000_000,
-    ];
+    let flow_rates: &[i128] = &[0, 1, i128::MAX, i128::MAX / 2, 1_000_000_000];
 
     for &(last_ts, current_ts) in timestamp_cases.iter() {
         for &rate in flow_rates.iter() {
@@ -317,7 +323,7 @@ fn test_epoch_timestamp_manipulation() {
             // (mirrors the contract's checked_sub approach)
             let elapsed = current_ts.checked_sub(last_ts);
             let accumulation = match elapsed {
-                None => 0i128,                          // backwards timestamp → 0
+                None => 0i128, // backwards timestamp → 0
                 Some(e) => rate.saturating_mul(e as i128),
             };
 

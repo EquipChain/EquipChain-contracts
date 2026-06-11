@@ -24,7 +24,7 @@ fuzz_target!(|data: &[u8]| {
     }
 
     let env = Env::default();
-    let contract_id = env.register_contract(None, UtilityContract);
+    let contract_id = env.register(UtilityContract, ());
     let client = utility_contracts::UtilityContractClient::new(&env, &contract_id);
     
     // Create test addresses

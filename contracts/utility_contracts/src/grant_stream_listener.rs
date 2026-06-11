@@ -1,9 +1,8 @@
-#![no_std]
+use super::secure_call_interface::SecureCallManager;
 use soroban_sdk::{
-    contract, contracterror, contractimpl, contracttype, panic_with_error,
-    symbol_short, token, Address, Env, String, Symbol, Vec, BytesN,
+    contract, contracterror, contractimpl, contracttype, panic_with_error, symbol_short, token,
+    Address, Env, IntoVal, Symbol, Vec,
 };
-use super::secure_call_interface::{SecureCallManager, SecureCallError};
 
 // --- Grant Stream Listener Contract ---
 // This contract listens for GoalReached events from Equipchains and processes grant matches
@@ -54,15 +53,19 @@ pub enum GrantError {
     Unauthorized = 7,
 }
 
-
 #[contract]
 pub struct GrantStreamListener;
 
 #[contractimpl]
 impl GrantStreamListener {
     /// Initialize the grant stream listener
-    pub fn initialize(env: Env, admin: Address, treasury: Address) {
-        if env.storage().instance().get::<_, GrantConfig>(&GrantDataKey::GrantConfig).is_some() {
+    pub fn init_listener(env: Env, admin: Address, treasury: Address) {
+        if env
+            .storage()
+            .instance()
+            .get::<_, GrantConfig>(&GrantDataKey::GrantConfig)
+            .is_some()
+        {
             panic_with_error!(&env, GrantError::GrantAlreadyProcessed);
         }
 
@@ -70,22 +73,29 @@ impl GrantStreamListener {
             admin: admin.clone(),
             treasury: treasury.clone(),
             enabled: true,
-            max_grant_per_month: 1_000_000_00, // $10,000 USD in cents
+            max_grant_per_month: 100_000_000, // $10,000 USD in cents
             total_granted: 0,
         };
 
-        env.storage().instance().set(&GrantDataKey::GrantConfig, &config);
-        env.storage().instance().set(&GrantDataKey::MatchCount, &0u64);
+        env.storage()
+            .instance()
+            .set(&GrantDataKey::GrantConfig, &config);
+        env.storage()
+            .instance()
+            .set(&GrantDataKey::MatchCount, &0u64);
 
-        env.events().publish(
-            (symbol_short!("GrantInit"),),
-            (admin, treasury),
-        );
+        env.events()
+            .publish((symbol_short!("GrantInit"),), (admin, treasury));
     }
 
     /// Called by Equipchains when a conservation goal is reached
-    pub fn on_goal_reached(env: Env, equipchain_contract: Address, goal_event: super::GoalReachedEvent) {
-        let config: GrantConfig = env.storage()
+    pub fn on_goal_reached(
+        env: Env,
+        equipchain_contract: Address,
+        goal_event: super::GoalReachedEvent,
+    ) {
+        let config: GrantConfig = env
+            .storage()
             .instance()
             .get(&GrantDataKey::GrantConfig)
             .unwrap_or_else(|| panic_with_error!(&env, GrantError::GrantNotFound));
@@ -95,7 +105,11 @@ impl GrantStreamListener {
         }
 
         // Check if this grant has already been processed
-        if let Some(existing_match) = env.storage().instance().get::<_, GrantMatch>(&GrantDataKey::GrantMatch(goal_event.goal_id)) {
+        if let Some(existing_match) = env
+            .storage()
+            .instance()
+            .get::<_, GrantMatch>(&GrantDataKey::GrantMatch(goal_event.goal_id))
+        {
             if existing_match.processed {
                 panic_with_error!(&env, GrantError::GrantAlreadyProcessed);
             }
@@ -103,9 +117,9 @@ impl GrantStreamListener {
 
         // Verify the goal event by calling back to the Equipchain contract using secure interface
         let mut args = Vec::new(&env);
-        args.push_back(goal_event.goal_id.into());
-        
-        match SecureCallManager::secure_call::<super::ConservationGoal>(
+        args.push_back(goal_event.goal_id.into_val(&env));
+
+        match SecureCallManager::secure_call_inner::<super::ConservationGoal>(
             &env,
             &equipchain_contract,
             &Symbol::new(&env, "get_conservation_goal"),
@@ -114,9 +128,10 @@ impl GrantStreamListener {
         ) {
             Ok(conservation_goal) => {
                 // Verify the goal event matches the stored goal
-                if conservation_goal.provider != goal_event.provider ||
-                   conservation_goal.target_water_savings != goal_event.water_savings ||
-                   !conservation_goal.is_active {
+                if conservation_goal.data.provider != goal_event.provider
+                    || conservation_goal.data.target_water_savings != goal_event.water_savings
+                    || !conservation_goal.data.is_active
+                {
                     panic_with_error!(&env, GrantError::GrantNotFound);
                 }
             }
@@ -126,13 +141,15 @@ impl GrantStreamListener {
         }
 
         // Calculate maintenance months covered (simplified: 1 month per $1000)
-        let maintenance_months_covered = (goal_event.grant_amount / 100_000_00) as u32; // $1000 = 100,000 cents
+        let maintenance_months_covered = (goal_event.grant_amount / 10_000_000i128) as u32; // $1000 = 100,000 cents
         let months_to_cover = maintenance_months_covered.min(12); // Cap at 12 months
 
         // Check monthly grant limit
         let year_month = Self::get_year_month(env.ledger().timestamp());
-        let monthly_limit_key = GrantDataKey::MonthlyGrantLimit(year_month, goal_event.goal_id as u32);
-        let current_monthly_grants = env.storage()
+        let monthly_limit_key =
+            GrantDataKey::MonthlyGrantLimit(year_month, goal_event.goal_id as u32);
+        let current_monthly_grants = env
+            .storage()
             .instance()
             .get::<_, i128>(&monthly_limit_key)
             .unwrap_or(0);
@@ -163,29 +180,52 @@ impl GrantStreamListener {
         };
 
         // Store grant match
-        env.storage().instance().set(&GrantDataKey::GrantMatch(goal_event.goal_id), &grant_match);
+        env.storage()
+            .instance()
+            .set(&GrantDataKey::GrantMatch(goal_event.goal_id), &grant_match);
 
         // Update match count
-        let mut count: u64 = env.storage().instance().get(&GrantDataKey::MatchCount).unwrap_or(0);
+        let mut count: u64 = env
+            .storage()
+            .instance()
+            .get(&GrantDataKey::MatchCount)
+            .unwrap_or(0);
         count += 1;
-        env.storage().instance().set(&GrantDataKey::MatchCount, &count);
+        env.storage()
+            .instance()
+            .set(&GrantDataKey::MatchCount, &count);
 
         // Update provider total grants
         let provider_total_key = GrantDataKey::ProviderTotalGrants(goal_event.provider.clone());
-        let mut provider_total = env.storage().instance().get::<_, i128>(&provider_total_key).unwrap_or(0);
+        let mut provider_total = env
+            .storage()
+            .instance()
+            .get::<_, i128>(&provider_total_key)
+            .unwrap_or(0);
         provider_total += goal_event.grant_amount;
-        env.storage().instance().set(&provider_total_key, &provider_total);
+        env.storage()
+            .instance()
+            .set(&provider_total_key, &provider_total);
 
         // Update monthly grants
-        env.storage().instance().set(&monthly_limit_key, &(current_monthly_grants + goal_event.grant_amount));
+        env.storage().instance().set(
+            &monthly_limit_key,
+            &(current_monthly_grants + goal_event.grant_amount),
+        );
 
         // Update total granted
         let mut updated_config = config.clone();
         updated_config.total_granted += goal_event.grant_amount;
-        env.storage().instance().set(&GrantDataKey::GrantConfig, &updated_config);
+        env.storage()
+            .instance()
+            .set(&GrantDataKey::GrantConfig, &updated_config);
 
         // Transfer grant from treasury to provider
-        token_client.transfer(&config.treasury, &goal_event.provider, &goal_event.grant_amount);
+        token_client.transfer(
+            &config.treasury,
+            &goal_event.provider,
+            &goal_event.grant_amount,
+        );
 
         // Emit grant processed event
         env.events().publish(
@@ -210,10 +250,18 @@ impl GrantStreamListener {
     /// Get all grant matches for a provider
     pub fn get_provider_grants(env: Env, provider: Address) -> Vec<u64> {
         let mut grant_ids = Vec::new(&env);
-        let count: u64 = env.storage().instance().get(&GrantDataKey::MatchCount).unwrap_or(0);
+        let count: u64 = env
+            .storage()
+            .instance()
+            .get(&GrantDataKey::MatchCount)
+            .unwrap_or(0);
 
         for goal_id in 1..=count {
-            if let Some(grant_match) = env.storage().instance().get::<_, GrantMatch>(&GrantDataKey::GrantMatch(goal_id)) {
+            if let Some(grant_match) = env
+                .storage()
+                .instance()
+                .get::<_, GrantMatch>(&GrantDataKey::GrantMatch(goal_id))
+            {
                 if grant_match.provider == provider {
                     grant_ids.push_back(goal_id);
                 }
@@ -233,7 +281,8 @@ impl GrantStreamListener {
 
     /// Update grant configuration (admin only)
     pub fn update_grant_config(env: Env, enabled: bool, max_grant_per_month: i128) {
-        let mut config: GrantConfig = env.storage()
+        let mut config: GrantConfig = env
+            .storage()
             .instance()
             .get(&GrantDataKey::GrantConfig)
             .unwrap_or_else(|| panic_with_error!(&env, GrantError::GrantNotFound));
@@ -247,7 +296,9 @@ impl GrantStreamListener {
         config.enabled = enabled;
         config.max_grant_per_month = max_grant_per_month;
 
-        env.storage().instance().set(&GrantDataKey::GrantConfig, &config);
+        env.storage()
+            .instance()
+            .set(&GrantDataKey::GrantConfig, &config);
 
         env.events().publish(
             (symbol_short!("GrntCfgUp"),),
@@ -257,7 +308,8 @@ impl GrantStreamListener {
 
     /// Update treasury address (admin only)
     pub fn update_treasury(env: Env, new_treasury: Address) {
-        let mut config: GrantConfig = env.storage()
+        let mut config: GrantConfig = env
+            .storage()
             .instance()
             .get(&GrantDataKey::GrantConfig)
             .unwrap_or_else(|| panic_with_error!(&env, GrantError::GrantNotFound));
@@ -267,12 +319,12 @@ impl GrantStreamListener {
         let old_treasury = config.treasury.clone();
         config.treasury = new_treasury.clone();
 
-        env.storage().instance().set(&GrantDataKey::GrantConfig, &config);
+        env.storage()
+            .instance()
+            .set(&GrantDataKey::GrantConfig, &config);
 
-        env.events().publish(
-            (symbol_short!("TreasUp"),),
-            (old_treasury, new_treasury),
-        );
+        env.events()
+            .publish((symbol_short!("TreasUp"),), (old_treasury, new_treasury));
     }
 
     /// Get total grants awarded to a provider
@@ -285,12 +337,17 @@ impl GrantStreamListener {
 
     /// Get grant statistics
     pub fn get_grant_statistics(env: Env) -> (u64, i128, i128) {
-        let count: u64 = env.storage().instance().get(&GrantDataKey::MatchCount).unwrap_or(0);
-        let config: GrantConfig = env.storage()
+        let count: u64 = env
+            .storage()
+            .instance()
+            .get(&GrantDataKey::MatchCount)
+            .unwrap_or(0);
+        let config: GrantConfig = env
+            .storage()
             .instance()
             .get(&GrantDataKey::GrantConfig)
             .unwrap_or_else(|| panic_with_error!(&env, GrantError::GrantNotFound));
-        
+
         (count, config.total_granted, config.max_grant_per_month)
     }
 
@@ -300,7 +357,7 @@ impl GrantStreamListener {
         let years = days_since_epoch / 365;
         let remaining_days = days_since_epoch % 365;
         let months = remaining_days / 30; // Approximate months
-        
+
         years * 100 + months // Format: YYYYMM
     }
 }

@@ -1,14 +1,10 @@
-#![no_std]
-use soroban_sdk::{
-    contract, contracterror, contractimpl, contracttype, panic_with_error,
-    symbol_short, Address, Env, Symbol, Vec, BytesN, Status, Val,
-};
+use soroban_sdk::{contracterror, contracttype, panic_with_error, Address, Env, Symbol, Val, Vec};
 
 /// Maximum gas limit for cross-contract calls to prevent gas exhaustion
 const MAX_CALL_GAS: u64 = 50_000_000;
 
 /// Maximum call depth to prevent reentrancy attacks
-const MAX_CALL_DEPTH: u8 = 5;
+const MAX_CALL_DEPTH: u32 = 5;
 
 /// Time window for rate limiting (in seconds)
 const RATE_LIMIT_WINDOW: u64 = 60;
@@ -28,7 +24,6 @@ pub struct ContractCallConfig {
     pub call_count_this_window: u32,
 }
 
-#[contracttype]
 #[derive(Clone)]
 pub struct CallResult<T> {
     pub success: bool,
@@ -37,7 +32,7 @@ pub struct CallResult<T> {
     pub error_code: Option<u32>,
 }
 
-#[contracttype]
+#[contracterror]
 pub enum SecureCallError {
     UnauthorizedCall = 1,
     ContractNotWhitelisted = 2,
@@ -107,11 +102,14 @@ pub trait SecureCallInterface {
 /// Implementation of the secure call interface
 pub struct SecureCallManager;
 
-#[contractimpl]
 impl SecureCallManager {
     /// Initialize the secure call manager
     pub fn initialize(env: Env, admin: Address) {
-        if env.storage().instance().get::<_, Address>(&SecureCallDataKey::ContractConfig(Address::generate(&env))).is_some() {
+        if env
+            .storage()
+            .instance()
+            .has(&SecureCallDataKey::LastCallReset)
+        {
             panic_with_error!(&env, SecureCallError::ContractCallFailed);
         }
 
@@ -126,18 +124,23 @@ impl SecureCallManager {
             call_count_this_window: 0,
         };
 
-        env.storage().instance().set(&SecureCallDataKey::ContractConfig(admin), &admin_config);
-        env.storage().instance().set(&SecureCallDataKey::CallDepth, &0u8);
-        env.storage().instance().set(&SecureCallDataKey::LastCallReset, &env.ledger().timestamp());
-
-        env.events().publish(
-            (symbol_short!("SecureInit"),),
-            admin,
+        env.storage().instance().set(
+            &SecureCallDataKey::ContractConfig(admin.clone()),
+            &admin_config,
         );
+        env.storage()
+            .instance()
+            .set(&SecureCallDataKey::CallDepth, &0u32);
+        env.storage()
+            .instance()
+            .set(&SecureCallDataKey::LastCallReset, &env.ledger().timestamp());
+
+        env.events()
+            .publish((Symbol::new(&env, "SecureInit"),), admin);
     }
 
     /// Execute a secure cross-contract call with comprehensive security checks
-    pub fn secure_call<T>(
+    pub fn secure_call_inner<T: soroban_sdk::TryFromVal<Env, soroban_sdk::Val>>(
         env: &Env,
         target_contract: &Address,
         function: &Symbol,
@@ -145,7 +148,11 @@ impl SecureCallManager {
         gas_limit: Option<u64>,
     ) -> Result<CallResult<T>, SecureCallError> {
         // Check call depth to prevent reentrancy
-        let current_depth: u8 = env.storage().instance().get(&SecureCallDataKey::CallDepth).unwrap_or(0);
+        let current_depth: u32 = env
+            .storage()
+            .instance()
+            .get(&SecureCallDataKey::CallDepth)
+            .unwrap_or(0);
         if current_depth >= MAX_CALL_DEPTH {
             return Err(SecureCallError::CallDepthExceeded);
         }
@@ -159,7 +166,7 @@ impl SecureCallManager {
         }
 
         // Check if function is allowed
-        if !config.allowed_functions.iter().any(|f| f == function) {
+        if !config.allowed_functions.iter().any(|f| f == *function) {
             return Err(SecureCallError::FunctionNotAllowed);
         }
 
@@ -170,20 +177,21 @@ impl SecureCallManager {
         }
 
         // Increment call depth
-        env.storage().instance().set(&SecureCallDataKey::CallDepth, &(current_depth + 1));
+        env.storage()
+            .instance()
+            .set(&SecureCallDataKey::CallDepth, &(current_depth + 1));
 
         // Execute the contract call with gas limit
-        let call_result = env.try_invoke_contract::<T, _>(
-            target_contract,
-            function,
-            args,
-        );
+        let call_result =
+            env.try_invoke_contract::<T, SecureCallError>(target_contract, function, args);
 
         // Decrement call depth
-        env.storage().instance().set(&SecureCallDataKey::CallDepth, &current_depth);
+        env.storage()
+            .instance()
+            .set(&SecureCallDataKey::CallDepth, &current_depth);
 
         match call_result {
-            Ok(result) => {
+            Ok(Ok(result)) => {
                 // Validate return value (basic type checking)
                 // In a full implementation, you'd add more sophisticated validation
                 Ok(CallResult {
@@ -193,7 +201,12 @@ impl SecureCallManager {
                     error_code: None,
                 })
             }
+            Ok(Err(_)) => {
+                // Handle contract-level error
+                Err(SecureCallError::ContractCallFailed)
+            }
             Err(_) => {
+                // Handle invocation error
                 Err(SecureCallError::ContractCallFailed)
             }
         }
@@ -208,10 +221,7 @@ impl SecureCallManager {
         requires_auth: bool,
     ) {
         // Check if caller is admin (simplified - in production use proper auth)
-        let admin_address = env.storage().instance().get::<_, Address>(&SecureCallDataKey::ContractConfig(Address::generate(&env)));
-        if let Some(admin) = admin_address {
-            admin.require_auth();
-        }
+        require_initialized(env);
 
         let config = ContractCallConfig {
             contract_address: contract_address.clone(),
@@ -223,27 +233,27 @@ impl SecureCallManager {
             call_count_this_window: 0,
         };
 
-        env.storage().instance().set(&SecureCallDataKey::ContractConfig(contract_address.clone()), &config);
-
-        env.events().publish(
-            (symbol_short!("ContractReg"),),
-            contract_address,
+        env.storage().instance().set(
+            &SecureCallDataKey::ContractConfig(contract_address.clone()),
+            &config,
         );
+
+        env.events()
+            .publish((Symbol::new(&env, "ContractReg"),), contract_address);
     }
 
     /// Remove a contract from the whitelist
     pub fn unregister_contract(env: &Env, contract_address: &Address) {
         // Check if caller is admin
-        let admin_address = env.storage().instance().get::<_, Address>(&SecureCallDataKey::ContractConfig(Address::generate(&env)));
-        if let Some(admin) = admin_address {
-            admin.require_auth();
-        }
+        require_initialized(env);
 
-        env.storage().instance().remove(&SecureCallDataKey::ContractConfig(contract_address));
+        env.storage()
+            .instance()
+            .remove(&SecureCallDataKey::ContractConfig(contract_address.clone()));
 
         env.events().publish(
-            (symbol_short!("ContractUnreg"),),
-            contract_address,
+            (Symbol::new(&env, "ContractUnreg"),),
+            contract_address.clone(),
         );
     }
 
@@ -257,13 +267,12 @@ impl SecureCallManager {
         enabled: Option<bool>,
     ) {
         // Check if caller is admin
-        let admin_address = env.storage().instance().get::<_, Address>(&SecureCallDataKey::ContractConfig(Address::generate(&env)));
-        if let Some(admin) = admin_address {
-            admin.require_auth();
-        }
+        require_initialized(env);
 
-        let mut config: ContractCallConfig = env.storage().instance()
-            .get(&SecureCallDataKey::ContractConfig(contract_address))
+        let mut config: ContractCallConfig = env
+            .storage()
+            .instance()
+            .get(&SecureCallDataKey::ContractConfig(contract_address.clone()))
             .unwrap_or_else(|| panic_with_error!(env, SecureCallError::ContractNotWhitelisted));
 
         if let Some(functions) = allowed_functions {
@@ -279,23 +288,29 @@ impl SecureCallManager {
             config.enabled = en;
         }
 
-        env.storage().instance().set(&SecureCallDataKey::ContractConfig(contract_address), &config);
-
-        env.events().publish(
-            (symbol_short!("ContractCfgUp"),),
-            contract_address,
+        env.storage().instance().set(
+            &SecureCallDataKey::ContractConfig(contract_address.clone()),
+            &config,
         );
+
+        env.events()
+            .publish((Symbol::new(&env, "ContractCfgUp"),), contract_address);
     }
 
     /// Get contract configuration
-    pub fn get_contract_config(env: &Env, contract_address: &Address) -> Option<ContractCallConfig> {
-        env.storage().instance().get(&SecureCallDataKey::ContractConfig(contract_address))
+    pub fn get_contract_config(
+        env: &Env,
+        contract_address: &Address,
+    ) -> Option<ContractCallConfig> {
+        env.storage()
+            .instance()
+            .get(&SecureCallDataKey::ContractConfig(contract_address.clone()))
     }
 
     /// Check if a contract is whitelisted for a specific function
     pub fn is_function_allowed(env: &Env, contract_address: &Address, function: &Symbol) -> bool {
         if let Some(config) = Self::get_contract_config(env, contract_address) {
-            config.enabled && config.allowed_functions.iter().any(|f| f == function)
+            config.enabled && config.allowed_functions.iter().any(|f| f == *function)
         } else {
             false
         }
@@ -304,15 +319,12 @@ impl SecureCallManager {
     /// Emergency disable all cross-contract calls
     pub fn emergency_disable(env: &Env) {
         // Check if caller is admin
-        let admin_address = env.storage().instance().get::<_, Address>(&SecureCallDataKey::ContractConfig(Address::generate(&env)));
-        if let Some(admin) = admin_address {
-            admin.require_auth();
-        }
+        require_initialized(env);
 
         // Disable all contracts by setting a global flag (simplified approach)
         // In a full implementation, you'd iterate through all registered contracts
         env.events().publish(
-            (symbol_short!("EmergencyOff"),),
+            (Symbol::new(&env, "EmergencyOff"),),
             env.ledger().timestamp(),
         );
     }
@@ -320,14 +332,21 @@ impl SecureCallManager {
     /// Re-enable cross-contract calls (admin only)
     pub fn emergency_enable(env: &Env) {
         // Check if caller is admin
-        let admin_address = env.storage().instance().get::<_, Address>(&SecureCallDataKey::ContractConfig(Address::generate(&env)));
-        if let Some(admin) = admin_address {
-            admin.require_auth();
-        }
+        require_initialized(env);
 
         env.events().publish(
-            (symbol_short!("EmergencyOn"),),
+            (Symbol::new(&env, "EmergencyOn"),),
             env.ledger().timestamp(),
         );
+    }
+}
+
+fn require_initialized(env: &Env) {
+    if !env
+        .storage()
+        .instance()
+        .has(&SecureCallDataKey::LastCallReset)
+    {
+        panic_with_error!(env, SecureCallError::UnauthorizedCall);
     }
 }

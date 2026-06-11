@@ -13,7 +13,7 @@ use crate::{
 #[test]
 fn test_buffer_creation_requirement() {
     let env = Env::default();
-    let contract_id = env.register_contract(None, UtilityContract);
+    let contract_id = env.register(UtilityContract, ());
     let client = UtilityContractClient::new(&env, &contract_id);
 
     let provider = Address::generate(&env);
@@ -54,7 +54,7 @@ fn test_buffer_creation_requirement() {
 #[test]
 fn test_buffer_depletion_logic() {
     let env = Env::default();
-    let contract_id = env.register_contract(None, UtilityContract);
+    let contract_id = env.register(UtilityContract, ());
     let client = UtilityContractClient::new(&env, &contract_id);
 
     let provider = Address::generate(&env);
@@ -94,7 +94,7 @@ fn test_buffer_depletion_logic() {
 #[test]
 fn test_buffer_warning_event() {
     let env = Env::default();
-    let contract_id = env.register_contract(None, UtilityContract);
+    let contract_id = env.register(UtilityContract, ());
     let client = UtilityContractClient::new(&env, &contract_id);
 
     let provider = Address::generate(&env);
@@ -126,7 +126,7 @@ fn test_buffer_warning_event() {
 #[test]
 fn test_buffer_depletion_and_termination() {
     let env = Env::default();
-    let contract_id = env.register_contract(None, UtilityContract);
+    let contract_id = env.register(UtilityContract, ());
     let client = UtilityContractClient::new(&env, &contract_id);
 
     let provider = Address::generate(&env);
@@ -161,7 +161,7 @@ fn test_buffer_depletion_and_termination() {
 #[test]
 fn test_amicable_closure_refund() {
     let env = Env::default();
-    let contract_id = env.register_contract(None, UtilityContract);
+    let contract_id = env.register(UtilityContract, ());
     let client = UtilityContractClient::new(&env, &contract_id);
 
     let provider = Address::generate(&env);
@@ -193,7 +193,7 @@ fn test_amicable_closure_refund() {
 #[test]
 fn test_additional_buffer_deposit() {
     let env = Env::default();
-    let contract_id = env.register_contract(None, UtilityContract);
+    let contract_id = env.register(UtilityContract, ());
     let client = UtilityContractClient::new(&env, &contract_id);
 
     let provider = Address::generate(&env);
@@ -223,7 +223,7 @@ fn test_additional_buffer_deposit() {
 #[test]
 fn test_buffer_security_against_malicious_draining() {
     let env = Env::default();
-    let contract_id = env.register_contract(None, UtilityContract);
+    let contract_id = env.register(UtilityContract, ());
     let client = UtilityContractClient::new(&env, &contract_id);
 
     let provider = Address::generate(&env);
@@ -268,7 +268,7 @@ fn test_buffer_security_against_malicious_draining() {
 #[test]
 fn test_buffer_math_precision() {
     let env = Env::default();
-    let contract_id = env.register_contract(None, UtilityContract);
+    let contract_id = env.register(UtilityContract, ());
     let client = UtilityContractClient::new(&env, &contract_id);
 
     let provider = Address::generate(&env);
@@ -297,7 +297,7 @@ fn test_buffer_math_precision() {
 #[test]
 fn test_stream_creation_without_buffer_fails() {
     let env = Env::default();
-    let contract_id = env.register_contract(None, UtilityContract);
+    let contract_id = env.register(UtilityContract, ());
     let client = UtilityContractClient::new(&env, &contract_id);
 
     let provider = Address::generate(&env);
@@ -321,7 +321,7 @@ fn test_stream_creation_without_buffer_fails() {
 #[test]
 fn test_buffer_refund_only_on_amicable_closure() {
     let env = Env::default();
-    let contract_id = env.register_contract(None, UtilityContract);
+    let contract_id = env.register(UtilityContract, ());
     let client = UtilityContractClient::new(&env, &contract_id);
 
     let provider = Address::generate(&env);

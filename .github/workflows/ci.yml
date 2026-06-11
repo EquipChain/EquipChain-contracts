@@ -9,6 +9,9 @@ on:
 jobs:
   test-and-lint:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./contracts
     steps:
       - uses: actions/checkout@v4
       - name: Install Rust toolchain
@@ -18,6 +21,8 @@ jobs:
           components: rustfmt, clippy
       - name: Cache dependencies
         uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: "./contracts -> target"
       - name: Check formatting
         run: cargo fmt --all -- --check
       - name: Run clippy
@@ -28,6 +33,9 @@ jobs:
   build-wasm:
     needs: test-and-lint
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./contracts
     steps:
       - uses: actions/checkout@v4
       - name: Install Rust toolchain
@@ -36,10 +44,12 @@ jobs:
           targets: wasm32-unknown-unknown
       - name: Cache dependencies
         uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: "./contracts -> target"
       - name: Build WASM artifact
         run: cargo build --target wasm32-unknown-unknown --release
       - name: Upload compiled artifacts
         uses: actions/upload-artifact@v4
         with:
           name: wasm-artifacts
-          path: target/wasm32-unknown-unknown/release/*.wasm
+          path: contracts/target/wasm32-unknown-unknown/release/*.wasm

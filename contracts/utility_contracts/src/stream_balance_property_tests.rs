@@ -1,3 +1,5 @@
+#![cfg(test)]
+
 /// Property-Based Testing for Stream Balance Invariants
 ///
 /// This module uses proptest to verify critical stream balance invariants:
@@ -18,9 +20,6 @@
 ///   2. Edge cases (zero, max values, boundaries) are covered
 ///   3. Sequential operations maintain invariants
 ///   4. No combination of inputs violates the invariants
-
-#![cfg(test)]
-
 use proptest::prelude::*;
 use std::cmp;
 
@@ -152,7 +151,7 @@ fn check_accumulated_balance_upper_bound(
         return Err(format!(
             "Accumulated balance {} exceeds initial deposit {}",
             accumulated_balance, initial_deposit
-        ))
+        ));
     }
     Ok(())
 }
@@ -176,9 +175,7 @@ fn calculate_fees(gross_streamed: i128, fee_bps: i128) -> i128 {
     }
 
     // fee_bps is in basis points, so divide by 10000
-    gross_streamed
-        .saturating_mul(fee_bps)
-        .saturating_div(10000)
+    gross_streamed.saturating_mul(fee_bps).saturating_div(10000)
 }
 
 /// Simulate a single streaming interval with fees
@@ -225,9 +222,9 @@ proptest! {
         prop_assert!(check_non_negativity(streamed, remaining, fees).is_ok());
 
         // Check bounds
-        prop_assert_le!(streamed, deposit);
-        prop_assert_le!(remaining, deposit);
-        prop_assert_ge!(streamed.saturating_add(remaining), 0);
+        prop_assert!(streamed <= deposit);
+        prop_assert!(remaining <= deposit);
+        prop_assert!(streamed.saturating_add(remaining) >= 0);
     }
 
     /// Property 2: Balance never goes negative
@@ -244,13 +241,13 @@ proptest! {
         let (streamed, remaining) = calculate_stream_depletion(rate, elapsed, deposit);
         let fees = calculate_fees(streamed, fee_bps);
 
-        prop_assert_ge!(streamed, 0, "Streamed must be non-negative");
-        prop_assert_ge!(remaining, 0, "Remaining must be non-negative");
-        prop_assert_ge!(fees, 0, "Fees must be non-negative");
+        prop_assert!(streamed >= 0, "Streamed must be non-negative");
+        prop_assert!(remaining >= 0, "Remaining must be non-negative");
+        prop_assert!(fees >= 0, "Fees must be non-negative");
 
         // Total should not exceed deposit (accounting for potential fee calculation quirks)
         let total = streamed.saturating_add(remaining).saturating_add(fees);
-        prop_assert_le!(total, deposit.saturating_mul(2), "Total should not wildly exceed deposit");
+        prop_assert!(total <= deposit.saturating_mul(2), "Total should not wildly exceed deposit");
     }
 
     /// Property 3: Accumulated balance monotonically decreases with withdrawals
@@ -267,8 +264,8 @@ proptest! {
 
         if check_withdrawal_invariant(initial_balance, withdrawal, accumulated_balance).is_ok() {
             let balance_after = accumulated_balance.saturating_sub(withdrawal);
-            prop_assert_le!(balance_after, accumulated_balance);
-            prop_assert_ge!(balance_after, 0);
+            prop_assert!(balance_after <= accumulated_balance);
+            prop_assert!(balance_after >= 0);
         }
     }
 
@@ -321,13 +318,13 @@ proptest! {
                     "Sequential withdrawal invariant broken");
 
                 // Check non-negativity
-                prop_assert_ge!(balance, 0, "Balance went negative after withdrawal");
-                prop_assert_ge!(total_withdrawn, 0, "Total withdrawn went negative");
+                prop_assert!(balance >= 0, "Balance went negative after withdrawal");
+                prop_assert!(total_withdrawn >= 0, "Total withdrawn went negative");
             }
         }
 
         // Final check: all amounts accounted for
-        prop_assert_le!(total_withdrawn, initial_balance,
+        prop_assert!(total_withdrawn <= initial_balance,
             "Total withdrawn exceeds initial balance");
     }
 
@@ -389,7 +386,7 @@ proptest! {
 
         // Total streamed should be monotonically increasing
         let total_streamed = streamed_at_change.saturating_add(streamed_after);
-        prop_assert_ge!(total_streamed, streamed_at_change,
+        prop_assert!(total_streamed >= streamed_at_change,
             "Total streamed should not decrease after rate change");
     }
 
@@ -423,7 +420,7 @@ proptest! {
         // The conservation should approximately hold
         // (may not be exact due to fee calculation discretization)
         let total_accounted = total_streamed.saturating_add(total_fees).saturating_add(total_remaining);
-        prop_assert_le!(total_accounted, deposit.saturating_mul(2),
+        prop_assert!(total_accounted <= deposit.saturating_mul(2),
             "Total accounted for should not massively exceed deposit");
     }
 }
@@ -497,7 +494,7 @@ proptest! {
     ) {
         // This should never panic due to saturating arithmetic
         let (streamed, _remaining) = calculate_stream_depletion(rate, elapsed, deposit);
-        prop_assert_ge!(streamed, 0);
+        prop_assert!(streamed >= 0);
     }
 
     /// Property 13: Fee calculation edge cases
@@ -513,8 +510,8 @@ proptest! {
     ) {
         let fees = calculate_fees(gross_streamed, fee_bps);
 
-        prop_assert_ge!(fees, 0, "Fees should be non-negative");
-        prop_assert_le!(fees, gross_streamed, "Fees should not exceed gross streamed");
+        prop_assert!(fees >= 0, "Fees should be non-negative");
+        prop_assert!(fees <= gross_streamed, "Fees should not exceed gross streamed");
 
         // 0% and 100% boundary checks
         if fee_bps == 0 {
@@ -562,7 +559,7 @@ proptest! {
                 .saturating_add(fees1)
                 .saturating_add(withdrawal_amount);
 
-            prop_assert_le!(total_accounted, initial_deposit.saturating_mul(2),
+            prop_assert!(total_accounted <= initial_deposit.saturating_mul(2),
                 "Complex operations should maintain reasonable accounting");
         }
     }
@@ -592,16 +589,12 @@ fn test_comprehensive_stream_lifecycle() {
     let withdrawal1 = remaining / 2;
     let balance_after_w1 = remaining.saturating_sub(withdrawal1);
 
-    assert!(
-        check_withdrawal_invariant(initial_deposit, withdrawal1, remaining).is_ok()
-    );
+    assert!(check_withdrawal_invariant(initial_deposit, withdrawal1, remaining).is_ok());
 
     let withdrawal2 = balance_after_w1 / 3;
     let final_balance = balance_after_w1.saturating_sub(withdrawal2);
 
-    assert!(
-        check_withdrawal_invariant(initial_deposit, withdrawal2, balance_after_w1).is_ok()
-    );
+    assert!(check_withdrawal_invariant(initial_deposit, withdrawal2, balance_after_w1).is_ok());
 
     // Final conservation check
     let total_withdrawn = withdrawal1.saturating_add(withdrawal2);
@@ -610,7 +603,7 @@ fn test_comprehensive_stream_lifecycle() {
         .saturating_add(fees)
         .saturating_add(total_withdrawn);
 
-    assert_le!(total_accounted, initial_deposit.saturating_mul(2));
+    assert!(total_accounted <= initial_deposit.saturating_mul(2));
 }
 
 #[test]
@@ -626,10 +619,10 @@ fn test_million_withdrawal_sequence() {
             break;
         }
         balance = balance.saturating_sub(withdrawal_amount);
-        assert_ge!(balance, 0);
+        assert!(balance >= 0);
     }
 
-    assert_le!(balance, initial_balance);
+    assert!(balance <= initial_balance);
 }
 
 #[test]
@@ -647,13 +640,11 @@ fn test_rate_acceleration_scenario() {
         total_streamed = total_streamed.saturating_add(streamed);
         balance = remaining;
 
-        assert_ge!(balance, 0);
-        assert_le!(total_streamed, initial_deposit);
+        assert!(balance >= 0);
+        assert!(total_streamed <= initial_deposit);
     }
 
-    assert!(
-        check_balance_conservation(initial_deposit, total_streamed, balance, 0).is_ok()
-    );
+    assert!(check_balance_conservation(initial_deposit, total_streamed, balance, 0).is_ok());
 }
 
 #[test]
