@@ -1,6 +1,8 @@
 // Insurance Pool Governance Demo
 // This file demonstrates the key concepts and functionality of the Stream Insurance Pool system
 
+#![allow(dead_code)]
+
 use std::collections::HashMap;
 
 // Simplified structs for demonstration
