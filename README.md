@@ -1,6 +1,50 @@
-﻿# Equipchain Contracts
+# EquipChain Contracts
 
-A Soroban smart contract for utility metering and billing with gas buffer functionality to ensure reliable provider withdrawals during network congestion.
+[![Soroban CI](https://github.com/EquipChain/EquipChain-contracts/actions/workflows/ci.yml/badge.svg)](https://github.com/EquipChain/EquipChain-contracts/actions/workflows/ci.yml)
+[![Utility Contract Tests](https://github.com/EquipChain/EquipChain-contracts/actions/workflows/test.yml/badge.svg)](https://github.com/EquipChain/EquipChain-contracts/actions/workflows/test.yml)
+[![Test Coverage](https://github.com/EquipChain/EquipChain-contracts/actions/workflows/test-coverage.yml/badge.svg)](https://github.com/EquipChain/EquipChain-contracts/actions/workflows/test-coverage.yml)
+[![Coverage](https://img.shields.io/badge/coverage-%3E85%25-brightgreen)]()
+[![Audit Status](https://img.shields.io/badge/audit-ready-yellow)]()
+[![License](https://img.shields.io/badge/license-MIT-blue)]()
+[![Soroban](https://img.shields.io/badge/Soroban-23.2.4-blue)]()
+
+A Soroban smart contract suite for decentralized utility metering, billing, and streaming on the Stellar network. Supports variable-rate tariffs, device nonce sync, ghost stream cleanup, and enterprise-grade multi-sig governance.
+
+## Quick Start
+
+```bash
+# Prerequisites: Rust, Stellar CLI
+rustup target add wasm32-unknown-unknown
+
+# Build contracts
+cd contracts
+cargo build --target wasm32-unknown-unknown --release
+
+# Run tests
+cargo test --workspace
+
+# Deploy (testnet)
+stellar contract deploy \
+  --wasm target/wasm32-unknown-unknown/release/utility_contracts.wasm \
+  --network testnet
+```
+
+## Contract Addresses
+
+| Contract | Network | Address |
+|----------|---------|---------|
+| UtilityContract | Testnet | `CB7PSJZALNWNX7NLOAM6LOEL4OJZMFPQZJMIYO522ZSACYWXTZIDEDSS` |
+| PriceOracle | Testnet | *(Deploy separately via `price_oracle` package)* |
+| UtilityContract | Mainnet | TBD |
+
+## Documentation
+
+| Document | Description |
+|----------|-------------|
+| [`docs/CONTRACT_ARCHITECTURE.md`](docs/CONTRACT_ARCHITECTURE.md) | System architecture, data flow diagrams, module dependencies, storage layout |
+| [`docs/MIGRATION_GUIDE.md`](docs/MIGRATION_GUIDE.md) | Version history, migration paths, upgrade procedures |
+| [`docs/SECURITY.md`](docs/SECURITY.md) | Trust model, assumptions, emergency procedures, bug bounty |
+| [`docs/AUDIT.md`](docs/AUDIT.md) | Audit readiness checklist, test coverage, known issues |
 
 ## Features
 
