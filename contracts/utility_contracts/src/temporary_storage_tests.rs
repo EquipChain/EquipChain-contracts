@@ -9,11 +9,7 @@ mod tests {
         temporary_storage::{OptimizedFlowCalculator, OptimizedUsageTracker, TempStorageManager},
         BillingType, ContinuousFlow, DataKey, Meter, StreamStatus, UsageData,
     };
-    use soroban_sdk::{
-        testutils::Address as _,
-        testutils::Ledger,
-        Address, BytesN, Env, Symbol,
-    };
+    use soroban_sdk::{testutils::Address as _, testutils::Ledger, Address, BytesN, Env, Symbol};
 
     fn create_test_env() -> Env {
         let env = Env::default();

@@ -189,8 +189,14 @@ mod debt_fuzz_tests {
         token_admin_client.mint(&user, &1_000_000_000_000i128);
 
         let device_public_key = BytesN::from_array(&env, &[1u8; 32]);
-        let meter_id =
-            client.register_meter(&user, &provider, &100, &token_address, &device_public_key, &0);
+        let meter_id = client.register_meter(
+            &user,
+            &provider,
+            &100,
+            &token_address,
+            &device_public_key,
+            &0,
+        );
 
         client.top_up(&meter_id, &1_000_000_000_000i128, &user);
 
@@ -264,8 +270,14 @@ mod debt_fuzz_tests {
         token_admin_client.mint(&user, &i128::MAX);
 
         let device_public_key = BytesN::from_array(&env, &[1u8; 32]);
-        let meter_id =
-            client.register_meter(&user, &provider, &100, &token_address, &device_public_key, &0);
+        let meter_id = client.register_meter(
+            &user,
+            &provider,
+            &100,
+            &token_address,
+            &device_public_key,
+            &0,
+        );
 
         client.top_up(&meter_id, &1_000_000_000_000i128, &user);
 

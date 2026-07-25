@@ -3,9 +3,7 @@ use crate::tariff_oracle::{
     TariffUpdateProposal, HOURS_IN_DAY, TARIFF_NOTICE_PERIOD,
 };
 use crate::{ContractError, DataKey};
-use soroban_sdk::{
-    testutils::Address as _, testutils::BytesN as _, Address, BytesN, Env, IntoVal, Val, Vec,
-};
+use soroban_sdk::{testutils::Address as _, testutils::BytesN as _, Address, BytesN, Env, IntoVal, Val, Vec};
 
 #[cfg(test)]
 pub mod tariff_oracle_tests {

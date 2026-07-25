@@ -2,11 +2,9 @@ use crate::nonce_sync::{
     DeviceNonceState, NonceAlertType, NonceDesyncAlert, NonceResetRequest, NonceSyncManager,
     SignedHeartbeat, NONCE_WINDOW_SIZE,
 };
-use crate::{ContractError, DataKey};
-use soroban_sdk::{
-    testutils::Address as _, testutils::BytesN as _, Address, BytesN, Env,
-};
 use crate::std::string::ToString;
+use crate::{ContractError, DataKey};
+use soroban_sdk::{testutils::Address as _, testutils::BytesN as _, Address, BytesN, Env};
 
 #[cfg(test)]
 pub mod nonce_sync_fuzz_tests {
@@ -308,7 +306,11 @@ pub mod nonce_sync_fuzz_tests {
     }
 
     /// Helper function to create test heartbeat
-    pub fn create_test_heartbeat(meter_id: u64, device_mac: BytesN<32>, nonce: u64) -> SignedHeartbeat {
+    pub fn create_test_heartbeat(
+        meter_id: u64,
+        device_mac: BytesN<32>,
+        nonce: u64,
+    ) -> SignedHeartbeat {
         let env = Env::default();
         SignedHeartbeat {
             meter_id,

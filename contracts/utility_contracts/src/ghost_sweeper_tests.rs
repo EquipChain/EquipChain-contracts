@@ -3,9 +3,7 @@ use crate::ghost_sweeper::{
     SweeperResult, SweeperStatistics, GHOST_STREAM_THRESHOLD_DAYS,
 };
 use crate::{ContinuousFlow, ContractError, DataKey, StreamStatus};
-use soroban_sdk::{
-    testutils::Address as _, testutils::BytesN as _, Address, BytesN, Env, Vec,
-};
+use soroban_sdk::{testutils::Address as _, testutils::BytesN as _, Address, BytesN, Env, Vec};
 
 #[cfg(test)]
 pub mod ghost_sweeper_tests {
