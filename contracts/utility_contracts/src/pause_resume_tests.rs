@@ -2,7 +2,7 @@
 
 use crate::*;
 use soroban_sdk::{
-    testutils::{Address as TestAddress, Ledger as TestLedger},
+    testutils::{Address as _, Ledger as TestLedger},
     Address, Env, Symbol,
 };
 
@@ -12,7 +12,7 @@ fn test_pause_stream_stops_flow_calculation() {
     let contract_id = env.register(UtilityContract, ());
     let client = UtilityContractClient::new(&env, &contract_id);
 
-    let provider = TestAddress::generate(&env);
+    let provider = Address::generate(&env);
     let stream_id = 1u64;
     let flow_rate = 1000i128; // 1000 micro-stroops per second
     let initial_balance = 1000000i128; // 1 XLM in stroops
@@ -47,7 +47,7 @@ fn test_resume_stream_adjusts_timeline() {
     let contract_id = env.register(UtilityContract, ());
     let client = UtilityContractClient::new(&env, &contract_id);
 
-    let provider = TestAddress::generate(&env);
+    let provider = Address::generate(&env);
     let stream_id = 2u64;
     let flow_rate = 1000i128;
     let initial_balance = 1000000i128;
@@ -91,8 +91,8 @@ fn test_provider_access_control() {
     let contract_id = env.register(UtilityContract, ());
     let client = UtilityContractClient::new(&env, &contract_id);
 
-    let provider = TestAddress::generate(&env);
-    let unauthorized_user = TestAddress::generate(&env);
+    let provider = Address::generate(&env);
+    let unauthorized_user = Address::generate(&env);
     let stream_id = 3u64;
     let flow_rate = 1000i128;
     let initial_balance = 1000000i128;
@@ -124,7 +124,7 @@ fn test_edge_case_depleted_during_pause() {
     let contract_id = env.register(UtilityContract, ());
     let client = UtilityContractClient::new(&env, &contract_id);
 
-    let provider = TestAddress::generate(&env);
+    let provider = Address::generate(&env);
     let stream_id = 4u64;
     let flow_rate = 1000i128;
     let initial_balance = 1000i128; // Very small balance
@@ -155,7 +155,7 @@ fn test_pause_only_active_streams() {
     let contract_id = env.register(UtilityContract, ());
     let client = UtilityContractClient::new(&env, &contract_id);
 
-    let provider = TestAddress::generate(&env);
+    let provider = Address::generate(&env);
     let stream_id = 5u64;
     let flow_rate = 1000i128;
     let initial_balance = 0i128; // Start with paused stream
@@ -184,7 +184,7 @@ fn test_resume_only_paused_streams() {
     let contract_id = env.register(UtilityContract, ());
     let client = UtilityContractClient::new(&env, &contract_id);
 
-    let provider = TestAddress::generate(&env);
+    let provider = Address::generate(&env);
     let stream_id = 6u64;
     let flow_rate = 1000i128;
     let initial_balance = 1000000i128;
@@ -214,7 +214,7 @@ fn test_flow_math_adjustment_post_resume() {
     let contract_id = env.register(UtilityContract, ());
     let client = UtilityContractClient::new(&env, &contract_id);
 
-    let provider = TestAddress::generate(&env);
+    let provider = Address::generate(&env);
     let stream_id = 7u64;
     let flow_rate = 1000i128;
     let initial_balance = 1000000i128;
@@ -260,7 +260,7 @@ fn test_zero_flow_rate_resume_fails() {
     let contract_id = env.register(UtilityContract, ());
     let client = UtilityContractClient::new(&env, &contract_id);
 
-    let provider = TestAddress::generate(&env);
+    let provider = Address::generate(&env);
     let stream_id = 8u64;
     let flow_rate = 1000i128;
     let initial_balance = 1000000i128;
@@ -290,7 +290,7 @@ fn test_pause_resume_events_emitted() {
     let contract_id = env.register(UtilityContract, ());
     let client = UtilityContractClient::new(&env, &contract_id);
 
-    let provider = TestAddress::generate(&env);
+    let provider = Address::generate(&env);
     let stream_id = 9u64;
     let flow_rate = 1000i128;
     let initial_balance = 1000000i128;

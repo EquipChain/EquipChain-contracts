@@ -20,6 +20,7 @@
 ///   2. Edge cases (zero, max values, boundaries) are covered
 ///   3. Sequential operations maintain invariants
 ///   4. No combination of inputs violates the invariants
+use crate::std::string::ToString;
 use proptest::prelude::*;
 use std::cmp;
 

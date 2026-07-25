@@ -2,7 +2,7 @@
 
 use crate::*;
 use soroban_sdk::{
-    testutils::{Address as TestAddress, Ledger as TestLedger},
+    testutils::{Address as _, Ledger as TestLedger},
     Address, Env,
 };
 
@@ -16,7 +16,7 @@ mod pause_resume_fuzz {
         let contract_id = env.register(UtilityContract, ());
         let client = UtilityContractClient::new(&env, &contract_id);
 
-        let provider = TestAddress::generate(&env);
+        let provider = Address::generate(&env);
         let stream_id = 100u64;
         let flow_rate = 1000i128;
         let initial_balance = 10000000i128; // Large balance for many cycles
@@ -61,7 +61,7 @@ mod pause_resume_fuzz {
         let contract_id = env.register(UtilityContract, ());
         let client = UtilityContractClient::new(&env, &contract_id);
 
-        let provider = TestAddress::generate(&env);
+        let provider = Address::generate(&env);
         let stream_id = 101u64;
         let flow_rate = 1000i128;
         let initial_balance = 1000000i128;
@@ -92,7 +92,7 @@ mod pause_resume_fuzz {
         let contract_id = env.register(UtilityContract, ());
         let client = UtilityContractClient::new(&env, &contract_id);
 
-        let provider = TestAddress::generate(&env);
+        let provider = Address::generate(&env);
         let stream_id = 102u64;
         let flow_rate = 1000i128;
         let initial_balance = 1000000i128;
@@ -128,7 +128,7 @@ mod pause_resume_fuzz {
         let contract_id = env.register(UtilityContract, ());
         let client = UtilityContractClient::new(&env, &contract_id);
 
-        let provider = TestAddress::generate(&env);
+        let provider = Address::generate(&env);
         let stream_id = 103u64;
         let flow_rate = 1000i128;
         let initial_balance = 1000000i128;
@@ -167,7 +167,7 @@ mod pause_resume_fuzz {
         let contract_id = env.register(UtilityContract, ());
         let client = UtilityContractClient::new(&env, &contract_id);
 
-        let provider = TestAddress::generate(&env);
+        let provider = Address::generate(&env);
         let stream_id = 104u64;
         let flow_rate = 1000i128;
         let initial_balance = 1000000i128;
@@ -205,7 +205,7 @@ mod pause_resume_fuzz {
         let contract_id = env.register(UtilityContract, ());
         let client = UtilityContractClient::new(&env, &contract_id);
 
-        let provider = TestAddress::generate(&env);
+        let provider = Address::generate(&env);
         let stream_id = 105u64;
         let flow_rate = 1000i128;
         let initial_balance = 1000000i128;
@@ -236,7 +236,7 @@ mod pause_resume_fuzz {
         let contract_id = env.register(UtilityContract, ());
         let client = UtilityContractClient::new(&env, &contract_id);
 
-        let provider = TestAddress::generate(&env);
+        let provider = Address::generate(&env);
 
         // Test with minimum balance
         let stream_id_min = 106u64;
@@ -269,7 +269,7 @@ mod pause_resume_fuzz {
         let contract_id = env.register(UtilityContract, ());
         let client = UtilityContractClient::new(&env, &contract_id);
 
-        let provider = TestAddress::generate(&env);
+        let provider = Address::generate(&env);
         let stream_id = 108u64;
         let flow_rate = 1000i128;
         let initial_balance = 1000000i128;

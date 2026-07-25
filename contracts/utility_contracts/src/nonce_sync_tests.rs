@@ -4,8 +4,9 @@ use crate::nonce_sync::{
 };
 use crate::{ContractError, DataKey};
 use soroban_sdk::{
-    testutils::Address as TestAddress, testutils::BytesN as TestBytesN, Address, BytesN, Env,
+    testutils::Address as _, testutils::BytesN as _, Address, BytesN, Env,
 };
+use crate::std::string::ToString;
 
 #[cfg(test)]
 pub mod nonce_sync_fuzz_tests {
@@ -17,11 +18,11 @@ pub mod nonce_sync_fuzz_tests {
     /// to verify the rejection logic works correctly.
     #[test]
     fn test_replay_attack_rejection() {
-        let env = Env::new();
-        let contract_address = TestAddress::random(&env);
+        let env = Env::default();
+        let contract_address = Address::random(&env);
         env.register_contract_at(&contract_address, NonceSyncManager, ());
 
-        let device_mac = TestBytesN::random(&env);
+        let device_mac = BytesN::random(&env);
         let meter_id = 12345u64;
 
         // Initialize device nonce
@@ -54,11 +55,11 @@ pub mod nonce_sync_fuzz_tests {
     /// while nonces outside the window are rejected.
     #[test]
     fn test_nonce_window_validation() {
-        let env = Env::new();
-        let contract_address = TestAddress::random(&env);
+        let env = Env::default();
+        let contract_address = Address::random(&env);
         env.register_contract_at(&contract_address, NonceSyncManager, ());
 
-        let device_mac = TestBytesN::random(&env);
+        let device_mac = BytesN::random(&env);
         let meter_id = 12345u64;
 
         // Initialize device nonce at 100
@@ -95,11 +96,11 @@ pub mod nonce_sync_fuzz_tests {
     /// but within the acceptable window.
     #[test]
     fn test_network_jitter_simulation() {
-        let env = Env::new();
-        let contract_address = TestAddress::random(&env);
+        let env = Env::default();
+        let contract_address = Address::random(&env);
         env.register_contract_at(&contract_address, NonceSyncManager, ());
 
-        let device_mac = TestBytesN::random(&env);
+        let device_mac = BytesN::random(&env);
         let meter_id = 12345u64;
 
         NonceSyncManager::initialize_device_nonce(env.clone(), device_mac.clone(), 0);
@@ -128,11 +129,11 @@ pub mod nonce_sync_fuzz_tests {
     /// Tests that devices with frequent desyncs are marked as suspicious.
     #[test]
     fn test_device_suspicious_marking() {
-        let env = Env::new();
-        let contract_address = TestAddress::random(&env);
+        let env = Env::default();
+        let contract_address = Address::random(&env);
         env.register_contract_at(&contract_address, NonceSyncManager, ());
 
-        let device_mac = TestBytesN::random(&env);
+        let device_mac = BytesN::random(&env);
         let meter_id = 12345u64;
 
         NonceSyncManager::initialize_device_nonce(env.clone(), device_mac.clone(), 0);
@@ -155,15 +156,15 @@ pub mod nonce_sync_fuzz_tests {
     /// Tests the multi-sig nonce reset functionality for compromised devices.
     #[test]
     fn test_multisig_nonce_reset() {
-        let env = Env::new();
-        let contract_address = TestAddress::random(&env);
+        let env = Env::default();
+        let contract_address = Address::random(&env);
         env.register_contract_at(&contract_address, NonceSyncManager, ());
 
-        let device_mac = TestBytesN::random(&env);
+        let device_mac = BytesN::random(&env);
         let meter_id = 12345u64;
-        let authorized_resetter1 = TestAddress::random(&env);
-        let authorized_resetter2 = TestAddress::random(&env);
-        let authorized_resetter3 = TestAddress::random(&env);
+        let authorized_resetter1 = Address::random(&env);
+        let authorized_resetter2 = Address::random(&env);
+        let authorized_resetter3 = Address::random(&env);
 
         // Setup authorized resetters — 3 fixed items, use vec! macro for clarity
         let resetters_key = DataKey::AuthorizedNonceResetters;
@@ -243,11 +244,11 @@ pub mod nonce_sync_fuzz_tests {
     /// Tests behavior with near-u64::MAX nonce values to prevent overflow.
     #[test]
     fn test_large_nonce_values() {
-        let env = Env::new();
-        let contract_address = TestAddress::random(&env);
+        let env = Env::default();
+        let contract_address = Address::random(&env);
         env.register_contract_at(&contract_address, NonceSyncManager, ());
 
-        let device_mac = TestBytesN::random(&env);
+        let device_mac = BytesN::random(&env);
         let meter_id = 12345u64;
 
         // Initialize with very large nonce
@@ -272,11 +273,11 @@ pub mod nonce_sync_fuzz_tests {
     /// to test race condition handling.
     #[test]
     fn test_concurrent_heartbeat_processing() {
-        let env = Env::new();
-        let contract_address = TestAddress::random(&env);
+        let env = Env::default();
+        let contract_address = Address::random(&env);
         env.register_contract_at(&contract_address, NonceSyncManager, ());
 
-        let device_mac = TestBytesN::random(&env);
+        let device_mac = BytesN::random(&env);
         let meter_id = 12345u64;
 
         NonceSyncManager::initialize_device_nonce(env.clone(), device_mac.clone(), 0);
@@ -307,15 +308,15 @@ pub mod nonce_sync_fuzz_tests {
     }
 
     /// Helper function to create test heartbeat
-    fn create_test_heartbeat(meter_id: u64, device_mac: BytesN<32>, nonce: u64) -> SignedHeartbeat {
-        let env = Env::new();
+    pub fn create_test_heartbeat(meter_id: u64, device_mac: BytesN<32>, nonce: u64) -> SignedHeartbeat {
+        let env = Env::default();
         SignedHeartbeat {
             meter_id,
             device_mac,
             nonce,
             timestamp: env.ledger().timestamp(),
-            signature: BytesN::from_array(&[1u8; 64]), // Dummy signature
-            public_key: BytesN::from_array(&[2u8; 32]), // Dummy public key
+            signature: BytesN::from_array(&env, &[1u8; 64]), // Dummy signature
+            public_key: BytesN::from_array(&env, &[2u8; 32]), // Dummy public key
         }
     }
 }
@@ -337,11 +338,11 @@ mod property_tests {
             initial_nonce in 0u64..1000u64,
             nonce_sequence in prop::collection::vec(0u64..2000u64, 10..50)
         ) {
-            let env = Env::new();
-            let contract_address = TestAddress::random(&env);
+            let env = Env::default();
+            let contract_address = Address::random(&env);
             env.register_contract_at(&contract_address, NonceSyncManager, ());
 
-            let device_mac = TestBytesN::random(&env);
+            let device_mac = BytesN::random(&env);
             let meter_id = 12345u64;
 
             NonceSyncManager::initialize_device_nonce(env.clone(), device_mac.clone(), initial_nonce);

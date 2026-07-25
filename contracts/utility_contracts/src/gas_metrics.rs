@@ -1,6 +1,6 @@
 #![cfg(test)]
 
-use std::string::ToString;
+use crate::std::string::ToString;
 
 /// Automated Gas Metering Metrics for Unit Tests
 ///

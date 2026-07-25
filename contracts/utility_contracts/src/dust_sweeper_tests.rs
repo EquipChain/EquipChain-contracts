@@ -1,7 +1,7 @@
 #![cfg(test)]
 
 use crate::*;
-use soroban_sdk::{symbol_short, Address, BytesN, Env};
+use soroban_sdk::{symbol_short, testutils::Address as _, Address, BytesN, Env};
 
 #[test]
 fn test_dust_detection() {
