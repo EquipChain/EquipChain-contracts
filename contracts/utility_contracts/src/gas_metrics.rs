@@ -1,5 +1,7 @@
 #![cfg(test)]
 
+use std::string::ToString;
+
 /// Automated Gas Metering Metrics for Unit Tests
 ///
 /// This module provides comprehensive gas measurement and analytics capabilities

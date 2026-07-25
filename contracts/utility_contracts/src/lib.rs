@@ -396,7 +396,8 @@ pub struct Meter {
     pub is_offline: bool,
     pub estimated_usage_total: i128,
     // SLA Penalty Fields
-    pub sla_config: Option<SLAConfig>,
+    pub sla_config: SLAConfig,
+    pub sla_config_set: bool,
     pub sla_state: SLAState,
     // Billing Group parent
     pub parent_account: Option<Address>,
@@ -578,20 +579,6 @@ pub struct CommitmentBatch {
     pub batch_root: BytesN<32>,       // Merkle root of commitments
     pub timestamp: u64,               // Batch creation time
     pub meter_id: u64,                // Associated meter
-}
-
-#[contracttype]
-#[derive(Clone)]
-pub struct MeterStatus {
-    pub meter_id: u64,
-    pub is_active: bool,
-    pub balance: i128,
-    pub billing_cycle: u32,
-    pub total_commitments: u32,
-    pub verified_proofs: u32,
-    pub privacy_enabled: bool,
-    pub last_update: u64,
-    pub usage_summary: Option<UsageData>,
 }
 
 // Issue #98: Multi-Sig Provider Withdrawal Requirement
@@ -1661,7 +1648,8 @@ fn settle_claim_for_meter(
     }
 
     // SLA Penalty Logic
-    if let Some(config) = &meter.sla_config {
+    if meter.sla_config_set {
+        let config = &meter.sla_config;
         // Automatic reversion if service stabilizes (no reports for 2x threshold)
         let stability_window = config.threshold_seconds.saturating_mul(2);
         if now.saturating_sub(meter.sla_state.last_report_timestamp) > stability_window {
@@ -2122,6 +2110,9 @@ fn can_finalize_upgrade(env: &Env) -> bool {
 
 #[contract]
 pub struct UtilityContract;
+
+// Re-export the generated client type so tests can use `use crate::*` or explicit imports
+pub use utility_contract::Client as UtilityContractClient;
 
 // Issue #118: ZK Privacy Helper Functions
 
@@ -3951,7 +3942,8 @@ impl UtilityContract {
             panic_with_error!(&env, ContractError::InvalidUsageValue);
         }
 
-        meter.sla_config = Some(config.clone());
+        meter.sla_config = config.clone();
+        meter.sla_config_set = true;
         env.storage()
             .instance()
             .set(&DataKey::Meter(meter_id), &meter);
@@ -4445,7 +4437,11 @@ impl UtilityContract {
             is_offline: false,
             estimated_usage_total: 0,
             parent_account: None,
-            sla_config: None,
+            sla_config: SLAConfig {
+                threshold_seconds: 0,
+                penalty_multiplier_bps: 0,
+            },
+            sla_config_set: false,
             sla_state: SLAState {
                 accumulated_downtime: 0,
                 last_report_timestamp: now,
@@ -4886,12 +4882,12 @@ impl UtilityContract {
             .saturating_mul(meter.rate_per_unit.saturating_add(meter.credit_drip_rate));
 
         // Apply SLA Penalty if active
-        if let Some(config) = &meter.sla_config {
+        if meter.sla_config_set {
             if meter.sla_state.is_penalty_active
-                || meter.sla_state.accumulated_downtime >= config.threshold_seconds
+                || meter.sla_state.accumulated_downtime >= meter.sla_config.threshold_seconds
             {
                 amount = amount
-                    .saturating_mul(config.penalty_multiplier_bps)
+                    .saturating_mul(meter.sla_config.penalty_multiplier_bps)
                     .saturating_div(10000);
             }
         }
@@ -7510,6 +7506,41 @@ impl UtilityContract {
             })
     }
 
+    pub fn get_continuous_balance(env: Env, stream_id: u64) -> Option<i128> {
+        if let Some(flow) = env
+            .storage()
+            .instance()
+            .get::<DataKey, ContinuousFlow>(&DataKey::ContinuousFlow(stream_id))
+        {
+            let current_timestamp = env.ledger().timestamp();
+            let mut flow_copy = flow.clone();
+            update_continuous_flow(&env, &mut flow_copy, current_timestamp).unwrap();
+            Some(flow_copy.accumulated_balance)
+        } else {
+            None
+        }
+    }
+
+    pub fn pause_stream(env: Env, stream_id: u64) {
+        let flow = get_continuous_flow_or_panic(&env, stream_id);
+        flow.provider.require_auth();
+        pause_stream(&env, stream_id, &flow.provider).unwrap();
+    }
+
+    pub fn resume_stream(env: Env, stream_id: u64, new_flow_rate: i128) {
+        let flow = get_continuous_flow_or_panic(&env, stream_id);
+        flow.provider.require_auth();
+        resume_stream(&env, stream_id, new_flow_rate, &flow.provider).unwrap();
+    }
+
+    pub fn is_privacy_enabled(env: Env, meter_id: u64) -> bool {
+        env.storage()
+            .instance()
+            .get::<DataKey, PrivateBillingStatus>(&DataKey::PrivateBillingStatus(meter_id))
+            .map(|s| s.privacy_enabled)
+            .unwrap_or(false)
+    }
+
     pub fn sweep_dust(
         env: Env,
         caller: Address,
@@ -8593,5 +8624,16 @@ fn verify_usage_signature(
 // Temporarily disabled while the legacy unit test module is repaired.
 // The new integration tests under `tests/` remain available.
 // mod test;
+
+#[cfg(test)]
+fn negate_g1(env: &Env, point: &Bytes) -> Bytes {
+    let mut result = point.clone();
+    if result.len() >= 64 {
+        let y_byte = result.get(63);
+        result.set(63, y_byte ^ 0x01);
+    }
+    result
+}
+
 #[cfg(test)]
 mod zk_tests;

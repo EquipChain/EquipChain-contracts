@@ -47,7 +47,7 @@ fn test_zk_privacy_flow() {
     client.set_zk_verification_key(&meter_id, &vk);
 
     // Top up to have balance
-    client.top_up(&meter_id, &10000);
+    client.top_up(&meter_id, &10000, &user);
 
     // Prepare mock proof
     let proof = Groth16Proof {

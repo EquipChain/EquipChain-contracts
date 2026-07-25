@@ -32,7 +32,7 @@ mod debt_fuzz_tests {
         );
 
         // Test 1: High rate, long duration, zero balance scenario
-        client.top_up(&meter_id, &1000000); // Initial collateral
+        client.top_up(&meter_id, &1000000, &user); // Initial collateral
 
         // Pair meter for usage deduction
         let _challenge = client.initiate_pairing(&meter_id);
@@ -190,9 +190,9 @@ mod debt_fuzz_tests {
 
         let device_public_key = BytesN::from_array(&env, &[1u8; 32]);
         let meter_id =
-            client.register_meter(&user, &provider, &100, &token_address, &device_public_key);
+            client.register_meter(&user, &provider, &100, &token_address, &device_public_key, &0);
 
-        client.top_up(&meter_id, &1_000_000_000_000i128);
+        client.top_up(&meter_id, &1_000_000_000_000i128, &user);
 
         // Test large (but valid) usage updates
         let extreme_values: [i128; 3] =
@@ -265,9 +265,9 @@ mod debt_fuzz_tests {
 
         let device_public_key = BytesN::from_array(&env, &[1u8; 32]);
         let meter_id =
-            client.register_meter(&user, &provider, &100, &token_address, &device_public_key);
+            client.register_meter(&user, &provider, &100, &token_address, &device_public_key, &0);
 
-        client.top_up(&meter_id, &1_000_000_000_000i128);
+        client.top_up(&meter_id, &1_000_000_000_000i128, &user);
 
         let extreme_usage = 1_000_000_000i128;
 
