@@ -1266,6 +1266,13 @@ const MAX_RESELLER_FEE_BPS: i128 = 500; // Maximum 5% reseller fee
 // Emergency drain tracking data structure
 #[contracttype]
 #[derive(Clone)]
+pub struct EmergencyDrainRecord {
+    pub timestamp: u64,
+    pub amount: i128,
+    pub recipient: Address,
+    pub reason: String,
+}
+
 // ============================================================================
 // Issue #23: Token Standard Detection & Whitelist
 // ============================================================================
@@ -1295,13 +1302,6 @@ pub struct TokenInfo {
     pub decimals: u32,
     pub approved_at: u64,
     pub approved_by: Address,
-}
-
-pub struct EmergencyDrainRecord {
-    pub timestamp: u64,
-    pub amount: i128,
-    pub recipient: Address,
-    pub reason: String,
 }
 const REFERRAL_REWARD_UNITS: i128 = 10;
 
