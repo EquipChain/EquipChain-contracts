@@ -1449,13 +1449,12 @@ fn require_approved_token(env: &Env, token: &Address) {
 fn validate_token(env: &Env, token: &Address) -> TokenStandard {
     let client = token::Client::new(env, token);
     // Check that the token responds to basic queries
-    let balance = client.balance(token);
+    let balance = client.balance(&env.current_contract_address());
     if balance == 0 {
-        // Zero-balance token - check if transfer fails
         return TokenStandard::Unknown;
     }
-    // Try to detect fee-on-transfer by simulating a small transfer
-    // In production, the contract would use a test transfer and check balance delta
+    // TODO(#23): Implement fee-on-transfer detection via small transfer + balance delta check.
+    // TODO(#23): Implement rebasing token detection via two consecutive balance reads.
     TokenStandard::Standard
 }
 
@@ -3079,7 +3078,7 @@ impl UtilityContract {
             standard: validate_token(&env, &token),
             decimals,
             approved_at: env.ledger().timestamp(),
-            approved_by: env.current_contract_address(),
+            approved_by: get_admin_or_panic(&env),
         };
         env.storage().instance().set(&DataKey::TokenInfo(token), &info);
     }
