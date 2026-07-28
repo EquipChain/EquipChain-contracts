@@ -47,7 +47,7 @@ jobs:
         run: cargo clippy --target wasm32-unknown-unknown -- -D warnings
         
       - name: Build Contracts
-        run: cargo build --manifest-path contracts/Cargo.toml --target wasm32-unknown-unknown --release
+        run: cargo build --target wasm32-unknown-unknown --release
 
       - name: Optimize Wasm
         run: |
