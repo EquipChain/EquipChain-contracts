@@ -47,12 +47,12 @@ jobs:
         run: cargo clippy --target wasm32-unknown-unknown -- -D warnings
         
       - name: Build Contracts
-        run: cargo build --target wasm32-unknown-unknown --release
+        run: cargo build --manifest-path contracts/Cargo.toml --target wasm32-unknown-unknown --release
 
       - name: Optimize Wasm
         run: |
-          stellar contract optimize --wasm contracts/target/wasm32-unknown-unknown/release/price_oracle.wasm
-          stellar contract optimize --wasm contracts/target/wasm32-unknown-unknown/release/utility_contracts.wasm
+          stellar contract optimize --wasm target/wasm32-unknown-unknown/release/price_oracle.wasm
+          stellar contract optimize --wasm target/wasm32-unknown-unknown/release/utility_contracts.wasm
         
       - name: Run Unit Tests
         run: cargo test

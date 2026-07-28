@@ -15,7 +15,8 @@
     clippy::redundant_pattern_matching,
     clippy::len_zero,
     clippy::result_unit_err,
-    clippy::needless_borrows_for_generic_args
+    clippy::needless_borrows_for_generic_args,
+    clippy::empty_line_after_outer_attr
 )]
 
 #[cfg(test)]
@@ -3060,7 +3061,6 @@ impl UtilityContract {
     /// # Panics
     /// * Panics if the caller is not the current contract address (self-invocation).
     // ==================== ISSUE #23: TOKEN WHITELIST MANAGEMENT ====================
-
     /// Approve a token for use in the protocol.
     /// Only callable by the contract admin.
     pub fn approve_token(env: Env, token: Address, decimals: u32) {
