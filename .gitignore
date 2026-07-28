@@ -1,11 +1,33 @@
+# Rust output directory
+target/
+
+# IDE/Editor
 .idea/
-# Rust's output directory
-target
+.vscode/
+*.swp
+*.swo
 
 # Local settings
 .soroban
 .stellar
-
 .agent/
 agents/
+
+# Temporaries and scratch
 issue.md
+*.codex
+
+# Binaries
+*.exe
+*.pdb
+*.dll
+*.so
+*.dylib
+
+# Test artifacts
+contracts/**/errors.txt
+contracts/**/test_out.txt
+
+# OS files
+.DS_Store
+Thumbs.db
