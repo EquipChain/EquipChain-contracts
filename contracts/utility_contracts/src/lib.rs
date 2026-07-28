@@ -1037,6 +1037,9 @@ pub enum DataKey {
     StreamArchive(u64),
     SweeperStatistics,
     // Issue #277 - Emergency Drain Recovery
+    // Issue #23 - Token Whitelist & Security
+    ApprovedTokens,
+    TokenInfo(Address),
     EmergencyDrainLastExecution,
     EmergencyDrainRecord(u64),
     EmergencyDrainCounter,
@@ -1180,6 +1183,9 @@ pub enum ContractError {
     NotFound = 114,
     NotInitialized = 115,
     FlowRateTooLow = 116,
+    // Issue #23 - Token Security
+    UnapprovedToken = 117,
+    TokenBalanceMismatch = 118,
 }
 
 #[contracttype]
@@ -1260,6 +1266,37 @@ const MAX_RESELLER_FEE_BPS: i128 = 500; // Maximum 5% reseller fee
 // Emergency drain tracking data structure
 #[contracttype]
 #[derive(Clone)]
+// ============================================================================
+// Issue #23: Token Standard Detection & Whitelist
+// ============================================================================
+
+/// Classification of a token based on on-chain heuristics.
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub enum TokenStandard {
+    /// Standard Stellar Asset Contract or typical token.
+    Standard,
+    /// Token that charges a fee on every transfer.
+    FeeOnTransfer,
+    /// Token whose balance changes without transfers (e.g., rebasing tokens).
+    Rebasing,
+    /// Token that has blacklist/pause functionality.
+    Blacklisted,
+    /// Token that cannot be identified or is known to be dangerous.
+    Unknown,
+}
+
+/// Metadata about an approved token.
+#[contracttype]
+#[derive(Clone, Debug)]
+pub struct TokenInfo {
+    pub token: Address,
+    pub standard: TokenStandard,
+    pub decimals: u32,
+    pub approved_at: u64,
+    pub approved_by: Address,
+}
+
 pub struct EmergencyDrainRecord {
     pub timestamp: u64,
     pub amount: i128,
@@ -1374,8 +1411,40 @@ fn get_meter_or_panic(env: &Env, meter_id: u64) -> Meter {
 }
 
 fn transfer_tokens(env: &Env, token: &Address, from: &Address, to: &Address, amount: &i128) {
+    require_approved_token(env, token);
+    let balance_before = get_token_balance(env, token, from);
     let client = token::Client::new(env, token);
     client.transfer(from, to, amount);
+    let balance_after = get_token_balance(env, token, from);
+    let expected_balance = balance_before.saturating_sub(*amount);
+    if balance_after < expected_balance {
+        panic_with_error!(env, ContractError::TokenBalanceMismatch);
+    }
+}
+
+fn get_token_balance(env: &Env, token: &Address, address: &Address) -> i128 {
+    let client = token::Client::new(env, token);
+    client.balance(address)
+}
+
+fn require_approved_token(env: &Env, token: &Address) {
+    let approved: Vec<Address> = env.storage()
+        .instance()
+        .get(&DataKey::ApprovedTokens)
+        .unwrap_or(Vec::new(env));
+    if approved.len() > 0 && !approved.contains(token) {
+        panic_with_error!(env, ContractError::UnapprovedToken);
+    }
+}
+
+fn validate_token(env: &Env, token: &Address) -> TokenStandard {
+    // Simplified heuristic: attempt to read token metadata
+    // If balance/transfer works, classify as Standard
+    // In production, this would use more sophisticated on-chain analysis
+    let client = token::Client::new(env, token);
+    // Test that the token responds to balance queries
+    let _ = client.balance(token);
+    TokenStandard::Standard
 }
 
 fn is_native_token(_env: &Env, _token: &Address) -> bool {
