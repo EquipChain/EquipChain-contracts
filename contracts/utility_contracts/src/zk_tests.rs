@@ -1,6 +1,6 @@
 #![cfg(test)]
 use super::*;
-use soroban_sdk::{testutils::Address as _, Bytes, BytesN, Env, Vec};
+use soroban_sdk::{testutils::Address as _, Bytes, BytesN, Env, IntoVal, Val, Vec};
 
 #[test]
 fn test_zk_privacy_flow() {
@@ -21,7 +21,6 @@ fn test_zk_privacy_flow() {
         &100,
         &token_address,
         &device_public_key,
-        &0,
         &0,
     );
 
@@ -47,7 +46,7 @@ fn test_zk_privacy_flow() {
     client.set_zk_verification_key(&meter_id, &vk);
 
     // Top up to have balance
-    client.top_up(&meter_id, &10000);
+    client.top_up(&meter_id, &10000, &user);
 
     // Prepare mock proof
     let proof = Groth16Proof {
@@ -70,12 +69,13 @@ fn test_zk_privacy_flow() {
     let result = env.try_invoke_contract::<(), ContractError>(
         &contract_id,
         &soroban_sdk::Symbol::new(&env, "submit_zk_usage_report"),
-        (
-            meter_id,
-            proof.clone(),
-            public_inputs.clone(),
-            nullifier.clone(),
-        ),
+        soroban_sdk::vec![
+            &env,
+            meter_id.into_val(&env),
+            proof.clone().into_val(&env),
+            public_inputs.clone().into_val(&env),
+            nullifier.clone().into_val(&env),
+        ],
     );
 
     assert!(result.is_err());

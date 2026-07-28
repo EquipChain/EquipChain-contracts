@@ -4,7 +4,7 @@ use crate::tariff_oracle::{
 };
 use crate::{ContractError, DataKey};
 use soroban_sdk::{
-    testutils::Address as TestAddress, testutils::BytesN as TestBytesN, Address, Env, Vec,
+    testutils::Address as _, testutils::BytesN as _, Address, BytesN, Env, IntoVal, Val, Vec,
 };
 
 #[cfg(test)]
@@ -14,11 +14,11 @@ pub mod tariff_oracle_tests {
     /// Test basic tariff oracle initialization
     #[test]
     fn test_tariff_oracle_initialization() {
-        let env = Env::new();
-        let contract_address = TestAddress::random(&env);
+        let env = Env::default();
+        let contract_address = Address::random(&env);
         env.register_contract_at(&contract_address, TariffOracle, ());
 
-        let grid_admin = TestAddress::random(&env);
+        let grid_admin = Address::random(&env);
         let initial_schedule = create_test_schedule(&env);
 
         // Initialize oracle
@@ -39,11 +39,11 @@ pub mod tariff_oracle_tests {
     /// Test tariff update proposal with notice period
     #[test]
     fn test_tariff_update_proposal() {
-        let env = Env::new();
-        let contract_address = TestAddress::random(&env);
+        let env = Env::default();
+        let contract_address = Address::random(&env);
         env.register_contract_at(&contract_address, TariffOracle, ());
 
-        let grid_admin = TestAddress::random(&env);
+        let grid_admin = Address::random(&env);
         let initial_schedule = create_test_schedule(&env);
 
         // Initialize oracle
@@ -51,7 +51,7 @@ pub mod tariff_oracle_tests {
 
         // Create new schedule proposal
         let new_schedule = create_peak_schedule(&env);
-        let admin_signature = TestBytesN::random(&env);
+        let admin_signature = BytesN::random(&env);
 
         // Submit proposal
         let proposal_id =
@@ -73,11 +73,11 @@ pub mod tariff_oracle_tests {
     /// Test tariff update execution after notice period
     #[test]
     fn test_tariff_update_execution() {
-        let env = Env::new();
-        let contract_address = TestAddress::random(&env);
+        let env = Env::default();
+        let contract_address = Address::random(&env);
         env.register_contract_at(&contract_address, TariffOracle, ());
 
-        let grid_admin = TestAddress::random(&env);
+        let grid_admin = Address::random(&env);
         let initial_schedule = create_test_schedule(&env);
 
         // Initialize oracle
@@ -85,7 +85,7 @@ pub mod tariff_oracle_tests {
 
         // Create and submit proposal
         let new_schedule = create_peak_schedule(&env);
-        let admin_signature = TestBytesN::random(&env);
+        let admin_signature = BytesN::random(&env);
         let proposal_id =
             TariffOracle::propose_tariff_update(env.clone(), new_schedule.clone(), admin_signature);
 
@@ -114,11 +114,11 @@ pub mod tariff_oracle_tests {
     /// Test current flow rate calculation
     #[test]
     fn test_current_flow_rate_calculation() {
-        let env = Env::new();
-        let contract_address = TestAddress::random(&env);
+        let env = Env::default();
+        let contract_address = Address::random(&env);
         env.register_contract_at(&contract_address, TariffOracle, ());
 
-        let grid_admin = TestAddress::random(&env);
+        let grid_admin = Address::random(&env);
         let initial_schedule = create_test_schedule(&env);
 
         // Initialize oracle
@@ -142,11 +142,11 @@ pub mod tariff_oracle_tests {
     /// This is the specific test case from Issue #261
     #[test]
     fn test_stream_spanning_midnight_blended_rate() {
-        let env = Env::new();
-        let contract_address = TestAddress::random(&env);
+        let env = Env::default();
+        let contract_address = Address::random(&env);
         env.register_contract_at(&contract_address, TariffOracle, ());
 
-        let grid_admin = TestAddress::random(&env);
+        let grid_admin = Address::random(&env);
         let initial_schedule = create_test_schedule(&env);
 
         // Initialize oracle
@@ -189,11 +189,11 @@ pub mod tariff_oracle_tests {
     /// Test flow calculation within single tariff window
     #[test]
     fn test_flow_within_single_window() {
-        let env = Env::new();
-        let contract_address = TestAddress::random(&env);
+        let env = Env::default();
+        let contract_address = Address::random(&env);
         env.register_contract_at(&contract_address, TariffOracle, ());
 
-        let grid_admin = TestAddress::random(&env);
+        let grid_admin = Address::random(&env);
         let initial_schedule = create_test_schedule(&env);
 
         // Initialize oracle
@@ -228,11 +228,11 @@ pub mod tariff_oracle_tests {
     /// Test tariff schedule validation
     #[test]
     fn test_tariff_schedule_validation() {
-        let env = Env::new();
-        let contract_address = TestAddress::random(&env);
+        let env = Env::default();
+        let contract_address = Address::random(&env);
         env.register_contract_at(&contract_address, TariffOracle, ());
 
-        let grid_admin = TestAddress::random(&env);
+        let grid_admin = Address::random(&env);
 
         // Test invalid schedule (wrong number of hours)
         let invalid_schedule = create_invalid_schedule(&env);
@@ -252,8 +252,8 @@ pub mod tariff_oracle_tests {
     /// Test default schedule fallback
     #[test]
     fn test_default_schedule_fallback() {
-        let env = Env::new();
-        let contract_address = TestAddress::random(&env);
+        let env = Env::default();
+        let contract_address = Address::random(&env);
         env.register_contract_at(&contract_address, TariffOracle, ());
 
         // Try to get tariff without initialization
@@ -270,11 +270,11 @@ pub mod tariff_oracle_tests {
     /// Test temporary storage optimization
     #[test]
     fn test_temporary_storage_optimization() {
-        let env = Env::new();
-        let contract_address = TestAddress::random(&env);
+        let env = Env::default();
+        let contract_address = Address::random(&env);
         env.register_contract_at(&contract_address, TariffOracle, ());
 
-        let grid_admin = TestAddress::random(&env);
+        let grid_admin = Address::random(&env);
         let initial_schedule = create_test_schedule(&env);
 
         // Initialize oracle
@@ -295,11 +295,11 @@ pub mod tariff_oracle_tests {
     /// Test renewable energy hours
     #[test]
     fn test_renewable_energy_hours() {
-        let env = Env::new();
-        let contract_address = TestAddress::random(&env);
+        let env = Env::default();
+        let contract_address = Address::random(&env);
         env.register_contract_at(&contract_address, TariffOracle, ());
 
-        let grid_admin = TestAddress::random(&env);
+        let grid_admin = Address::random(&env);
         let initial_schedule = create_test_schedule(&env);
 
         // Initialize oracle
@@ -321,11 +321,11 @@ pub mod tariff_oracle_tests {
     /// Test multiple tariff window crossings
     #[test]
     fn test_multiple_window_crossings() {
-        let env = Env::new();
-        let contract_address = TestAddress::random(&env);
+        let env = Env::default();
+        let contract_address = Address::random(&env);
         env.register_contract_at(&contract_address, TariffOracle, ());
 
-        let grid_admin = TestAddress::random(&env);
+        let grid_admin = Address::random(&env);
         let initial_schedule = create_test_schedule(&env);
 
         // Initialize oracle
@@ -351,7 +351,7 @@ pub mod tariff_oracle_tests {
     }
 
     /// Helper function to create test tariff schedule
-    fn create_test_schedule(env: &Env) -> DailyTariffSchedule {
+    pub fn create_test_schedule(env: &Env) -> DailyTariffSchedule {
         let mut hourly_rates = Vec::new(env);
 
         for hour in 0..HOURS_IN_DAY {
@@ -373,15 +373,15 @@ pub mod tariff_oracle_tests {
         DailyTariffSchedule {
             hourly_rates,
             schedule_date: 20240101,
-            signed_by: TestAddress::random(env),
+            signed_by: Address::random(env),
             created_at: env.ledger().timestamp(),
             effective_at: env.ledger().timestamp(),
-            admin_signature: TestBytesN::random(env),
+            admin_signature: BytesN::random(env),
         }
     }
 
     /// Helper function to create peak-heavy tariff schedule
-    fn create_peak_schedule(env: &Env) -> DailyTariffSchedule {
+    pub fn create_peak_schedule(env: &Env) -> DailyTariffSchedule {
         let mut hourly_rates = Vec::new(env);
 
         for hour in 0..HOURS_IN_DAY {
@@ -402,15 +402,15 @@ pub mod tariff_oracle_tests {
         DailyTariffSchedule {
             hourly_rates,
             schedule_date: 20240102,
-            signed_by: TestAddress::random(env),
+            signed_by: Address::random(env),
             created_at: env.ledger().timestamp(),
             effective_at: env.ledger().timestamp(),
-            admin_signature: TestBytesN::random(env),
+            admin_signature: BytesN::random(env),
         }
     }
 
     /// Helper function to create invalid schedule (wrong number of hours)
-    fn create_invalid_schedule(env: &Env) -> DailyTariffSchedule {
+    pub fn create_invalid_schedule(env: &Env) -> DailyTariffSchedule {
         let mut hourly_rates = Vec::new(env);
 
         // Only create 20 hours instead of 24
@@ -426,15 +426,15 @@ pub mod tariff_oracle_tests {
         DailyTariffSchedule {
             hourly_rates,
             schedule_date: 20240101,
-            signed_by: TestAddress::random(env),
+            signed_by: Address::random(env),
             created_at: env.ledger().timestamp(),
             effective_at: env.ledger().timestamp(),
-            admin_signature: TestBytesN::random(env),
+            admin_signature: BytesN::random(env),
         }
     }
 
     /// Helper function to create schedule with negative rates
-    fn create_schedule_with_negative_rates(env: &Env) -> DailyTariffSchedule {
+    pub fn create_schedule_with_negative_rates(env: &Env) -> DailyTariffSchedule {
         let mut hourly_rates = Vec::new(env);
 
         for hour in 0..HOURS_IN_DAY {
@@ -449,10 +449,10 @@ pub mod tariff_oracle_tests {
         DailyTariffSchedule {
             hourly_rates,
             schedule_date: 20240101,
-            signed_by: TestAddress::random(env),
+            signed_by: Address::random(env),
             created_at: env.ledger().timestamp(),
             effective_at: env.ledger().timestamp(),
-            admin_signature: TestBytesN::random(env),
+            admin_signature: BytesN::random(env),
         }
     }
 }
@@ -472,11 +472,11 @@ mod tariff_property_tests {
             duration_minutes in 1u64..180u64, // 1 minute to 3 hours
             consumption_rate in 100i128..10000i128,
         ) {
-            let env = Env::new();
-            let contract_address = TestAddress::random(&env);
+            let env = Env::default();
+            let contract_address = Address::random(&env);
             env.register_contract_at(&contract_address, TariffOracle, ());
 
-            let grid_admin = TestAddress::random(&env);
+            let grid_admin = Address::random(&env);
             let initial_schedule = create_test_schedule(&env);
 
             // Initialize oracle
@@ -505,7 +505,7 @@ mod tariff_property_tests {
 
             // Property: windows_crossed should not exceed duration in hours
             let max_possible_windows = (duration_minutes / 60 + 1) as u8;
-            prop_assert!(result.windows_crossed <= max_possible_windows);
+            prop_assert!(result.windows_crossed <= max_possible_windows as u32);
         }
     }
 }

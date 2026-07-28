@@ -9,7 +9,7 @@ mod tests {
         temporary_storage::{OptimizedFlowCalculator, OptimizedUsageTracker, TempStorageManager},
         BillingType, ContinuousFlow, DataKey, Meter, StreamStatus, UsageData,
     };
-    use soroban_sdk::{Address, BytesN, Env, Symbol};
+    use soroban_sdk::{testutils::Address as _, testutils::Ledger, Address, BytesN, Env, Symbol};
 
     fn create_test_env() -> Env {
         let env = Env::default();
@@ -17,7 +17,7 @@ mod tests {
         env
     }
 
-    fn create_test_flow(stream_id: u64, rate: i128, balance: i128) -> ContinuousFlow {
+    fn create_test_flow(env: &Env, stream_id: u64, rate: i128, balance: i128) -> ContinuousFlow {
         ContinuousFlow {
             stream_id,
             flow_rate_per_second: rate,
@@ -26,13 +26,13 @@ mod tests {
             created_timestamp: 1000,
             status: StreamStatus::Active,
             paused_at: 0,
-            provider: Address::generate(&create_test_env()),
+            provider: Address::generate(env),
             buffer_balance: 1000,
             buffer_warning_sent: false,
-            payer: Address::generate(&create_test_env()),
+            payer: Address::generate(env),
             priority_tier: 1,
             grid_epoch_seen: 1000,
-            device_mac_pubkey: BytesN::from_array(&[0; 32]),
+            device_mac_pubkey: BytesN::from_array(env, &[0; 32]),
             is_unreliable: false,
         }
     }
@@ -40,7 +40,7 @@ mod tests {
     #[test]
     fn test_temp_storage_flow_accumulation() {
         let env = create_test_env();
-        let flow = create_test_flow(1, 100, 1000);
+        let flow = create_test_flow(&env, 1, 100, 1000);
         let current_timestamp = 2000;
 
         // First calculation should store in temp storage
@@ -169,7 +169,7 @@ mod tests {
     #[test]
     fn test_flow_calculation_with_different_timestamps() {
         let env = create_test_env();
-        let flow = create_test_flow(1, 100, 1000);
+        let flow = create_test_flow(&env, 1, 100, 1000);
 
         // Test with different timestamps
         let timestamp1 = 1500;
@@ -189,7 +189,7 @@ mod tests {
     #[test]
     fn test_paused_flow_returns_zero() {
         let env = create_test_env();
-        let mut flow = create_test_flow(1, 100, 1000);
+        let mut flow = create_test_flow(&env, 1, 100, 1000);
         flow.status = StreamStatus::Paused;
 
         let current_timestamp = 2000;
@@ -228,7 +228,7 @@ mod tests {
         let env = create_test_env();
         let stream_id = 1;
         let current_timestamp = 2000;
-        let flow = create_test_flow(stream_id, 100, 1000);
+        let flow = create_test_flow(&env, stream_id, 100, 1000);
 
         // Store accumulation
         let result =
@@ -255,9 +255,9 @@ mod tests {
         let env = create_test_env();
 
         // Test multiple streams simultaneously
-        let flow1 = create_test_flow(1, 100, 1000);
-        let flow2 = create_test_flow(2, 200, 2000);
-        let flow3 = create_test_flow(3, 300, 3000);
+        let flow1 = create_test_flow(&env, 1, 100, 1000);
+        let flow2 = create_test_flow(&env, 2, 200, 2000);
+        let flow3 = create_test_flow(&env, 3, 300, 3000);
 
         let timestamp = 2000;
 
@@ -285,7 +285,7 @@ mod tests {
     fn test_temp_storage_cost_optimization() {
         let env = create_test_env();
         let stream_id = 1;
-        let flow = create_test_flow(stream_id, 100, 1000);
+        let flow = create_test_flow(&env, stream_id, 100, 1000);
 
         // Simulate multiple rapid calculations
         let timestamp = 2000;
