@@ -326,6 +326,7 @@ mod gas_estimator;
 use gas_estimator::GasCostEstimator;
 
 pub mod enterprise;
+pub mod governance;
 pub mod ghost_sweeper;
 pub mod grant_stream_listener;
 pub mod nonce_sync;
@@ -1033,6 +1034,13 @@ pub enum DataKey {
     UpgradeApproval(u64, Address),
     UpgradeProposalCounter,
     ActiveUpgradeProposalId,
+    // Issue #18 - Governance Enhancements
+    GovernanceConfig,
+    GovernanceProposal(u64),
+    GovernanceProposalCounter,
+    GovernanceVote(u64, Address),
+    // Issue #18 - Nonce Sync Safety
+    PendingNonceLock(BytesN<32>),
 }
 
 #[contracterror(export = false)]
@@ -1167,6 +1175,10 @@ pub enum ContractError {
     NotFound = 114,
     NotInitialized = 115,
     FlowRateTooLow = 116,
+    // Issue #18 - Governance Enhancements
+    QuorumNotSatisfied = 124,
+    GovernanceDisabled = 125,
+    NonceLockActive = 126,
 }
 
 #[contracttype]
@@ -4720,14 +4732,12 @@ impl UtilityContract {
         let mut cost = signed_data.units_consumed.saturating_mul(discounted_rate);
 
         // Apply SLA Penalty if active
-        if let Some(config) = &meter.sla_config {
-            if meter.sla_state.is_penalty_active
-                || meter.sla_state.accumulated_downtime >= config.threshold_seconds
-            {
-                cost = cost
-                    .saturating_mul(config.penalty_multiplier_bps)
-                    .saturating_div(10000);
-            }
+        if meter.sla_state.is_penalty_active
+            || meter.sla_state.accumulated_downtime >= meter.sla_config.threshold_seconds
+        {
+            cost = cost
+                .saturating_mul(meter.sla_config.penalty_multiplier_bps)
+                .saturating_div(10000);
         }
 
         // Apply provider withdrawal limits
