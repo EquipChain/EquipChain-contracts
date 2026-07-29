@@ -2219,9 +2219,9 @@ pub struct UtilityContract;
 
 // Re-export the generated client type so tests can use `use crate::*` or explicit imports
 // The `#[contract]` macro on `UtilityContract` generates `utility_contract::Client`.
-// We reference it via a cfg-gated import to avoid resolution issues in CI with WASM target.
+// We gate it with #[cfg(test)] to avoid E0428 duplicate on WASM where the macro also generates it.
 #[cfg(test)]
-pub use crate::utility_contract::Client as UtilityContractClient;
+pub use utility_contract::Client as UtilityContractClient;
 
 // Issue #118: ZK Privacy Helper Functions
 
