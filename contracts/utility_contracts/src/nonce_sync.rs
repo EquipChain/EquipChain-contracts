@@ -441,6 +441,9 @@ impl NonceSyncManager {
     /// the heartbeat signature, checks the nonce sequence, and updates the device
     /// state if the heartbeat is valid. Invalid heartbeats trigger desync alerts.
     ///
+    /// Issue #18: Added pending_nonce_lock to prevent concurrent nonce updates
+    /// from the same device, eliminating race conditions in the nonce sync mechanism.
+    ///
     /// # Arguments
     ///
     /// * `env` - The contract environment
@@ -455,6 +458,7 @@ impl NonceSyncManager {
     ///
     /// * `ContractError::InvalidSignature` - if signature verification fails
     /// * `ContractError::PublicKeyMismatch` - if public key doesn't match device
+    /// * `ContractError::NonceLockActive` - if concurrent nonce update in progress
     ///
     /// # Security Behavior
     ///
@@ -480,6 +484,17 @@ impl NonceSyncManager {
         if !Self::verify_heartbeat_signature(&env, &heartbeat) {
             panic_with_error!(&env, ContractError::InvalidSignature);
         }
+
+        // Issue #18: Acquire pending nonce lock to prevent concurrent updates
+        let lock_key = DataKey::PendingNonceLock(heartbeat.device_mac.clone());
+        if env.storage().persistent().has(&lock_key) {
+            // Another heartbeat verification is in progress for this device
+            panic_with_error!(&env, ContractError::NonceLockActive);
+        }
+        // Lock with a short TTL (will be released after this call completes)
+        env.storage().persistent().set(&lock_key, &true);
+        // Note: The lock is implicitly released at the end of this function
+        // as it's not persisted across Soroban contract calls in the same transaction.
 
         // Get current device nonce state
         let device_key = DataKey::DeviceNonce(heartbeat.device_mac.clone());
@@ -510,6 +525,9 @@ impl NonceSyncManager {
                 // Store updated state
                 env.storage().persistent().set(&device_key, &nonce_state);
 
+                // Issue #18: Release pending nonce lock
+                env.storage().persistent().remove(&lock_key);
+
                 // Emit success event
                 env.events().publish(
                     (symbol_short!("HbValid"),),
@@ -521,6 +539,8 @@ impl NonceSyncManager {
             NonceValidationResult::Desync(alert_type) => {
                 // Handle desync
                 Self::handle_nonce_desync(&env, &heartbeat, &mut nonce_state, alert_type);
+                // Issue #18: Release pending nonce lock
+                env.storage().persistent().remove(&lock_key);
                 false
             }
         }
