@@ -460,6 +460,7 @@ pub mod tariff_oracle_tests {
 /// Property-based tests for tariff calculations
 #[cfg(test)]
 mod tariff_property_tests {
+    use super::tariff_oracle_tests::create_test_schedule;
     use super::*;
     use proptest::prelude::*;
 
