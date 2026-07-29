@@ -2218,7 +2218,9 @@ fn can_finalize_upgrade(env: &Env) -> bool {
 pub struct UtilityContract;
 
 // Re-export the generated client type so tests can use `use crate::*` or explicit imports
-// The `#[contract]` macro on `UtilityContract` generates `utility_contract::Client`
+// The `#[contract]` macro on `UtilityContract` generates `utility_contract::Client`.
+// We reference it via a cfg-gated import to avoid resolution issues in CI with WASM target.
+#[cfg(any(test, feature = "testutils"))]
 pub use crate::utility_contract::Client as UtilityContractClient;
 
 // Issue #118: ZK Privacy Helper Functions
