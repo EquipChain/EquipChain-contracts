@@ -2219,9 +2219,15 @@ pub struct UtilityContract;
 
 // Re-export the generated client type so tests can use `use crate::*` or explicit imports
 // The `#[contract]` macro on `UtilityContract` generates `utility_contract::Client`.
-// We reference it via a cfg-gated import to avoid resolution issues in CI with WASM target.
-#[cfg(any(test, feature = "testutils"))]
+// Gated to non-WASM targets since the macro-generated module has resolution issues
+// when targeting wasm32-unknown-unknown. Native/test compilation still works fine.
+#[cfg(not(target_arch = "wasm32"))]
 pub use crate::utility_contract::Client as UtilityContractClient;
+
+// WASM target stub: used only when compiling for wasm32 (clippy/lint checks on lib)
+// Tests always compile natively and get the real type above.
+#[cfg(target_arch = "wasm32")]
+pub struct UtilityContractClient;
 
 // Issue #118: ZK Privacy Helper Functions
 
