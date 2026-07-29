@@ -332,6 +332,7 @@ pub mod nonce_sync;
 pub mod secure_call_interface;
 pub mod tariff_oracle;
 pub mod temporary_storage;
+pub mod upgrade_framework;
 pub mod velocity_limit;
 
 #[cfg(test)]
@@ -1033,6 +1034,15 @@ pub enum DataKey {
     UpgradeApproval(u64, Address),
     UpgradeProposalCounter,
     ActiveUpgradeProposalId,
+    // Issue #16 - Upgrade Framework
+    ContractVersion,
+    LastUpgradeLedger,
+    VersionInfo(u32),
+    VersionCount,
+    StorageSchemaVersion(BytesN<32>),
+    RollbackPoint(u32),
+    RollbackCount,
+    PreviousWasmHash(u32),
 }
 
 #[contracterror(export = false)]
@@ -1167,6 +1177,11 @@ pub enum ContractError {
     NotFound = 114,
     NotInitialized = 115,
     FlowRateTooLow = 116,
+    // Issue #16 - Upgrade Framework
+    UpgradeDelayNotElapsed = 119,
+    RollbackPointNotFound = 120,
+    RollbackAlreadyConsumed = 121,
+    MigrationFailed = 122,
 }
 
 #[contracttype]
