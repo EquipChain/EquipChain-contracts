@@ -5045,14 +5045,13 @@ impl UtilityContract {
             .saturating_mul(meter.rate_per_unit.saturating_add(meter.credit_drip_rate));
 
         // Apply SLA Penalty if active
-        if meter.sla_config_set {
-            if meter.sla_state.is_penalty_active
-                || meter.sla_state.accumulated_downtime >= meter.sla_config.threshold_seconds
-            {
-                amount = amount
-                    .saturating_mul(meter.sla_config.penalty_multiplier_bps)
-                    .saturating_div(10000);
-            }
+        if meter.sla_config_set
+            && (meter.sla_state.is_penalty_active
+                || meter.sla_state.accumulated_downtime >= meter.sla_config.threshold_seconds)
+        {
+            amount = amount
+                .saturating_mul(meter.sla_config.penalty_multiplier_bps)
+                .saturating_div(10000);
         }
 
         // Check if we're in the same hour as last claim
