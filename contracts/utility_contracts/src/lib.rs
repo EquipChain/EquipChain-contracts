@@ -326,8 +326,8 @@ mod gas_estimator;
 use gas_estimator::GasCostEstimator;
 
 pub mod enterprise;
-pub mod governance;
 pub mod ghost_sweeper;
+pub mod governance;
 pub mod grant_stream_listener;
 pub mod nonce_sync;
 pub mod secure_call_interface;
