@@ -227,9 +227,7 @@ impl UpgradeFramework {
 
     /// Get version info for a specific version.
     pub fn get_version_info(env: Env, version: u32) -> Option<ContractVersionInfo> {
-        env.storage()
-            .instance()
-            .get(&DataKey::VersionInfo(version))
+        env.storage().instance().get(&DataKey::VersionInfo(version))
     }
 
     /// Get all available versions from history.
@@ -241,10 +239,10 @@ impl UpgradeFramework {
             .unwrap_or(0);
         let mut versions = Vec::new(&env);
         for v in 0..count {
-            if let Some(info) =
-                env.storage()
-                    .instance()
-                    .get::<DataKey, ContractVersionInfo>(&DataKey::VersionInfo(v))
+            if let Some(info) = env
+                .storage()
+                .instance()
+                .get::<DataKey, ContractVersionInfo>(&DataKey::VersionInfo(v))
             {
                 versions.push_back(v);
             }
@@ -257,7 +255,10 @@ impl UpgradeFramework {
     // -------------------------------------------------------
 
     /// Get storage schema version for a specific key.
-    pub fn get_storage_schema_version(env: Env, key_hash: BytesN<32>) -> Option<StorageSchemaVersion> {
+    pub fn get_storage_schema_version(
+        env: Env,
+        key_hash: BytesN<32>,
+    ) -> Option<StorageSchemaVersion> {
         env.storage()
             .instance()
             .get(&DataKey::StorageSchemaVersion(key_hash))

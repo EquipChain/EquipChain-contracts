@@ -2,9 +2,10 @@ use crate::nonce_sync::{
     DeviceNonceState, NonceAlertType, NonceDesyncAlert, NonceResetRequest, NonceSyncManager,
     SignedHeartbeat, NONCE_WINDOW_SIZE,
 };
-use crate::std::string::ToString;
 use crate::{ContractError, DataKey};
-use soroban_sdk::{testutils::Address as _, testutils::BytesN as _, Address, BytesN, Env};
+use soroban_sdk::{
+    testutils::Address as _, testutils::BytesN as _, Address, BytesN, Env, String, Vec,
+};
 
 #[cfg(test)]
 pub mod nonce_sync_fuzz_tests {
@@ -329,6 +330,7 @@ pub mod nonce_sync_fuzz_tests {
 /// and prevents any form of nonce reuse or manipulation.
 #[cfg(test)]
 mod property_tests {
+    use super::nonce_sync_fuzz_tests::create_test_heartbeat;
     use super::*;
     use proptest::prelude::*;
 
