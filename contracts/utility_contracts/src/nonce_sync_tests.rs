@@ -3,7 +3,9 @@ use crate::nonce_sync::{
     SignedHeartbeat, NONCE_WINDOW_SIZE,
 };
 use crate::{ContractError, DataKey};
-use soroban_sdk::{testutils::Address as _, testutils::BytesN as _, Address, BytesN, Env, String, Vec};
+use soroban_sdk::{
+    testutils::Address as _, testutils::BytesN as _, Address, BytesN, Env, String, Vec,
+};
 
 #[cfg(test)]
 pub mod nonce_sync_fuzz_tests {
