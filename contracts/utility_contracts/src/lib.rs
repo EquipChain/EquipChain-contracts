@@ -2219,7 +2219,7 @@ pub struct UtilityContract;
 
 // Re-export the generated client type so tests can use `use crate::*` or explicit imports
 // The `#[contract]` macro on `UtilityContract` generates `utility_contract::Client`
-pub use utility_contract::Client as UtilityContractClient;
+pub use crate::utility_contract::Client as UtilityContractClient;
 
 // Issue #118: ZK Privacy Helper Functions
 
