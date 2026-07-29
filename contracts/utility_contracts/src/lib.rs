@@ -2123,8 +2123,8 @@ fn can_finalize_upgrade(env: &Env) -> bool {
 #[contract]
 pub struct UtilityContract;
 
-// Re-export the generated client type so tests can use `use crate::*` or explicit imports
-pub use utility_contract::Client as UtilityContractClient;
+// #[contract] + #[contractimpl] on UtilityContract already generates UtilityContractClient
+// at the crate root, so no re-export is needed.
 
 // Issue #118: ZK Privacy Helper Functions
 
