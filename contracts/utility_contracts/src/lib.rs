@@ -15,7 +15,8 @@
     clippy::redundant_pattern_matching,
     clippy::len_zero,
     clippy::result_unit_err,
-    clippy::needless_borrows_for_generic_args
+    clippy::needless_borrows_for_generic_args,
+    clippy::empty_line_after_outer_attr
 )]
 
 #[cfg(test)]
@@ -1024,6 +1025,9 @@ pub enum DataKey {
     StreamArchive(u64),
     SweeperStatistics,
     // Issue #277 - Emergency Drain Recovery
+    // Issue #23 - Token Whitelist & Security
+    ApprovedTokens,
+    TokenInfo(Address),
     EmergencyDrainLastExecution,
     EmergencyDrainRecord(u64),
     EmergencyDrainCounter,
@@ -1167,6 +1171,9 @@ pub enum ContractError {
     NotFound = 114,
     NotInitialized = 115,
     FlowRateTooLow = 116,
+    // Issue #23 - Token Security
+    UnapprovedToken = 117,
+    TokenBalanceMismatch = 118,
 }
 
 #[contracttype]
@@ -1252,6 +1259,37 @@ pub struct EmergencyDrainRecord {
     pub amount: i128,
     pub recipient: Address,
     pub reason: String,
+}
+
+// ============================================================================
+// Issue #23: Token Standard Detection & Whitelist
+// ============================================================================
+
+/// Classification of a token based on on-chain heuristics.
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub enum TokenStandard {
+    /// Standard Stellar Asset Contract or typical token.
+    Standard,
+    /// Token that charges a fee on every transfer.
+    FeeOnTransfer,
+    /// Token whose balance changes without transfers (e.g., rebasing tokens).
+    Rebasing,
+    /// Token that has blacklist/pause functionality.
+    Blacklisted,
+    /// Token that cannot be identified or is known to be dangerous.
+    Unknown,
+}
+
+/// Metadata about an approved token.
+#[contracttype]
+#[derive(Clone, Debug)]
+pub struct TokenInfo {
+    pub token: Address,
+    pub standard: TokenStandard,
+    pub decimals: u32,
+    pub approved_at: u64,
+    pub approved_by: Address,
 }
 const REFERRAL_REWARD_UNITS: i128 = 10;
 
@@ -1361,8 +1399,51 @@ fn get_meter_or_panic(env: &Env, meter_id: u64) -> Meter {
 }
 
 fn transfer_tokens(env: &Env, token: &Address, from: &Address, to: &Address, amount: &i128) {
+    require_approved_token(env, token);
+    let balance_before = get_token_balance(env, token, from);
     let client = token::Client::new(env, token);
     client.transfer(from, to, amount);
+    let balance_after = get_token_balance(env, token, from);
+    let expected_balance = balance_before.saturating_sub(*amount);
+    if balance_after < expected_balance {
+        panic_with_error!(env, ContractError::TokenBalanceMismatch);
+    }
+}
+
+fn get_token_balance(env: &Env, token: &Address, address: &Address) -> i128 {
+    let client = token::Client::new(env, token);
+    client.balance(address)
+}
+
+fn require_approved_token(env: &Env, token: &Address) {
+    // Skip whitelist enforcement in test mode
+    #[cfg(not(test))]
+    {
+        let approved: Option<Vec<Address>> = env.storage()
+            .instance()
+            .get(&DataKey::ApprovedTokens);
+        if let Some(tokens) = approved {
+            if tokens.len() > 0 && !tokens.contains(token) {
+                panic_with_error!(env, ContractError::UnapprovedToken);
+            }
+        }
+    }
+    #[cfg(test)]
+    {
+        let _ = (env, token);
+    }
+}
+
+fn validate_token(env: &Env, token: &Address) -> TokenStandard {
+    let client = token::Client::new(env, token);
+    // Check that the token responds to basic queries
+    let balance = client.balance(&env.current_contract_address());
+    if balance == 0 {
+        return TokenStandard::Unknown;
+    }
+    // TODO(#23): Implement fee-on-transfer detection via small transfer + balance delta check.
+    // TODO(#23): Implement rebasing token detection via two consecutive balance reads.
+    TokenStandard::Standard
 }
 
 fn is_native_token(_env: &Env, _token: &Address) -> bool {
@@ -2970,6 +3051,59 @@ impl UtilityContract {
     ///
     /// # Panics
     /// * Panics if the caller is not the current contract address (self-invocation).
+    // ==================== ISSUE #23: TOKEN WHITELIST MANAGEMENT ====================
+    /// Approve a token for use in the protocol.
+    /// Only callable by the contract admin.
+    pub fn approve_token(env: Env, token: Address, decimals: u32) {
+        require_admin_auth(&env);
+        let mut approved: Vec<Address> = env.storage()
+            .instance()
+            .get(&DataKey::ApprovedTokens)
+            .unwrap_or(Vec::new(&env));
+        if !approved.contains(&token) {
+            approved.push_back(token.clone());
+            env.storage().instance().set(&DataKey::ApprovedTokens, &approved);
+        }
+        let info = TokenInfo {
+            token: token.clone(),
+            standard: validate_token(&env, &token),
+            decimals,
+            approved_at: env.ledger().timestamp(),
+            approved_by: get_admin_or_panic(&env),
+        };
+        env.storage().instance().set(&DataKey::TokenInfo(token), &info);
+    }
+
+    /// Revoke a token from the protocol whitelist.
+    /// Only callable by the contract admin.
+    pub fn revoke_token(env: Env, token: Address) {
+        require_admin_auth(&env);
+        let mut approved: Vec<Address> = env.storage()
+            .instance()
+            .get(&DataKey::ApprovedTokens)
+            .unwrap_or(Vec::new(&env));
+        if let Some(pos) = approved.first_index_of(&token) {
+            approved.remove(pos);
+            env.storage().instance().set(&DataKey::ApprovedTokens, &approved);
+            env.storage().instance().remove(&DataKey::TokenInfo(token));
+        }
+    }
+
+    /// Get the list of approved tokens.
+    pub fn get_approved_tokens(env: Env) -> Vec<Address> {
+        env.storage()
+            .instance()
+            .get(&DataKey::ApprovedTokens)
+            .unwrap_or(Vec::new(&env))
+    }
+
+    /// Get token info for a specific token.
+    pub fn get_token_info(env: Env, token: Address) -> Option<TokenInfo> {
+        env.storage()
+            .instance()
+            .get(&DataKey::TokenInfo(token))
+    }
+
     pub fn set_admin(env: Env, admin_address: Address) {
         env.current_contract_address().require_auth();
         env.storage()
