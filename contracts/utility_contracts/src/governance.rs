@@ -12,9 +12,7 @@
 //! - **Cancel Proposal**: Proposer can retract flawed proposals
 //! - **Proposal Status Query**: Rich status enum for governance transparency
 
-use soroban_sdk::{
-    contract, contractimpl, contracttype, panic_with_error, Address, Env, Symbol,
-};
+use soroban_sdk::{contract, contractimpl, contracttype, panic_with_error, Address, Env, Symbol};
 
 use crate::{ContractError, DataKey};
 
@@ -200,11 +198,7 @@ impl GovernanceModule {
         default_quorum: Option<u32>,
         default_approval_threshold_bps: Option<u32>,
     ) {
-        if env
-            .storage()
-            .instance()
-            .has(&DataKey::GovernanceConfig)
-        {
+        if env.storage().instance().has(&DataKey::GovernanceConfig) {
             panic_with_error!(&env, ContractError::MultiSigAlreadyConfigured);
         }
 
@@ -226,10 +220,8 @@ impl GovernanceModule {
             .instance()
             .set(&DataKey::GovernanceConfig, &config);
 
-        env.events().publish(
-            (soroban_sdk::symbol_short!("GovInit"),),
-            admin,
-        );
+        env.events()
+            .publish((soroban_sdk::symbol_short!("GovInit"),), admin);
     }
 
     /// Create a new governance proposal.
@@ -366,9 +358,7 @@ impl GovernanceModule {
             voted_at: now,
         };
 
-        env.storage()
-            .instance()
-            .set(&vote_key, &vote);
+        env.storage().instance().set(&vote_key, &vote);
 
         // Update proposal tally
         proposal.total_votes = proposal.total_votes.saturating_add(1);
@@ -379,7 +369,9 @@ impl GovernanceModule {
         }
 
         // Check quorum and threshold
-        let total_weight = proposal.approval_weight.saturating_add(proposal.rejection_weight);
+        let total_weight = proposal
+            .approval_weight
+            .saturating_add(proposal.rejection_weight);
 
         // Quorum check: Need minimum participation
         let quorum_satisfied = proposal.total_votes >= proposal.min_quorum;
