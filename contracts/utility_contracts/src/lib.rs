@@ -1179,6 +1179,9 @@ pub enum ContractError {
     NotFound = 114,
     NotInitialized = 115,
     FlowRateTooLow = 116,
+    // Issue #23 - Token Security
+    UnapprovedToken = 117,
+    TokenBalanceMismatch = 118,
     // Issue #18 - Governance Enhancements
     QuorumNotSatisfied = 124,
     GovernanceDisabled = 125,
