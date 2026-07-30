@@ -51,8 +51,8 @@ jobs:
 
       - name: Optimize Wasm
         run: |
-          stellar contract optimize --wasm contracts/target/wasm32-unknown-unknown/release/price_oracle.wasm
-          stellar contract optimize --wasm contracts/target/wasm32-unknown-unknown/release/utility_contracts.wasm
+          stellar contract optimize --wasm target/wasm32-unknown-unknown/release/price_oracle.wasm
+          stellar contract optimize --wasm target/wasm32-unknown-unknown/release/utility_contracts.wasm
         
       - name: Run Unit Tests
         run: cargo test
