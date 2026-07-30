@@ -1428,9 +1428,7 @@ fn require_approved_token(env: &Env, token: &Address) {
     // Skip whitelist enforcement in test mode
     #[cfg(not(test))]
     {
-        let approved: Option<Vec<Address>> = env.storage()
-            .instance()
-            .get(&DataKey::ApprovedTokens);
+        let approved: Option<Vec<Address>> = env.storage().instance().get(&DataKey::ApprovedTokens);
         if let Some(tokens) = approved {
             if tokens.len() > 0 && !tokens.contains(token) {
                 panic_with_error!(env, ContractError::UnapprovedToken);
@@ -3065,13 +3063,16 @@ impl UtilityContract {
     /// Only callable by the contract admin.
     pub fn approve_token(env: Env, token: Address, decimals: u32) {
         require_admin_auth(&env);
-        let mut approved: Vec<Address> = env.storage()
+        let mut approved: Vec<Address> = env
+            .storage()
             .instance()
             .get(&DataKey::ApprovedTokens)
             .unwrap_or(Vec::new(&env));
         if !approved.contains(&token) {
             approved.push_back(token.clone());
-            env.storage().instance().set(&DataKey::ApprovedTokens, &approved);
+            env.storage()
+                .instance()
+                .set(&DataKey::ApprovedTokens, &approved);
         }
         let info = TokenInfo {
             token: token.clone(),
@@ -3080,20 +3081,25 @@ impl UtilityContract {
             approved_at: env.ledger().timestamp(),
             approved_by: get_admin_or_panic(&env),
         };
-        env.storage().instance().set(&DataKey::TokenInfo(token), &info);
+        env.storage()
+            .instance()
+            .set(&DataKey::TokenInfo(token), &info);
     }
 
     /// Revoke a token from the protocol whitelist.
     /// Only callable by the contract admin.
     pub fn revoke_token(env: Env, token: Address) {
         require_admin_auth(&env);
-        let mut approved: Vec<Address> = env.storage()
+        let mut approved: Vec<Address> = env
+            .storage()
             .instance()
             .get(&DataKey::ApprovedTokens)
             .unwrap_or(Vec::new(&env));
         if let Some(pos) = approved.first_index_of(&token) {
             approved.remove(pos);
-            env.storage().instance().set(&DataKey::ApprovedTokens, &approved);
+            env.storage()
+                .instance()
+                .set(&DataKey::ApprovedTokens, &approved);
             env.storage().instance().remove(&DataKey::TokenInfo(token));
         }
     }
@@ -3108,9 +3114,7 @@ impl UtilityContract {
 
     /// Get token info for a specific token.
     pub fn get_token_info(env: Env, token: Address) -> Option<TokenInfo> {
-        env.storage()
-            .instance()
-            .get(&DataKey::TokenInfo(token))
+        env.storage().instance().get(&DataKey::TokenInfo(token))
     }
 
     pub fn set_admin(env: Env, admin_address: Address) {
