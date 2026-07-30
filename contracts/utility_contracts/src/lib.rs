@@ -1184,6 +1184,11 @@ pub enum ContractError {
     // Issue #23 - Token Security
     UnapprovedToken = 117,
     TokenBalanceMismatch = 118,
+    // Issue #16 - Upgrade Framework
+    UpgradeDelayNotElapsed = 119,
+    RollbackPointNotFound = 120,
+    RollbackAlreadyConsumed = 121,
+    MigrationFailed = 122,
 }
 
 #[contracttype]
