@@ -8584,6 +8584,8 @@ impl UtilityContract {
     /// Called internally by the provider when billing a post-paid stream.
     /// Emits `CreditLimitApproached` at 80 % and slashes at 100 %.
     pub fn accrue_postpaid_debt(env: Env, owner: Address, debt_amount: i128) {
+    pub fn accrue_postpaid_debt(env: Env, owner: Address, debt_amount: i128) {
+        owner.require_auth();
         if debt_amount <= 0 {
             return;
         }
