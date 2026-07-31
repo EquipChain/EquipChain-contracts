@@ -6624,8 +6624,16 @@ impl UtilityContract {
     }
 
     /// Set legal vault address
-    pub fn set_legal_vault(env: Env, vault: Address) {
-        vault.require_auth();
+    pub fn set_legal_vault(env: Env, admin: Address, vault: Address) {
+        admin.require_auth();
+        let stored_admin: Address = env
+            .storage()
+            .instance()
+            .get(&DataKey::CurrentAdmin)
+            .expect("No admin set");
+        if admin != stored_admin {
+            panic_with_error!(&env, ContractError::UnauthorizedAdmin);
+        }
 
         env.storage().instance().set(&DataKey::LegalVault, &vault);
 
@@ -7963,7 +7971,17 @@ impl UtilityContract {
 
     /// Sweep accrued streaming fees for a stream to the Protocol Fee Vault.
     /// Anyone can call this; the vault address is set by the admin.
-    pub fn collect_streaming_fees(env: Env, stream_id: u64) -> i128 {
+    pub fn collect_streaming_fees(env: Env, admin: Address, stream_id: u64) -> i128 {
+        admin.require_auth();
+        let stored_admin: Address = env
+            .storage()
+            .instance()
+            .get(&DataKey::CurrentAdmin)
+            .expect("No admin set");
+        if admin != stored_admin {
+            panic_with_error!(&env, ContractError::UnauthorizedAdmin);
+        }
+
         let vault: Address = env
             .storage()
             .instance()
