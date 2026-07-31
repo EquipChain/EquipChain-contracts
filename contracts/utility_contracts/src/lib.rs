@@ -6127,9 +6127,17 @@ impl UtilityContract {
         );
     }
 
-    // Task #2: Tax Compliance - Set government vault address
-    pub fn set_government_vault(env: Env, vault_address: Address) {
-        vault_address.require_auth();
+    // Task #2: Tax Compliance - Set government vault address (admin-only)
+    pub fn set_government_vault(env: Env, admin: Address, vault_address: Address) {
+        admin.require_auth();
+        let stored_admin: Address = env
+            .storage()
+            .instance()
+            .get(&DataKey::CurrentAdmin)
+            .expect("admin not set");
+        if admin != stored_admin {
+            panic_with_error!(&env, ContractError::Unauthorized);
+        }
 
         env.storage()
             .instance()
@@ -6139,9 +6147,17 @@ impl UtilityContract {
             .publish((soroban_sdk::symbol_short!("GovVault"),), vault_address);
     }
 
-    // Task #2: Tax Compliance - Set tax rate (in basis points)
-    pub fn set_tax_rate(env: Env, tax_rate_bps: i128) {
-        // Should be admin-only in production
+    // Task #2: Tax Compliance - Set tax rate (in basis points, admin-only)
+    pub fn set_tax_rate(env: Env, admin: Address, tax_rate_bps: i128) {
+        admin.require_auth();
+        let stored_admin: Address = env
+            .storage()
+            .instance()
+            .get(&DataKey::CurrentAdmin)
+            .expect("admin not set");
+        if admin != stored_admin {
+            panic_with_error!(&env, ContractError::Unauthorized);
+        }
         if tax_rate_bps < 0 || tax_rate_bps > 10_000 {
             panic_with_error!(&env, ContractError::InvalidUsageValue);
         }
