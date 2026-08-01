@@ -5505,6 +5505,9 @@ impl UtilityContract {
     /// Add balance to a continuous flow stream
     pub fn add_continuous_balance(env: Env, stream_id: u64, additional_balance: i128) {
         add_balance_to_flow(&env, stream_id, additional_balance).unwrap();
+        let flow = get_continuous_flow_or_panic(&env, stream_id);
+        flow.provider.require_auth();
+
 
         env.events().publish(
             (symbol_short!("BalAdded"),),
