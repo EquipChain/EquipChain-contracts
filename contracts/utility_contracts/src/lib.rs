@@ -8272,6 +8272,9 @@ impl UtilityContract {
         meter_id: u64,
         stale_threshold_ledgers: u32,
     ) -> i128 {
+        // Fix #48: Require provider auth before slashing stream buffer
+        let flow = get_continuous_flow_or_panic(&env, stream_id);
+        flow.provider.require_auth();
         crate::enterprise::liveness_check_and_slash(
             &env,
             stream_id,
