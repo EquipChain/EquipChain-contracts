@@ -5494,7 +5494,8 @@ impl UtilityContract {
 
     /// Create a new continuous flow stream
     /// Update the flow rate of an existing continuous stream
-    pub fn update_continuous_flow_rate(env: Env, stream_id: u64, new_flow_rate: i128) {
+    pub fn update_continuous_flow_rate(
+    flow.provider.require_auth();env: Env, stream_id: u64, new_flow_rate: i128) {
         if new_flow_rate < 0 {
             panic_with_error!(&env, ContractError::InvalidTokenAmount);
         }
@@ -5546,12 +5547,14 @@ impl UtilityContract {
     }
 
     /// Pause a continuous flow stream
-    pub fn pause_continuous_flow(env: Env, stream_id: u64) {
+    pub fn pause_continuous_flow(
+    flow.provider.require_auth();env: Env, stream_id: u64) {
         update_flow_rate(&env, stream_id, 0).unwrap();
     }
 
     /// Resume a continuous flow stream with specified rate
-    pub fn resume_continuous_flow(env: Env, stream_id: u64, flow_rate_per_second: i128) {
+    pub fn resume_continuous_flow(
+    flow.provider.require_auth();env: Env, stream_id: u64, flow_rate_per_second: i128) {
         if flow_rate_per_second <= 0 {
             panic_with_error!(&env, ContractError::InvalidTokenAmount);
         }
@@ -6160,7 +6163,8 @@ impl UtilityContract {
     }
 
     // Task #3: Self-Maintenance - Manually extend TTL (emergency function)
-    pub fn manual_extend_ttl(env: Env, meter_id: u64) {
+    pub fn manual_extend_ttl(
+    admin.require_auth();env: Env, meter_id: u64) {
         let maintenance_balance = get_maintenance_fund_balance(&env, meter_id);
 
         // Estimate cost (simplified)
@@ -7598,7 +7602,8 @@ impl UtilityContract {
     }
 
     /// Withdraw from a continuous flow stream
-    pub fn withdraw_continuous(env: Env, stream_id: u64, withdrawal_amount: i128) -> i128 {
+    pub fn withdraw_continuous(
+    flow.provider.require_auth();env: Env, stream_id: u64, withdrawal_amount: i128) -> i128 {
         let withdrawn = withdraw_from_flow(&env, stream_id, withdrawal_amount).unwrap();
 
         env.events()
@@ -8272,6 +8277,9 @@ impl UtilityContract {
         meter_id: u64,
         stale_threshold_ledgers: u32,
     ) -> i128 {
+        // Fix #48: Require provider auth before slashing stream buffer
+        let flow = get_continuous_flow_or_panic(&env, stream_id);
+        flow.provider.require_auth();
         crate::enterprise::liveness_check_and_slash(
             &env,
             stream_id,
