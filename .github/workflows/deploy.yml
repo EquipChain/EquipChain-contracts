@@ -1,0 +1,53 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+
+jobs:
+  deploy-testnet:
+    name: Deploy to Testnet
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+    environment: testnet
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Install soroban CLI
+        run: cargo install --locked soroban-cli 2>/dev/null || true
+      - name: Configure soroban
+        run: |
+          soroban config network add --global testnet \
+            --rpc-url https://soroban-testnet.stellar.org:443 \
+            --network-passphrase "Test SDF Future Network ; October 2022"
+      - name: Build contracts
+        run: |
+          for contract in contracts/*/; do
+            if [ -f "$contract/Cargo.toml" ]; then
+              name=$(basename "$contract")
+              soroban contract build -- "$contract"
+            fi
+          done
+      - name: Deploy contracts
+        env:
+          SECRET_KEY: ${{ secrets.DEPLOYER_SECRET }}
+        run: |
+          echo "Deploying contracts to testnet..."
+          # Deploy utility_contracts
+          soroban contract deploy \
+            --wasm target/wasm32-unknown-unknown/release/utility_contracts.wasm \
+            --source-account "$SECRET_KEY" \
+            --network testnet
+
+  notify:
+    name: Notify Deployment
+    runs-on: ubuntu-latest
+    needs: deploy-testnet
+    steps:
+      - name: Create deployment summary
+        run: |
+          echo "### Deployment Summary" >> $GITHUB_STEP_SUMMARY
+          echo "- **Tag:** ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Environment:** Testnet" >> $GITHUB_STEP_SUMMARY
+          echo "- **Status:** Completed" >> $GITHUB_STEP_SUMMARY
