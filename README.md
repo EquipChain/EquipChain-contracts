@@ -43,7 +43,8 @@ stellar contract deploy \
 |----------|-------------|
 | [`docs/CONTRACT_ARCHITECTURE.md`](docs/CONTRACT_ARCHITECTURE.md) | System architecture, data flow diagrams, module dependencies, storage layout |
 | [`docs/MIGRATION_GUIDE.md`](docs/MIGRATION_GUIDE.md) | Version history, migration paths, upgrade procedures |
-| [`docs/SECURITY.md`](docs/SECURITY.md) | Trust model, assumptions, emergency procedures, bug bounty |
+| [`.github/SECURITY.md`](.github/SECURITY.md) | Public security policy — how to report vulnerabilities, bug bounty scope, responsible disclosure |
+| [`docs/SECURITY.md`](docs/SECURITY.md) | Trust model, assumptions, emergency procedures, bug bounty (internal) |
 | [`docs/AUDIT.md`](docs/AUDIT.md) | Audit readiness checklist, test coverage, known issues |
 
 ## Features
@@ -9541,10 +9542,14 @@ The implementation is ready for production deployment and provides a solid found
 
 ## Reporting a Vulnerability
 
-Please report security vulnerabilities by opening a **private** GitHub Security Advisory at:
-`https://github.com/EquipChain/EquipChain-contracts/security/advisories/new`
+**Do not open a public GitHub issue for security-sensitive findings.**
 
-Do **not** open a public issue for security-sensitive findings.
+Use one of the private reporting channels:
+
+- **GitHub Security Advisory (preferred):** [Report a vulnerability](https://github.com/EquipChain/EquipChain-contracts/security/advisories/new) — private, visible only to maintainers and the reporter
+- **Email:** security@equipchain.io
+
+Please include the affected contract(s) and function(s), a description of the impact, and reproduction steps. For full details on scope, severity classification, and the bug bounty program, see [`.github/SECURITY.md`](.github/SECURITY.md).
 
 ---
 
