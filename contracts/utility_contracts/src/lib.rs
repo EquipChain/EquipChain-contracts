@@ -2192,9 +2192,6 @@ fn can_finalize_upgrade(env: &Env) -> bool {
 #[contract]
 pub struct UtilityContract;
 
-// Re-export the generated client type so tests can use `use crate::*` or explicit imports
-pub use utility_contract::Client as UtilityContractClient;
-
 // Issue #118: ZK Privacy Helper Functions
 
 /// ZK proof verification using native Soroban crypto functions
@@ -4854,7 +4851,8 @@ impl UtilityContract {
         let mut cost = signed_data.units_consumed.saturating_mul(discounted_rate);
 
         // Apply SLA Penalty if active
-        if let Some(config) = &meter.sla_config {
+        if meter.sla_config_set {
+            let config = &meter.sla_config;
             if meter.sla_state.is_penalty_active
                 || meter.sla_state.accumulated_downtime >= config.threshold_seconds
             {
@@ -7599,6 +7597,10 @@ impl UtilityContract {
 
     /// Withdraw from a continuous flow stream
     pub fn withdraw_continuous(env: Env, stream_id: u64, withdrawal_amount: i128) -> i128 {
+        // Only the stream's provider may withdraw the accumulated balance.
+        let flow = get_continuous_flow_or_panic(&env, stream_id);
+        flow.provider.require_auth();
+
         let withdrawn = withdraw_from_flow(&env, stream_id, withdrawal_amount).unwrap();
 
         env.events()
