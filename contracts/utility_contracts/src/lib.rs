@@ -5551,18 +5551,26 @@ impl UtilityContract {
     }
 
     /// Resume a continuous flow stream with specified rate
-    pub fn resume_continuous_flow(env: Env, stream_id: u64, flow_rate_per_second: i128) {
-        if flow_rate_per_second <= 0 {
-            panic_with_error!(&env, ContractError::InvalidTokenAmount);
-        }
+    // contracts/equip-chain/src/lib.rs (around L5554)
 
-        update_flow_rate(&env, stream_id, flow_rate_per_second).unwrap();
+pub fn resume_continuous_flow(env: Env, stream_id: u64, flow_rate_per_second: i128) {
+    // 1. Fetch the stream/flow data
+    let flow_key = DataKey::Flow(stream_id);
+    let flow: Flow = env.storage().instance().get(&flow_key).expect("Flow not found");
+
+    // 2. FIX: Add caller authentication
+    // This ensures ONLY the provider assigned to this stream can resume/update it.
+    flow.provider.require_auth();
+
+    // 3. Validate flow rate (Standard security practice)
+    if flow_rate_per_second <= 0 {
+        panic!("Flow rate must be positive");
     }
 
-    // Issue #178: Firmware Update Authorization Gate Functions
-
-    /// Initiate a firmware update for a meter (provider-only)
-    /// This pauses billing during the update window and requires device signature to resume
+    // 4. Update the flow rate
+    // This internal call usually handles the state logic and balance snapshots
+    Self::update_flow_rate(env, stream_id, flow_rate_per_second);
+}
     pub fn initiate_firmware_update(env: Env, meter_id: u64) {
         let mut meter = get_meter_or_panic(&env, meter_id);
 
