@@ -6162,6 +6162,17 @@ impl UtilityContract {
     // Task #3: Self-Maintenance - Manually extend TTL (emergency function)
     pub fn manual_extend_ttl(env: Env, meter_id: u64) {
         let maintenance_balance = get_maintenance_fund_balance(&env, meter_id);
+        let meter_key = DataKey::Meter(meter_id);
+    let mut meter: Meter = env.storage().instance().get(&meter_key).expect("Meter not found");
+
+        meter.provider.require_auth();
+
+        let maintenance_cost = 1_000_000; // 1 XLM in stroops
+    if meter.maintenance_fund < maintenance_cost {
+        panic!("Insufficient maintenance fund");
+    }
+
+        meter.maintenance_fund -= maintenance_cost;
 
         // Estimate cost (simplified)
         let estimated_cost = 1_000_000; // 1 XLM in stroops
@@ -6181,9 +6192,12 @@ impl UtilityContract {
             .instance()
             .extend_ttl(LEDGER_LIFETIME_EXTENSION, LEDGER_LIFETIME_EXTENSION);
 
+        env.storage().instance().extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_EXTEND_AMOUNT);
+
         env.events().publish(
             (soroban_sdk::symbol_short!("TTLMnl"), meter_id),
             LEDGER_LIFETIME_EXTENSION,
+            env.storage().instance().set(&meter_key, &meter);
         );
     }
 
