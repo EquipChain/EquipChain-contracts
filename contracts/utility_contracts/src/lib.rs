@@ -8583,35 +8583,31 @@ impl UtilityContract {
     ///
     /// Called internally by the provider when billing a post-paid stream.
     /// Emits `CreditLimitApproached` at 80 % and slashes at 100 %.
-    pub fn accrue_postpaid_debt(env: Env, owner: Address, debt_amount: i128) {
+    pub fn accrue_postpaid_debt(env: Env, meter_id: u64, debt_amount: i128) {
         if debt_amount <= 0 {
             return;
         }
+
+        let meter: Meter = env
+            .storage()
+            .instance()
+            .get(&DataKey::Meter(meter_id))
+            .unwrap_or_else(|| panic_with_error!(&env, ContractError::MeterNotFound));
+
+        if meter.billing_type != BillingType::PostPaid || !meter.is_active {
+            panic_with_error!(&env, ContractError::MeterNotFound);
+        }
+
+        meter.provider.require_auth();
+
+        let provider = meter.provider;
+        let owner = meter.user;
 
         let count: u64 = env
             .storage()
             .instance()
             .get::<DataKey, u64>(&DataKey::Count)
             .unwrap_or(0);
-
-        let mut provider: Option<Address> = None;
-        for meter_id in 1..=count {
-            if let Some(meter) = env
-                .storage()
-                .instance()
-                .get::<DataKey, Meter>(&DataKey::Meter(meter_id))
-            {
-                if meter.user == owner
-                    && meter.billing_type == BillingType::PostPaid
-                    && meter.is_active
-                {
-                    provider = Some(meter.provider.clone());
-                    break;
-                }
-            }
-        }
-        let provider = provider.unwrap_or_else(|| panic_with_error!(&env, ContractError::MeterNotFound));
-        provider.require_auth();
 
         let mut deposit: GuarantorDeposit = env
             .storage()
