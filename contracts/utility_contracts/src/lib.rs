@@ -8639,14 +8639,7 @@ impl UtilityContract {
             deposit.is_slashed = true;
             deposit.locked_amount = 0;
 
-            // Identify the provider from the first active post-paid meter.
-            let count: u64 = env
-                .storage()
-                .instance()
-                .get::<DataKey, u64>(&DataKey::Count)
-                .unwrap_or(0);
-
-            let mut provider_opt: Option<Address> = None;
+            // Close the active post-paid meter(s) for this owner.
             for meter_id in 1..=count {
                 if let Some(mut meter) = env
                     .storage()
@@ -8657,7 +8650,6 @@ impl UtilityContract {
                         && meter.billing_type == BillingType::PostPaid
                         && meter.is_active
                     {
-                        provider_opt = Some(meter.provider.clone());
                         meter.is_active = false;
                         meter.is_closed = true;
                         env.storage()
@@ -8667,20 +8659,18 @@ impl UtilityContract {
                 }
             }
 
-            if let Some(provider) = provider_opt {
-                let token_client = token::Client::new(&env, &deposit.collateral_token);
-                token_client.transfer(&env.current_contract_address(), &provider, &slashed);
+            let token_client = token::Client::new(&env, &deposit.collateral_token);
+            token_client.transfer(&env.current_contract_address(), &provider, &slashed);
 
-                env.events().publish(
-                    (symbol_short!("GDepSlsh"),),
-                    GuarantorSlashed {
-                        owner: owner.clone(),
-                        slashed_amount: slashed,
-                        provider,
-                        timestamp: now,
-                    },
-                );
-            }
+            env.events().publish(
+                (symbol_short!("GDepSlsh"),),
+                GuarantorSlashed {
+                    owner: owner.clone(),
+                    slashed_amount: slashed,
+                    provider,
+                    timestamp: now,
+                },
+            );
         } else if ratio_bps >= MARGIN_CALL_THRESHOLD_BPS && !deposit.margin_call_sent {
             deposit.margin_call_sent = true;
             env.events().publish(
