@@ -8588,6 +8588,31 @@ impl UtilityContract {
             return;
         }
 
+        let count: u64 = env
+            .storage()
+            .instance()
+            .get::<DataKey, u64>(&DataKey::Count)
+            .unwrap_or(0);
+
+        let mut provider: Option<Address> = None;
+        for meter_id in 1..=count {
+            if let Some(meter) = env
+                .storage()
+                .instance()
+                .get::<DataKey, Meter>(&DataKey::Meter(meter_id))
+            {
+                if meter.user == owner
+                    && meter.billing_type == BillingType::PostPaid
+                    && meter.is_active
+                {
+                    provider = Some(meter.provider.clone());
+                    break;
+                }
+            }
+        }
+        let provider = provider.unwrap_or_else(|| panic_with_error!(&env, ContractError::MeterNotFound));
+        provider.require_auth();
+
         let mut deposit: GuarantorDeposit = env
             .storage()
             .instance()
