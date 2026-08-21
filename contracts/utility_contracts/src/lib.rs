@@ -234,6 +234,8 @@ mod pause_resume_fuzz_tests;
 #[cfg(test)]
 mod pause_resume_tests;
 #[cfg(test)]
+mod referral_security_tests;
+#[cfg(test)]
 mod streaming_invariant_tests;
 #[cfg(test)]
 mod stroop_fuzz_tests;
@@ -977,6 +979,7 @@ pub enum DataKey {
     ProviderVolume(Address),
     ProviderWindow(Address),
     Referral(Address),
+    ReferralReward(u64),
     ReentrancyGuard(u64),
     ResellerConfig(u64),
     SavingGoal(u64),
@@ -4246,14 +4249,10 @@ impl UtilityContract {
         );
 
         if referrer != user {
-            let mut meter = get_meter_or_panic(&env, meter_id);
-            // Reward the new user
-            meter.balance = meter.balance.saturating_add(REFERRAL_REWARD_UNITS);
             env.storage()
                 .instance()
-                .set(&DataKey::Meter(meter_id), &meter);
+                .set(&DataKey::ReferralReward(meter_id), &REFERRAL_REWARD_UNITS);
 
-            // Reward the referrer if they have a meter? (simplified for now: just record it)
             env.storage()
                 .instance()
                 .set(&DataKey::Referral(user.clone()), &referrer.clone());
@@ -4265,6 +4264,17 @@ impl UtilityContract {
         }
 
         meter_id
+    }
+
+    /// Returns the non-withdrawable referral reward recorded for a meter.
+    ///
+    /// Referral rewards are intentionally kept separate from `Meter.balance`,
+    /// which only represents token-backed funds available for settlement.
+    pub fn get_referral_reward(env: Env, meter_id: u64) -> i128 {
+        env.storage()
+            .instance()
+            .get(&DataKey::ReferralReward(meter_id))
+            .unwrap_or(0)
     }
 
     /// Register a device MAC address hash and bind it to a meter (streaming channel)
