@@ -397,7 +397,7 @@ pub struct Meter {
     pub is_offline: bool,
     pub estimated_usage_total: i128,
     // SLA Penalty Fields
-    pub sla_config: SLAConfig,
+    pub sla_config: Option<SLAConfig>,
     pub sla_config_set: bool,
     pub sla_state: SLAState,
     // Billing Group parent
@@ -1354,7 +1354,7 @@ fn validate_user_bytes(bytes: &Bytes, max_size: u32) -> Result<(), ContractError
         return Err(ContractError::InvalidTokenAmount); // Reuse error for size validation
     }
 
-    if bytes.len() == 0 {
+    if bytes.is_empty() {
         return Err(ContractError::InvalidTokenAmount); // Reuse error for empty validation
     }
 
@@ -1419,11 +1419,9 @@ fn require_approved_token(env: &Env, token: &Address) {
     // Skip whitelist enforcement in test mode
     #[cfg(not(test))]
     {
-        let approved: Option<Vec<Address>> = env.storage()
-            .instance()
-            .get(&DataKey::ApprovedTokens);
+        let approved: Option<Vec<Address>> = env.storage().instance().get(&DataKey::ApprovedTokens);
         if let Some(tokens) = approved {
-            if tokens.len() > 0 && !tokens.contains(token) {
+            if !tokens.is_empty() && !tokens.contains(token) {
                 panic_with_error!(env, ContractError::UnapprovedToken);
             }
         }
@@ -1730,7 +1728,7 @@ fn settle_claim_for_meter(
 
     // SLA Penalty Logic
     if meter.sla_config_set {
-        let config = &meter.sla_config;
+        let config = meter.sla_config.as_ref().unwrap();
         // Automatic reversion if service stabilizes (no reports for 2x threshold)
         let stability_window = config.threshold_seconds.saturating_mul(2);
         if now.saturating_sub(meter.sla_state.last_report_timestamp) > stability_window {
@@ -2191,9 +2189,6 @@ fn can_finalize_upgrade(env: &Env) -> bool {
 
 #[contract]
 pub struct UtilityContract;
-
-// Re-export the generated client type so tests can use `use crate::*` or explicit imports
-pub use utility_contract::Client as UtilityContractClient;
 
 // Issue #118: ZK Privacy Helper Functions
 
@@ -3056,13 +3051,16 @@ impl UtilityContract {
     /// Only callable by the contract admin.
     pub fn approve_token(env: Env, token: Address, decimals: u32) {
         require_admin_auth(&env);
-        let mut approved: Vec<Address> = env.storage()
+        let mut approved: Vec<Address> = env
+            .storage()
             .instance()
             .get(&DataKey::ApprovedTokens)
             .unwrap_or(Vec::new(&env));
         if !approved.contains(&token) {
             approved.push_back(token.clone());
-            env.storage().instance().set(&DataKey::ApprovedTokens, &approved);
+            env.storage()
+                .instance()
+                .set(&DataKey::ApprovedTokens, &approved);
         }
         let info = TokenInfo {
             token: token.clone(),
@@ -3071,20 +3069,25 @@ impl UtilityContract {
             approved_at: env.ledger().timestamp(),
             approved_by: get_admin_or_panic(&env),
         };
-        env.storage().instance().set(&DataKey::TokenInfo(token), &info);
+        env.storage()
+            .instance()
+            .set(&DataKey::TokenInfo(token), &info);
     }
 
     /// Revoke a token from the protocol whitelist.
     /// Only callable by the contract admin.
     pub fn revoke_token(env: Env, token: Address) {
         require_admin_auth(&env);
-        let mut approved: Vec<Address> = env.storage()
+        let mut approved: Vec<Address> = env
+            .storage()
             .instance()
             .get(&DataKey::ApprovedTokens)
             .unwrap_or(Vec::new(&env));
         if let Some(pos) = approved.first_index_of(&token) {
             approved.remove(pos);
-            env.storage().instance().set(&DataKey::ApprovedTokens, &approved);
+            env.storage()
+                .instance()
+                .set(&DataKey::ApprovedTokens, &approved);
             env.storage().instance().remove(&DataKey::TokenInfo(token));
         }
     }
@@ -3099,9 +3102,7 @@ impl UtilityContract {
 
     /// Get token info for a specific token.
     pub fn get_token_info(env: Env, token: Address) -> Option<TokenInfo> {
-        env.storage()
-            .instance()
-            .get(&DataKey::TokenInfo(token))
+        env.storage().instance().get(&DataKey::TokenInfo(token))
     }
 
     pub fn set_admin(env: Env, admin_address: Address) {
@@ -4076,7 +4077,7 @@ impl UtilityContract {
             panic_with_error!(&env, ContractError::InvalidUsageValue);
         }
 
-        meter.sla_config = config.clone();
+        meter.sla_config = Some(config.clone());
         meter.sla_config_set = true;
         env.storage()
             .instance()
@@ -4571,10 +4572,10 @@ impl UtilityContract {
             is_offline: false,
             estimated_usage_total: 0,
             parent_account: None,
-            sla_config: SLAConfig {
+            sla_config: Some(SLAConfig {
                 threshold_seconds: 0,
                 penalty_multiplier_bps: 0,
-            },
+            }),
             sla_config_set: false,
             sla_state: SLAState {
                 accumulated_downtime: 0,
@@ -5017,11 +5018,12 @@ impl UtilityContract {
 
         // Apply SLA Penalty if active
         if meter.sla_config_set {
+            let config = meter.sla_config.as_ref().unwrap();
             if meter.sla_state.is_penalty_active
-                || meter.sla_state.accumulated_downtime >= meter.sla_config.threshold_seconds
+                || meter.sla_state.accumulated_downtime >= config.threshold_seconds
             {
                 amount = amount
-                    .saturating_mul(meter.sla_config.penalty_multiplier_bps)
+                    .saturating_mul(config.penalty_multiplier_bps)
                     .saturating_div(10000);
             }
         }
@@ -7142,7 +7144,7 @@ impl UtilityContract {
 
         // Find and verify the approver is an authorized finance wallet
         let mut approver: Option<Address> = None;
-        if config.finance_wallets.len() > 0 {
+        if !config.finance_wallets.is_empty() {
             let wallet = config.finance_wallets.get(0).unwrap();
             wallet.require_auth();
             approver = Some(wallet);
@@ -7309,7 +7311,7 @@ impl UtilityContract {
         }
 
         let mut revoker: Option<Address> = None;
-        if config.finance_wallets.len() > 0 {
+        if !config.finance_wallets.is_empty() {
             let wallet = config.finance_wallets.get(0).unwrap();
             wallet.require_auth();
             revoker = Some(wallet);

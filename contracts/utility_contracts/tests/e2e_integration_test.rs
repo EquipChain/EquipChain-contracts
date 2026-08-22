@@ -135,5 +135,5 @@ fn test_final_e2e_integration_hardware_to_dex() {
 
     // Verify Events
     let events = env.events().all();
-    assert!(events.len() > 0);
+    assert!(!events.is_empty());
 }
