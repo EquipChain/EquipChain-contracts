@@ -1,7 +1,9 @@
 // Comprehensive tests for Issue #119: Milestone-Based Maintenance Fund Release
 // This test suite validates the step-logic and sequential milestone verification
 
-use soroban_sdk::{contractimport, symbol_short, Address, Bytes, BytesN, Env, String, Vec};
+use soroban_sdk::{
+    contractimport, symbol_short, testutils::Address as _, Address, Bytes, BytesN, Env, String, Vec,
+};
 
 #[contractimport]
 __!("../../target/wasm32-unknown-unknown/release/utility_contracts.wasm");

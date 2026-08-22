@@ -1,11 +1,11 @@
 #![cfg(test)]
 
 use crate::{
-    ContinuousFlow, ContractError, StreamStatus, UtilityContract, BUFFER_DURATION_SECONDS,
+    StreamStatus, UtilityContract, UtilityContractClient, BUFFER_DURATION_SECONDS,
     BUFFER_WARNING_THRESHOLD,
 };
 use soroban_sdk::testutils::{Address as _, Ledger as _};
-use soroban_sdk::{symbol_short, Address, BytesN, Env, Symbol};
+use soroban_sdk::{Address, Env, Symbol};
 
 #[test]
 fn test_buffer_creation_requirement() {
@@ -25,7 +25,7 @@ fn test_buffer_creation_requirement() {
 
     // Test 2: Stream creation should fail without proper authorization
     env.mock_auths(&[]);
-    let result = std::panic::catch_unwind(|| {
+    let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
         client.create_continuous_stream(
             &stream_id,
             &flow_rate,
@@ -33,7 +33,7 @@ fn test_buffer_creation_requirement() {
             &provider,
             &payer,
         );
-    });
+    }));
     assert!(result.is_err());
 
     // Test 3: Successful stream creation with buffer
@@ -262,9 +262,9 @@ fn test_buffer_security_against_malicious_draining() {
 
     // Test 1: Unauthorized withdrawal should fail
     env.mock_auths(&[(&attacker, &Symbol::new(&env, "withdraw_continuous"))]);
-    let result = std::panic::catch_unwind(|| {
+    let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
         client.withdraw_continuous(&stream_id, &1000);
-    });
+    }));
     assert!(result.is_err(), "Unauthorized withdrawal should fail");
 
     // Test 2: Even authorized withdrawal should only affect main balance, not buffer
@@ -280,9 +280,9 @@ fn test_buffer_security_against_malicious_draining() {
 
     // Test 3: Unauthorized buffer addition should fail
     env.mock_auths(&[(&attacker, &Symbol::new(&env, "add_continuous_buffer"))]);
-    let result = std::panic::catch_unwind(|| {
+    let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
         client.add_continuous_buffer(&stream_id, &1000);
-    });
+    }));
     assert!(result.is_err(), "Unauthorized buffer addition should fail");
 }
 
@@ -330,7 +330,7 @@ fn test_stream_creation_without_buffer_fails() {
     // Attempt to create stream without proper authorization for buffer transfer
     env.mock_auths(&[(&provider, &Symbol::new(&env, "create_continuous_stream"))]);
 
-    let result = std::panic::catch_unwind(|| {
+    let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
         client.create_continuous_stream(
             &stream_id,
             &flow_rate,
@@ -338,7 +338,7 @@ fn test_stream_creation_without_buffer_fails() {
             &provider,
             &payer,
         );
-    });
+    }));
     assert!(
         result.is_err(),
         "Stream creation should fail without payer authorization for buffer"
@@ -377,8 +377,8 @@ fn test_buffer_refund_only_on_amicable_closure() {
 
     // Attempt refund on depleted stream should fail
     env.mock_auths(&[(&provider, &Symbol::new(&env, "close_stream_amicably"))]);
-    let result = std::panic::catch_unwind(|| {
+    let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
         client.close_stream_amicably(&stream_id);
-    });
+    }));
     assert!(result.is_err(), "Refund should fail on depleted stream");
 }

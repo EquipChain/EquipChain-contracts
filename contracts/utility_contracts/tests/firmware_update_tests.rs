@@ -1,7 +1,7 @@
 #![cfg(test)]
 
 use soroban_sdk::testutils::{Address as _, Ledger};
-use soroban_sdk::{token, Address, BytesN, Env};
+use soroban_sdk::{testutils::Address as _, token, Address, BytesN, Env};
 use utility_contracts::{
     SignedUpdateComplete, SignedUsageData, UtilityContract, UtilityContractClient,
 };

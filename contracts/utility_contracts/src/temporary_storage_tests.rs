@@ -9,7 +9,9 @@ mod tests {
         temporary_storage::{OptimizedFlowCalculator, OptimizedUsageTracker, TempStorageManager},
         BillingType, ContinuousFlow, DataKey, Meter, StreamStatus, UsageData,
     };
-    use soroban_sdk::{testutils::Address as _, testutils::Ledger, Address, BytesN, Env, Symbol};
+    use soroban_sdk::{
+        testutils::Address as _, testutils::Ledger, Address, BytesN, Env, Symbol, Vec,
+    };
 
     fn create_test_env() -> Env {
         let env = Env::default();
@@ -241,7 +243,8 @@ mod tests {
         // Simulate ledger advancement beyond TTL (5 ledgers)
         for _ in 0..6 {
             env.ledger()
-                .set(env.ledger().sequence() + 1, env.ledger().timestamp() + 1);
+                .set_sequence_number(env.ledger().sequence() + 1);
+            env.ledger().set_timestamp(env.ledger().timestamp() + 1);
         }
 
         // Data should still be accessible within TTL period

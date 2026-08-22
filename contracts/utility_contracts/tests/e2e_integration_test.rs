@@ -1,5 +1,7 @@
 use soroban_sdk::testutils::{Address as _, Events, Ledger};
-use soroban_sdk::{symbol_short, token, Address, BytesN, Env, Symbol};
+use soroban_sdk::{
+    symbol_short, testutils::Address as _, testutils::Events, token, Address, BytesN, Env, Symbol,
+};
 use utility_contracts::{
     BillingType, Meter, SLAState, SignedUsageData, StreamStatus, UtilityContract,
     UtilityContractClient,
@@ -11,7 +13,9 @@ fn device_key(env: &Env, byte: u8) -> BytesN<32> {
 }
 
 mod mock_oracle {
-    use soroban_sdk::{contract, contractimpl, Address, Env};
+    use soroban_sdk::{
+        contract, contractimpl, testutils::Address as _, testutils::Events, Address, Env,
+    };
     #[contract]
     pub struct MockOracle;
     #[contractimpl]

@@ -1,4 +1,4 @@
-use soroban_sdk::{symbol_short, Address, BytesN, Env};
+use soroban_sdk::{symbol_short, testutils::Address as _, Address, BytesN, Env};
 use utility_contracts::{
     grant_stream_listener::{GrantConfig, GrantMatch, GrantStreamListener},
     ConservationGoal, GoalReachedEvent, GrantDataKey, UtilityContract,

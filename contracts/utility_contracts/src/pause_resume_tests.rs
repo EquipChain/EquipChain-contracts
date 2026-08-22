@@ -2,6 +2,7 @@
 
 use crate::*;
 use soroban_sdk::{
+    testutils::Events,
     testutils::{Address as _, Ledger as TestLedger},
     Address, Env, Symbol,
 };

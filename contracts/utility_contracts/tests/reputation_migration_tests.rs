@@ -1,13 +1,16 @@
 // Comprehensive tests for Inter-Susu Reputation Migration functionality
 // Issue #127: Support for Inter-Susu_Reputation_Migration_for_Renters
 
-use soroban_sdk::{contractimpl, symbol_short, Address, BytesN, Env, Symbol};
+use soroban_sdk::{
+    contractimpl, symbol_short, testutils::Address as _, testutils::Events, Address, BytesN, Env,
+    Symbol,
+};
 use utility_contracts::{ContractError, DataKey, ReputationMigration, ReputationRecord};
 
 #[test]
 fn test_reputation_export_burns_old_record() {
     let env = Env::default();
-    let user = Address::random(&env);
+    let user = Address::generate(&env);
     let old_contract = env.register(utility_contracts::Contract, ());
 
     // Create initial reputation record
@@ -68,8 +71,8 @@ fn test_reputation_export_burns_old_record() {
 #[test]
 fn test_reputation_import_mints_new_record() {
     let env = Env::default();
-    let user = Address::random(&env);
-    let old_contract = Address::random(&env);
+    let user = Address::generate(&env);
+    let old_contract = Address::generate(&env);
     let new_contract = env.register(utility_contracts::Contract, ());
 
     // Create reputation record to import
@@ -159,7 +162,7 @@ fn test_reputation_import_mints_new_record() {
 #[should_panic(expected = "ReputationNotFound")]
 fn test_export_reputation_not_found() {
     let env = Env::default();
-    let user = Address::random(&env);
+    let user = Address::generate(&env);
 
     // Try to export non-existent reputation
     utility_contracts::Contract::export_reputation(&env, user);
@@ -169,8 +172,8 @@ fn test_export_reputation_not_found() {
 #[should_panic(expected = "ReputationAlreadyMigrated")]
 fn test_import_already_migrated() {
     let env = Env::default();
-    let user = Address::random(&env);
-    let old_contract = Address::random(&env);
+    let user = Address::generate(&env);
+    let old_contract = Address::generate(&env);
 
     // Set up migrated reputation flag
     env.storage().instance().set(
@@ -207,8 +210,8 @@ fn test_import_already_migrated() {
 #[should_panic(expected = "NullifierAlreadyUsed")]
 fn test_import_nullifier_already_used() {
     let env = Env::default();
-    let user = Address::random(&env);
-    let old_contract = Address::random(&env);
+    let user = Address::generate(&env);
+    let old_contract = Address::generate(&env);
 
     // Set up used nullifier
     let nullifier = BytesN::from_array(&env, &[5; 32]);
@@ -243,7 +246,7 @@ fn test_import_nullifier_already_used() {
 #[test]
 fn test_get_reputation() {
     let env = Env::default();
-    let user = Address::random(&env);
+    let user = Address::generate(&env);
 
     let reputation = ReputationRecord {
         user: user.clone(),
@@ -281,7 +284,7 @@ fn test_get_reputation() {
 #[should_panic(expected = "ReputationNotFound")]
 fn test_get_reputation_not_found() {
     let env = Env::default();
-    let user = Address::random(&env);
+    let user = Address::generate(&env);
 
     // Try to get non-existent reputation
     utility_contracts::Contract::get_reputation(&env, user);
@@ -290,7 +293,7 @@ fn test_get_reputation_not_found() {
 #[test]
 fn test_update_reputation_score_on_time_payment() {
     let env = Env::default();
-    let user = Address::random(&env);
+    let user = Address::generate(&env);
     let contract_address = env.register(utility_contracts::Contract, ());
 
     // Create initial reputation
@@ -332,7 +335,7 @@ fn test_update_reputation_score_on_time_payment() {
 #[test]
 fn test_update_reputation_score_late_payment() {
     let env = Env::default();
-    let user = Address::random(&env);
+    let user = Address::generate(&env);
     let contract_address = env.register(utility_contracts::Contract, ());
 
     // Create initial reputation
@@ -374,7 +377,7 @@ fn test_update_reputation_score_late_payment() {
 #[test]
 fn test_update_reputation_score_creates_new_record() {
     let env = Env::default();
-    let user = Address::random(&env);
+    let user = Address::generate(&env);
     let contract_address = env.register(utility_contracts::Contract, ());
 
     // Update reputation for non-existent record
@@ -397,8 +400,8 @@ fn test_update_reputation_score_creates_new_record() {
 #[test]
 fn test_complete_migration_flow() {
     let env = Env::default();
-    let user = Address::random(&env);
-    let old_contract_address = Address::random(&env);
+    let user = Address::generate(&env);
+    let old_contract_address = Address::generate(&env);
     let new_contract_address = env.register(utility_contracts::Contract, ());
 
     // Step 1: Create reputation in old contract (simulated)

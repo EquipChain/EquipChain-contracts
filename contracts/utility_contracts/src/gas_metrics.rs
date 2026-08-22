@@ -1,6 +1,8 @@
 #![cfg(test)]
 
 use crate::std::string::ToString;
+use std::string::String;
+use std::vec::Vec;
 
 /// Automated Gas Metering Metrics for Unit Tests
 ///
@@ -231,9 +233,9 @@ impl GasMeter {
 
         operation_names
             .into_iter()
-            .filter_map(|op_name| {
+            .filter_map(|op_name: &String| {
                 self.get_operation_statistics(&op_name)
-                    .map(|stats| (op_name, stats))
+                    .map(|stats| (op_name.clone(), stats))
             })
             .collect()
     }

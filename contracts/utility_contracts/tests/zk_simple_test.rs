@@ -1,7 +1,7 @@
 #![cfg(test)]
 
 use soroban_sdk::testutils::{Address as _, Ledger};
-use soroban_sdk::{token, Address, Bytes, BytesN, Env, Vec};
+use soroban_sdk::{testutils::Address as _, token, Address, Bytes, BytesN, Env, Vec};
 use utility_contracts::{PrivateBillingStatus, UtilityContractClient};
 
 // Simple test to verify ZK privacy implementation compiles and works

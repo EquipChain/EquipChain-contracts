@@ -1,7 +1,7 @@
 #![cfg(test)]
 
 use crate::*;
-use soroban_sdk::{symbol_short, testutils::Address as _, Address, BytesN, Env};
+use soroban_sdk::{testutils::Address as _, Address, Env};
 
 #[test]
 fn test_dust_detection() {
@@ -116,9 +116,9 @@ fn test_dust_sweeping_single_stream() {
     assert!(client.has_dust(&stream_id));
 
     // Sweep dust (should fail with no dust to sweep since dust_amount = 0)
-    let result = std::panic::catch_unwind(|| {
+    let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
         client.sweep_dust(&token_address, None);
-    });
+    }));
     assert!(result.is_err()); // Should panic with NoDustToSweep
 }
 

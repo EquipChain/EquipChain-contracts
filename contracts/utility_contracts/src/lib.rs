@@ -397,7 +397,7 @@ pub struct Meter {
     pub is_offline: bool,
     pub estimated_usage_total: i128,
     // SLA Penalty Fields
-    pub sla_config: Option<SLAConfig>,
+    pub sla_config: SLAConfig,
     pub sla_config_set: bool,
     pub sla_state: SLAState,
     // Billing Group parent
@@ -1728,7 +1728,7 @@ fn settle_claim_for_meter(
 
     // SLA Penalty Logic
     if meter.sla_config_set {
-        let config = meter.sla_config.as_ref().unwrap();
+        let config = &meter.sla_config;
         // Automatic reversion if service stabilizes (no reports for 2x threshold)
         let stability_window = config.threshold_seconds.saturating_mul(2);
         if now.saturating_sub(meter.sla_state.last_report_timestamp) > stability_window {
@@ -4077,7 +4077,7 @@ impl UtilityContract {
             panic_with_error!(&env, ContractError::InvalidUsageValue);
         }
 
-        meter.sla_config = Some(config.clone());
+        meter.sla_config = config.clone();
         meter.sla_config_set = true;
         env.storage()
             .instance()
@@ -4572,10 +4572,10 @@ impl UtilityContract {
             is_offline: false,
             estimated_usage_total: 0,
             parent_account: None,
-            sla_config: Some(SLAConfig {
+            sla_config: SLAConfig {
                 threshold_seconds: 0,
                 penalty_multiplier_bps: 0,
-            }),
+            },
             sla_config_set: false,
             sla_state: SLAState {
                 accumulated_downtime: 0,
@@ -4855,7 +4855,8 @@ impl UtilityContract {
         let mut cost = signed_data.units_consumed.saturating_mul(discounted_rate);
 
         // Apply SLA Penalty if active
-        if let Some(config) = &meter.sla_config {
+        {
+            let config = &meter.sla_config;
             if meter.sla_state.is_penalty_active
                 || meter.sla_state.accumulated_downtime >= config.threshold_seconds
             {
@@ -5018,7 +5019,7 @@ impl UtilityContract {
 
         // Apply SLA Penalty if active
         if meter.sla_config_set {
-            let config = meter.sla_config.as_ref().unwrap();
+            let config = &meter.sla_config;
             if meter.sla_state.is_penalty_active
                 || meter.sla_state.accumulated_downtime >= config.threshold_seconds
             {
@@ -8766,7 +8767,7 @@ fn negate_g1(env: &Env, point: &Bytes) -> Bytes {
     let mut result = point.clone();
     if result.len() >= 64 {
         let y_byte = result.get(63);
-        result.set(63, y_byte ^ 0x01);
+        result.set(63, y_byte.unwrap_or(0) ^ 0x01);
     }
     result
 }
