@@ -2672,9 +2672,6 @@ fn update_flow_rate(env: &Env, stream_id: u64, new_flow_rate: i128) -> Result<()
 
     let mut flow = get_continuous_flow_or_panic(env, stream_id);
 
-    // Require authentication for flow rate changes
-    env.current_contract_address().require_auth();
-
     let old_flow_rate = flow.flow_rate_per_second;
     let old_status = flow.status;
 
@@ -5499,11 +5496,17 @@ impl UtilityContract {
             panic_with_error!(&env, ContractError::InvalidTokenAmount);
         }
 
+        let flow = get_continuous_flow_or_panic(&env, stream_id);
+        flow.provider.require_auth();
+
         update_flow_rate(&env, stream_id, new_flow_rate).unwrap();
     }
 
     /// Add balance to a continuous flow stream
     pub fn add_continuous_balance(env: Env, stream_id: u64, additional_balance: i128) {
+        let flow = get_continuous_flow_or_panic(&env, stream_id);
+        flow.provider.require_auth();
+
         add_balance_to_flow(&env, stream_id, additional_balance).unwrap();
 
         env.events().publish(
@@ -5547,6 +5550,9 @@ impl UtilityContract {
 
     /// Pause a continuous flow stream
     pub fn pause_continuous_flow(env: Env, stream_id: u64) {
+        let flow = get_continuous_flow_or_panic(&env, stream_id);
+        flow.provider.require_auth();
+
         update_flow_rate(&env, stream_id, 0).unwrap();
     }
 
@@ -5555,6 +5561,9 @@ impl UtilityContract {
         if flow_rate_per_second <= 0 {
             panic_with_error!(&env, ContractError::InvalidTokenAmount);
         }
+
+        let flow = get_continuous_flow_or_panic(&env, stream_id);
+        flow.provider.require_auth();
 
         update_flow_rate(&env, stream_id, flow_rate_per_second).unwrap();
     }
