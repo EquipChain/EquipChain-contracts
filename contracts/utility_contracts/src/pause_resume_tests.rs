@@ -19,7 +19,7 @@ fn test_pause_stream_stops_flow_calculation() {
     let initial_balance = 1000000i128; // 1 XLM in stroops
 
     // Create stream
-    client.create_continuous_stream(&stream_id, &flow_rate, &initial_balance, &provider);
+    client.create_continuous_stream(&stream_id, &0u64, &flow_rate, &initial_balance, &provider, &provider, &0u32, &soroban_sdk::BytesN::from_array(&env, &[0u8; 32]));
 
     // Simulate time passage (100 seconds)
     env.ledger().set_timestamp(100);
@@ -54,7 +54,7 @@ fn test_resume_stream_adjusts_timeline() {
     let initial_balance = 1000000i128;
 
     // Create stream
-    client.create_continuous_stream(&stream_id, &flow_rate, &initial_balance, &provider);
+    client.create_continuous_stream(&stream_id, &0u64, &flow_rate, &initial_balance, &provider, &provider, &0u32, &soroban_sdk::BytesN::from_array(&env, &[0u8; 32]));
 
     // Simulate time passage (100 seconds)
     env.ledger().set_timestamp(100);
@@ -99,7 +99,7 @@ fn test_provider_access_control() {
     let initial_balance = 1000000i128;
 
     // Create stream with provider
-    client.create_continuous_stream(&stream_id, &flow_rate, &initial_balance, &provider);
+    client.create_continuous_stream(&stream_id, &0u64, &flow_rate, &initial_balance, &provider, &provider, &0u32, &soroban_sdk::BytesN::from_array(&env, &[0u8; 32]));
 
     // Try to pause with unauthorized user (should fail)
     let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
@@ -131,7 +131,7 @@ fn test_edge_case_depleted_during_pause() {
     let initial_balance = 1000i128; // Very small balance
 
     // Create stream
-    client.create_continuous_stream(&stream_id, &flow_rate, &initial_balance, &provider);
+    client.create_continuous_stream(&stream_id, &0u64, &flow_rate, &initial_balance, &provider, &provider, &0u32, &soroban_sdk::BytesN::from_array(&env, &[0u8; 32]));
 
     // Simulate time passage to deplete the stream (1 second)
     env.ledger().set_timestamp(1);
@@ -162,7 +162,7 @@ fn test_pause_only_active_streams() {
     let initial_balance = 0i128; // Start with paused stream
 
     // Create paused stream
-    client.create_continuous_stream(&stream_id, &flow_rate, &initial_balance, &provider);
+    client.create_continuous_stream(&stream_id, &0u64, &flow_rate, &initial_balance, &provider, &provider, &0u32, &soroban_sdk::BytesN::from_array(&env, &[0u8; 32]));
 
     // Try to pause already paused stream (should fail)
     let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
@@ -191,7 +191,7 @@ fn test_resume_only_paused_streams() {
     let initial_balance = 1000000i128;
 
     // Create active stream
-    client.create_continuous_stream(&stream_id, &flow_rate, &initial_balance, &provider);
+    client.create_continuous_stream(&stream_id, &0u64, &flow_rate, &initial_balance, &provider, &provider, &0u32, &soroban_sdk::BytesN::from_array(&env, &[0u8; 32]));
 
     // Try to resume active stream (should fail)
     let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
@@ -221,7 +221,7 @@ fn test_flow_math_adjustment_post_resume() {
     let initial_balance = 1000000i128;
 
     // Create stream
-    client.create_continuous_stream(&stream_id, &flow_rate, &initial_balance, &provider);
+    client.create_continuous_stream(&stream_id, &0u64, &flow_rate, &initial_balance, &provider, &provider, &0u32, &soroban_sdk::BytesN::from_array(&env, &[0u8; 32]));
 
     // Simulate time passage (100 seconds)
     env.ledger().set_timestamp(100);
@@ -267,7 +267,7 @@ fn test_zero_flow_rate_resume_fails() {
     let initial_balance = 1000000i128;
 
     // Create stream
-    client.create_continuous_stream(&stream_id, &flow_rate, &initial_balance, &provider);
+    client.create_continuous_stream(&stream_id, &0u64, &flow_rate, &initial_balance, &provider, &provider, &0u32, &soroban_sdk::BytesN::from_array(&env, &[0u8; 32]));
 
     // Pause
     client.pause_stream(&stream_id);
@@ -297,7 +297,7 @@ fn test_pause_resume_events_emitted() {
     let initial_balance = 1000000i128;
 
     // Create stream
-    client.create_continuous_stream(&stream_id, &flow_rate, &initial_balance, &provider);
+    client.create_continuous_stream(&stream_id, &0u64, &flow_rate, &initial_balance, &provider, &provider, &0u32, &soroban_sdk::BytesN::from_array(&env, &[0u8; 32]));
 
     // Simulate time passage
     env.ledger().set_timestamp(100);

@@ -1,7 +1,7 @@
 #![no_main]
 
 use libfuzzer_sys::fuzz_target;
-use soroban_sdk::{testutils::Address as TestAddress, Address, Env};
+use soroban_sdk::{testutils::Address as TestAddress, Address, BytesN, Env};
 use utility_contracts::{UtilityContract, ContinuousFlow, StreamStatus};
 
 fuzz_target!(|data: &[u8]| {
@@ -67,9 +67,13 @@ fuzz_target!(|data: &[u8]| {
             let result = std::panic::catch_unwind(|| {
                 client.create_continuous_stream(
                     &stream_id,
+                    &0u64,
                     &test_flow_rate,
                     &test_balance,
-                    &provider
+                    &provider,
+                    &provider,
+                    &0u32,
+                    &BytesN::from_array(&env, &[0u8; 32]),
                 );
             });
             
@@ -162,7 +166,7 @@ fuzz_target!(|data: &[u8]| {
         let base_balance = 1000000i128;
         
         let create_result = std::panic::catch_unwind(|| {
-            client.create_continuous_stream(&stream_id, &base_flow_rate, &base_balance, &provider);
+            client.create_continuous_stream(&stream_id, &0u64, &base_flow_rate, &base_balance, &provider, &provider, &0u32, &BytesN::from_array(&env, &[0u8; 32]));
         });
         
         if create_result.is_err() {
@@ -224,7 +228,7 @@ fuzz_target!(|data: &[u8]| {
     
     let edge_case_result = std::panic::catch_unwind(|| {
         let stream_id = 888888u64;
-        client.create_continuous_stream(&stream_id, &max_flow_rate, &max_balance, &provider);
+        client.create_continuous_stream(&stream_id, &0u64, &max_flow_rate, &max_balance, &provider, &provider, &0u32, &BytesN::from_array(&env, &[0u8; 32]));
         
         env.ledger().set_timestamp(max_time);
         let _flow = client.get_continuous_flow(&stream_id);

@@ -1,4 +1,4 @@
-use soroban_sdk::testutils::{Address as _, Events, Ledger};
+use soroban_sdk::testutils::{Address as _, Ledger};
 use soroban_sdk::{
     symbol_short, testutils::Address as _, testutils::Events, token, Address, BytesN, Env, Symbol,
 };
@@ -109,10 +109,13 @@ fn test_final_e2e_integration_hardware_to_dex() {
 
     client.create_continuous_stream(
         &stream_id,
+        &0u64,
         &flow_rate,
         &stream_initial_balance,
         &provider,
         &provider,
+        &0u32,
+        &soroban_sdk::BytesN::from_array(&env, &[0u8; 32]),
     );
 
     // Advance time

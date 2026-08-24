@@ -74,7 +74,9 @@ fn test_stream_creation_and_dust_detection() {
 
     // Create a stream
     let stream_id = 1u64;
-    client.create_continuous_stream(&stream_id, &1000, &5000);
+    let provider = Address::generate(&env);
+    env.mock_all_auths();
+    client.create_continuous_stream(&stream_id, &0u64, &1000, &5000, &provider, &provider, &0u32, &soroban_sdk::BytesN::from_array(&env, &[0u8; 32]));
     
     // Get the stream
     let flow = client.get_continuous_flow(&stream_id);

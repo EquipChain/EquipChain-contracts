@@ -24,10 +24,10 @@ pub mod stream_operation_examples {
     ) {
         measure_gas(format!("create_continuous_stream_{}", label), GasBaseline::REGISTER_METER, || {
             // Simulated contract call:
-            // client.create_continuous_stream(stream_id, flow_rate, balance, provider, payer)
+            // client.create_continuous_stream(stream_id, meter_id, flow_rate, balance, provider, payer, priority_tier, device_mac_pubkey)
             
             // In actual test, this would be:
-            // let _ = client.create_continuous_stream(&stream_id, &flow_rate, &balance, &provider, &payer);
+            // let _ = client.create_continuous_stream(&stream_id, &0, &flow_rate, &balance, &provider, &payer, &0, &BytesN::from_array(&env, &[0u8; 32]));
             
             // For demonstration, we simulate the operation
             let _stream_data = (stream_id, flow_rate, balance);

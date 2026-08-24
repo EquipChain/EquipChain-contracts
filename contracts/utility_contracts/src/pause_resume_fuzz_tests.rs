@@ -22,7 +22,7 @@ mod pause_resume_fuzz {
         let initial_balance = 10000000i128; // Large balance for many cycles
 
         // Create stream
-        client.create_continuous_stream(&stream_id, &flow_rate, &initial_balance, &provider);
+        client.create_continuous_stream(&stream_id, &0u64, &flow_rate, &initial_balance, &provider, &provider, &0u32, &soroban_sdk::BytesN::from_array(&env, &[0u8; 32]));
 
         // Perform rapid pause/resume cycles
         for cycle in 0..100 {
@@ -67,7 +67,7 @@ mod pause_resume_fuzz {
         let initial_balance = 1000000i128;
 
         // Create stream
-        client.create_continuous_stream(&stream_id, &flow_rate, &initial_balance, &provider);
+        client.create_continuous_stream(&stream_id, &0u64, &flow_rate, &initial_balance, &provider, &provider, &0u32, &soroban_sdk::BytesN::from_array(&env, &[0u8; 32]));
 
         env.ledger().set_timestamp(100);
 
@@ -98,7 +98,7 @@ mod pause_resume_fuzz {
         let initial_balance = 1000000i128;
 
         // Create stream
-        client.create_continuous_stream(&stream_id, &flow_rate, &initial_balance, &provider);
+        client.create_continuous_stream(&stream_id, &0u64, &flow_rate, &initial_balance, &provider, &provider, &0u32, &soroban_sdk::BytesN::from_array(&env, &[0u8; 32]));
 
         env.ledger().set_timestamp(100);
 
@@ -134,7 +134,7 @@ mod pause_resume_fuzz {
         let initial_balance = 1000000i128;
 
         // Create stream
-        client.create_continuous_stream(&stream_id, &flow_rate, &initial_balance, &provider);
+        client.create_continuous_stream(&stream_id, &0u64, &flow_rate, &initial_balance, &provider, &provider, &0u32, &soroban_sdk::BytesN::from_array(&env, &[0u8; 32]));
 
         // Test with rapid timestamp changes including backwards timestamps
         let timestamps = vec![100, 150, 120, 200, 180, 250, 300];
@@ -173,7 +173,7 @@ mod pause_resume_fuzz {
         let initial_balance = 1000000i128;
 
         // Create stream
-        client.create_continuous_stream(&stream_id, &flow_rate, &initial_balance, &provider);
+        client.create_continuous_stream(&stream_id, &0u64, &flow_rate, &initial_balance, &provider, &provider, &0u32, &soroban_sdk::BytesN::from_array(&env, &[0u8; 32]));
 
         // Let stream run for a bit
         env.ledger().set_timestamp(100);
@@ -211,7 +211,7 @@ mod pause_resume_fuzz {
         let initial_balance = 1000000i128;
 
         // Create stream
-        client.create_continuous_stream(&stream_id, &flow_rate, &initial_balance, &provider);
+        client.create_continuous_stream(&stream_id, &0u64, &flow_rate, &initial_balance, &provider, &provider, &0u32, &soroban_sdk::BytesN::from_array(&env, &[0u8; 32]));
 
         env.ledger().set_timestamp(100);
 
@@ -240,7 +240,7 @@ mod pause_resume_fuzz {
 
         // Test with minimum balance
         let stream_id_min = 106u64;
-        client.create_continuous_stream(&stream_id_min, &1i128, &1i128, &provider);
+        client.create_continuous_stream(&stream_id_min, &0u64, &1i128, &1i128, &provider, &provider, &0u32, &soroban_sdk::BytesN::from_array(&env, &[0u8; 32]));
         env.ledger().set_timestamp(1);
         client.pause_stream(&stream_id_min);
         client.resume_stream(&stream_id_min, &1i128);
@@ -249,7 +249,7 @@ mod pause_resume_fuzz {
         let stream_id_max = 107u64;
         let max_balance = i128::MAX / 1000; // Prevent overflow in calculations
         let max_flow_rate = 1000000i128;
-        client.create_continuous_stream(&stream_id_max, &max_flow_rate, &max_balance, &provider);
+        client.create_continuous_stream(&stream_id_max, &0u64, &max_flow_rate, &max_balance, &provider, &provider, &0u32, &soroban_sdk::BytesN::from_array(&env, &[0u8; 32]));
         env.ledger().set_timestamp(1000);
         client.pause_stream(&stream_id_max);
         client.resume_stream(&stream_id_max, &max_flow_rate);
@@ -275,7 +275,7 @@ mod pause_resume_fuzz {
         let initial_balance = 1000000i128;
 
         // Create stream
-        client.create_continuous_stream(&stream_id, &flow_rate, &initial_balance, &provider);
+        client.create_continuous_stream(&stream_id, &0u64, &flow_rate, &initial_balance, &provider, &provider, &0u32, &soroban_sdk::BytesN::from_array(&env, &[0u8; 32]));
 
         // Interleave various operations rapidly
         for i in 0..50 {

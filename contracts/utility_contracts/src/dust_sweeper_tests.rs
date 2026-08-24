@@ -1,7 +1,7 @@
 #![cfg(test)]
 
 use crate::*;
-use soroban_sdk::{testutils::Address as _, Address, Env};
+use soroban_sdk::{testutils::Address as _, Address, BytesN, Env};
 
 #[test]
 fn test_dust_detection() {
@@ -96,17 +96,27 @@ fn test_dust_sweeping_single_stream() {
     // Create a stream with dust amount
     let stream_id = 1u64;
     let dust_amount = 0i128; // Less than 1 stroop
-    client.create_continuous_stream(&stream_id, &1000, &dust_amount);
+    let provider = Address::generate(&env);
+    env.mock_all_auths();
+    client.create_continuous_stream(&stream_id, &0u64, &1000, &dust_amount, &provider, &provider, &0u32, &soroban_sdk::BytesN::from_array(&env, &[0u8; 32]));
 
     // Manually set stream to depleted status with dust
-    let mut flow = ContinuousFlow {
+    let flow = ContinuousFlow {
         stream_id,
         flow_rate_per_second: 1000,
         accumulated_balance: 0, // Dust amount
         last_flow_timestamp: env.ledger().timestamp(),
         created_timestamp: env.ledger().timestamp(),
         status: StreamStatus::Depleted,
-        reserved: [0u8; 7],
+        paused_at: 0,
+        provider: provider.clone(),
+        buffer_balance: 0,
+        buffer_warning_sent: false,
+        payer: provider.clone(),
+        priority_tier: 0,
+        grid_epoch_seen: 0,
+        device_mac_pubkey: BytesN::from_array(&env, &[0u8; 32]),
+        is_unreliable: false,
     };
     env.storage()
         .instance()
@@ -117,7 +127,7 @@ fn test_dust_sweeping_single_stream() {
 
     // Sweep dust (should fail with no dust to sweep since dust_amount = 0)
     let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-        client.sweep_dust(&token_address, None);
+        client.sweep_dust(&admin, &token_address, &None::<u64>);
     }));
     assert!(result.is_err()); // Should panic with NoDustToSweep
 }
@@ -137,19 +147,29 @@ fn test_dust_sweeping_with_actual_dust() {
     client.set_maintenance_config(&treasury, &0);
 
     // Create multiple streams with dust amounts
+    env.mock_all_auths();
     for i in 1u64..=10u64 {
         // Create stream with small amount that will become dust
-        client.create_continuous_stream(&i, &1000, &1000);
+        let provider = Address::generate(&env);
+        client.create_continuous_stream(&i, &0u64, &1000, &1000, &provider, &provider, &0u32, &soroban_sdk::BytesN::from_array(&env, &[0u8; 32]));
 
         // Simulate flow to create dust remainder
-        let mut flow = ContinuousFlow {
+        let flow = ContinuousFlow {
             stream_id: i,
             flow_rate_per_second: 1000,
             accumulated_balance: 0, // Dust amount after flow calculation
             last_flow_timestamp: env.ledger().timestamp().saturating_sub(1000),
             created_timestamp: env.ledger().timestamp().saturating_sub(2000),
             status: StreamStatus::Depleted,
-            reserved: [0u8; 7],
+            paused_at: 0,
+            provider: provider.clone(),
+            buffer_balance: 0,
+            buffer_warning_sent: false,
+            payer: provider.clone(),
+            priority_tier: 0,
+            grid_epoch_seen: 0,
+            device_mac_pubkey: BytesN::from_array(&env, &[0u8; 32]),
+            is_unreliable: false,
         };
         env.storage()
             .instance()
@@ -166,7 +186,7 @@ fn test_dust_sweeping_with_actual_dust() {
     assert!(dust_streams > 0);
 
     // Sweep dust
-    let sweep_result = client.sweep_dust(&token_address, Some(10));
+    let sweep_result = client.sweep_dust(&admin, &token_address, &Some(10u64));
     assert!(sweep_result.streams_swept > 0);
     assert_eq!(sweep_result.token_address, token_address);
 
@@ -207,17 +227,27 @@ fn test_multi_asset_dust_handling() {
     client.set_maintenance_config(&treasury, &0);
 
     // Create streams for different tokens
+    env.mock_all_auths();
     // XLM streams
     for i in 1u64..=5u64 {
-        client.create_continuous_stream(&i, &1000, &500);
-        let mut flow = ContinuousFlow {
+        let provider = Address::generate(&env);
+        client.create_continuous_stream(&i, &0u64, &1000, &500, &provider, &provider, &0u32, &soroban_sdk::BytesN::from_array(&env, &[0u8; 32]));
+        let flow = ContinuousFlow {
             stream_id: i,
             flow_rate_per_second: 1000,
             accumulated_balance: 0,
             last_flow_timestamp: env.ledger().timestamp().saturating_sub(1000),
             created_timestamp: env.ledger().timestamp().saturating_sub(2000),
             status: StreamStatus::Depleted,
-            reserved: [0u8; 7],
+            paused_at: 0,
+            provider: provider.clone(),
+            buffer_balance: 0,
+            buffer_warning_sent: false,
+            payer: provider.clone(),
+            priority_tier: 0,
+            grid_epoch_seen: 0,
+            device_mac_pubkey: BytesN::from_array(&env, &[0u8; 32]),
+            is_unreliable: false,
         };
         env.storage()
             .instance()
@@ -226,15 +256,24 @@ fn test_multi_asset_dust_handling() {
 
     // USDC streams
     for i in 6u64..=10u64 {
-        client.create_continuous_stream(&i, &1000, &500);
-        let mut flow = ContinuousFlow {
+        let provider = Address::generate(&env);
+        client.create_continuous_stream(&i, &0u64, &1000, &500, &provider, &provider, &0u32, &soroban_sdk::BytesN::from_array(&env, &[0u8; 32]));
+        let flow = ContinuousFlow {
             stream_id: i,
             flow_rate_per_second: 1000,
             accumulated_balance: 0,
             last_flow_timestamp: env.ledger().timestamp().saturating_sub(1000),
             created_timestamp: env.ledger().timestamp().saturating_sub(2000),
             status: StreamStatus::Depleted,
-            reserved: [0u8; 7],
+            paused_at: 0,
+            provider: provider.clone(),
+            buffer_balance: 0,
+            buffer_warning_sent: false,
+            payer: provider.clone(),
+            priority_tier: 0,
+            grid_epoch_seen: 0,
+            device_mac_pubkey: BytesN::from_array(&env, &[0u8; 32]),
+            is_unreliable: false,
         };
         env.storage()
             .instance()
@@ -242,11 +281,11 @@ fn test_multi_asset_dust_handling() {
     }
 
     // Sweep XLM dust
-    let xlm_sweep = client.sweep_dust(&xlm_address, Some(5));
+    let xlm_sweep = client.sweep_dust(&admin, &xlm_address, &Some(5u64));
     assert_eq!(xlm_sweep.token_address, xlm_address);
 
     // Sweep USDC dust
-    let usdc_sweep = client.sweep_dust(&usdc_address, Some(5));
+    let usdc_sweep = client.sweep_dust(&admin, &usdc_address, &Some(5u64));
     assert_eq!(usdc_sweep.token_address, usdc_address);
 
     // Verify independent aggregation
@@ -275,18 +314,29 @@ fn test_gas_bounty_mechanism() {
     // Setup
     client.set_admin(&admin);
     client.set_maintenance_config(&treasury, &0);
-    client.fund_gas_bounty(&GAS_BOUNTY_AMOUNT * 2); // Fund enough for bounty
+    let bounty = GAS_BOUNTY_AMOUNT * 2;
+    client.fund_gas_bounty(&bounty); // Fund enough for bounty
 
     // Create stream with dust
-    client.create_continuous_stream(&1u64, &1000, &1000);
-    let mut flow = ContinuousFlow {
+    let provider = Address::generate(&env);
+    env.mock_all_auths();
+    client.create_continuous_stream(&1u64, &0u64, &1000, &1000, &provider, &provider, &0u32, &soroban_sdk::BytesN::from_array(&env, &[0u8; 32]));
+    let flow = ContinuousFlow {
         stream_id: 1,
         flow_rate_per_second: 1000,
         accumulated_balance: 0,
         last_flow_timestamp: env.ledger().timestamp().saturating_sub(1000),
         created_timestamp: env.ledger().timestamp().saturating_sub(2000),
         status: StreamStatus::Depleted,
-        reserved: [0u8; 7],
+        paused_at: 0,
+        provider: provider.clone(),
+        buffer_balance: 0,
+        buffer_warning_sent: false,
+        payer: provider.clone(),
+        priority_tier: 0,
+        grid_epoch_seen: 0,
+        device_mac_pubkey: BytesN::from_array(&env, &[0u8; 32]),
+        is_unreliable: false,
     };
     env.storage()
         .instance()
@@ -322,6 +372,7 @@ fn test_massive_dust_sweeping_performance() {
     client.set_maintenance_config(&treasury, &0);
 
     // Create 10,000 streams with dust
+    env.mock_all_auths();
     let stream_count = 10000u64;
     let batch_size = 1000u64;
 
@@ -329,16 +380,25 @@ fn test_massive_dust_sweeping_performance() {
         let batch_end = (batch_start + batch_size - 1).min(stream_count);
 
         for stream_id in batch_start..=batch_end {
-            client.create_continuous_stream(&stream_id, &1000, &1000);
+            let provider = Address::generate(&env);
+            client.create_continuous_stream(&stream_id, &0u64, &1000, &1000, &provider, &provider, &0u32, &soroban_sdk::BytesN::from_array(&env, &[0u8; 32]));
 
-            let mut flow = ContinuousFlow {
+            let flow = ContinuousFlow {
                 stream_id,
                 flow_rate_per_second: 1000,
                 accumulated_balance: 0,
                 last_flow_timestamp: env.ledger().timestamp().saturating_sub(1000),
                 created_timestamp: env.ledger().timestamp().saturating_sub(2000),
                 status: StreamStatus::Depleted,
-                reserved: [0u8; 7],
+                paused_at: 0,
+                provider: provider.clone(),
+                buffer_balance: 0,
+                buffer_warning_sent: false,
+                payer: provider.clone(),
+                priority_tier: 0,
+                grid_epoch_seen: 0,
+                device_mac_pubkey: BytesN::from_array(&env, &[0u8; 32]),
+                is_unreliable: false,
             };
             env.storage()
                 .instance()
@@ -362,7 +422,7 @@ fn test_massive_dust_sweeping_performance() {
         let batch_end = (batch_start + MAX_SWEEP_STREAMS_PER_CALL - 1).min(stream_count);
         let streams_in_batch = batch_end - batch_start + 1;
 
-        let sweep_result = client.sweep_dust(&token_address, Some(streams_in_batch));
+        let sweep_result = client.sweep_dust(&admin, &token_address, &Some(streams_in_batch));
         total_swept += sweep_result.streams_swept;
         total_dust_amount += sweep_result.total_dust_swept;
     }
@@ -402,26 +462,37 @@ fn test_total_supply_invariant() {
     client.set_maintenance_config(&treasury, &0);
 
     // Create streams with known balances
+    env.mock_all_auths();
     let initial_balances = vec![1000i128, 2000i128, 500i128];
     let mut total_initial = 0i128;
 
     for (i, &balance) in initial_balances.iter().enumerate() {
         let stream_id = (i + 1) as u64;
-        client.create_continuous_stream(&stream_id, &100, &balance);
+        let provider = Address::generate(&env);
+        client.create_continuous_stream(&stream_id, &0u64, &100, &balance, &provider, &provider, &0u32, &soroban_sdk::BytesN::from_array(&env, &[0u8; 32]));
         total_initial += balance;
     }
 
     // Simulate some flow to create dust remainders
     for (i, &balance) in initial_balances.iter().enumerate() {
         let stream_id = (i + 1) as u64;
-        let mut flow = ContinuousFlow {
+        let provider = Address::generate(&env);
+        let flow = ContinuousFlow {
             stream_id,
             flow_rate_per_second: 100,
             accumulated_balance: balance % 1000, // Create dust remainder
             last_flow_timestamp: env.ledger().timestamp().saturating_sub(100),
             created_timestamp: env.ledger().timestamp().saturating_sub(200),
             status: StreamStatus::Depleted,
-            reserved: [0u8; 7],
+            paused_at: 0,
+            provider: provider.clone(),
+            buffer_balance: 0,
+            buffer_warning_sent: false,
+            payer: provider.clone(),
+            priority_tier: 0,
+            grid_epoch_seen: 0,
+            device_mac_pubkey: BytesN::from_array(&env, &[0u8; 32]),
+            is_unreliable: false,
         };
         env.storage()
             .instance()
@@ -441,7 +512,7 @@ fn test_total_supply_invariant() {
     }
 
     // Sweep dust
-    let sweep_result = client.sweep_dust(&token_address, Some(3));
+    let sweep_result = client.sweep_dust(&admin, &token_address, &Some(3u64));
 
     // Calculate total after sweep
     let mut total_after = 0i128;
