@@ -1,11 +1,32 @@
 #![cfg(test)]
 
 use crate::{
-    StreamStatus, UtilityContract, UtilityContractClient, BUFFER_DURATION_SECONDS,
+    BillingType, StreamStatus, UtilityContract, UtilityContractClient, BUFFER_DURATION_SECONDS,
     BUFFER_WARNING_THRESHOLD,
 };
 use soroban_sdk::testutils::{Address as _, Ledger as _};
 use soroban_sdk::{Address, Env};
+
+fn setup_stream_meter(
+    env: &Env,
+    client: &UtilityContractClient,
+    provider: &Address,
+    flow_rate: i128,
+) -> u64 {
+    env.mock_all_auths();
+    let user = Address::generate(env);
+    let token = Address::generate(env);
+    let device_key = soroban_sdk::BytesN::from_array(env, &[1u8; 32]);
+    client.register_meter_with_mode(
+        &user,
+        provider,
+        &flow_rate.max(1),
+        &token,
+        &BillingType::PrePaid,
+        &device_key,
+        &0u32,
+    )
+}
 
 #[test]
 fn test_buffer_creation_requirement() {
@@ -18,6 +39,7 @@ fn test_buffer_creation_requirement() {
     let stream_id = 1;
     let flow_rate = 1000; // 1000 stroops per second
     let initial_balance = 5000;
+    let meter_id = setup_stream_meter(&env, &client, &provider, flow_rate);
 
     // Test 1: Verify required buffer calculation (24 hours)
     let expected_buffer = flow_rate * BUFFER_DURATION_SECONDS as i128;
@@ -28,7 +50,7 @@ fn test_buffer_creation_requirement() {
     let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
         client.create_continuous_stream(
             &stream_id,
-            &0u64,
+            &meter_id,
             &flow_rate,
             &initial_balance,
             &provider,
@@ -44,7 +66,7 @@ fn test_buffer_creation_requirement() {
 
     client.create_continuous_stream(
         &stream_id,
-        &0u64,
+        &meter_id,
         &flow_rate,
         &initial_balance,
         &provider,
@@ -75,12 +97,13 @@ fn test_buffer_depletion_logic() {
     let flow_rate = 1000; // 1000 stroops per second
     let initial_balance = 2000; // Small initial balance to trigger buffer usage
     let buffer_amount = flow_rate * BUFFER_DURATION_SECONDS as i128;
+    let meter_id = setup_stream_meter(&env, &client, &provider, flow_rate);
 
     // Create stream
     env.mock_all_auths();
     client.create_continuous_stream(
         &stream_id,
-        &0u64,
+        &meter_id,
         &flow_rate,
         &initial_balance,
         &provider,
@@ -127,12 +150,13 @@ fn test_buffer_warning_event() {
     let flow_rate = 1000;
     let initial_balance = 1000;
     let buffer_amount = flow_rate * BUFFER_DURATION_SECONDS as i128;
+    let meter_id = setup_stream_meter(&env, &client, &provider, flow_rate);
 
     // Create stream
     env.mock_all_auths();
     client.create_continuous_stream(
         &stream_id,
-        &0u64,
+        &meter_id,
         &flow_rate,
         &initial_balance,
         &provider,
@@ -166,12 +190,13 @@ fn test_buffer_depletion_and_termination() {
     let flow_rate = 1000;
     let initial_balance = 1000;
     let buffer_amount = flow_rate * BUFFER_DURATION_SECONDS as i128;
+    let meter_id = setup_stream_meter(&env, &client, &provider, flow_rate);
 
     // Create stream
     env.mock_all_auths();
     client.create_continuous_stream(
         &stream_id,
-        &0u64,
+        &meter_id,
         &flow_rate,
         &initial_balance,
         &provider,
@@ -212,13 +237,14 @@ fn test_amicable_closure_refund() {
     let flow_rate = 1000;
     let initial_balance = 5000;
     let buffer_amount = flow_rate * BUFFER_DURATION_SECONDS as i128;
+    let meter_id = setup_stream_meter(&env, &client, &provider, flow_rate);
 
     // Create stream
     env.mock_all_auths();
 
     client.create_continuous_stream(
         &stream_id,
-        &0u64,
+        &meter_id,
         &flow_rate,
         &initial_balance,
         &provider,
@@ -254,13 +280,14 @@ fn test_additional_buffer_deposit() {
     let flow_rate = 1000;
     let initial_balance = 1000;
     let additional_buffer = 5000;
+    let meter_id = setup_stream_meter(&env, &client, &provider, flow_rate);
 
     // Create stream
     env.mock_all_auths();
 
     client.create_continuous_stream(
         &stream_id,
-        &0u64,
+        &meter_id,
         &flow_rate,
         &initial_balance,
         &provider,
@@ -291,13 +318,14 @@ fn test_buffer_security_against_malicious_draining() {
     let stream_id = 1;
     let flow_rate = 1000;
     let initial_balance = 5000;
+    let meter_id = setup_stream_meter(&env, &client, &provider, flow_rate);
 
     // Create stream
     env.mock_all_auths();
 
     client.create_continuous_stream(
         &stream_id,
-        &0u64,
+        &meter_id,
         &flow_rate,
         &initial_balance,
         &provider,
@@ -345,12 +373,13 @@ fn test_buffer_math_precision() {
     let stream_id = 1;
     let flow_rate = 1; // Minimal flow rate for precision testing
     let initial_balance = 0;
+    let meter_id = setup_stream_meter(&env, &client, &provider, flow_rate);
 
     // Create stream with minimal flow rate
     env.mock_all_auths();
     client.create_continuous_stream(
         &stream_id,
-        &0u64,
+        &meter_id,
         &flow_rate,
         &initial_balance,
         &provider,
@@ -380,6 +409,7 @@ fn test_stream_creation_without_buffer_fails() {
     let stream_id = 1;
     let flow_rate = 1000;
     let initial_balance = 5000;
+    let meter_id = setup_stream_meter(&env, &client, &provider, flow_rate);
 
     // Attempt to create stream without proper authorization for buffer transfer
     env.mock_auths(&[]);
@@ -387,7 +417,7 @@ fn test_stream_creation_without_buffer_fails() {
     let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
         client.create_continuous_stream(
             &stream_id,
-            &0u64,
+            &meter_id,
             &flow_rate,
             &initial_balance,
             &provider,
@@ -416,13 +446,14 @@ fn test_buffer_refund_only_on_amicable_closure() {
     let stream_id = 1;
     let flow_rate = 1000;
     let initial_balance = 1000; // Small balance to trigger buffer depletion
+    let meter_id = setup_stream_meter(&env, &client, &provider, flow_rate);
 
     // Create stream
     env.mock_all_auths();
 
     client.create_continuous_stream(
         &stream_id,
-        &0u64,
+        &meter_id,
         &flow_rate,
         &initial_balance,
         &provider,

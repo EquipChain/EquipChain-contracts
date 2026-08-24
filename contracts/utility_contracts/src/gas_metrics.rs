@@ -226,11 +226,16 @@ impl GasMeter {
 
     /// Get statistics for all operations
     pub fn get_all_statistics(&self) -> BTreeMap<String, GasStatistics> {
-        let measurements = self.measurements.lock().unwrap();
-        let operation_names: std::collections::HashSet<_> = measurements
-            .iter()
-            .map(|m| m.operation_name.clone())
-            .collect();
+        let operation_names: Vec<String> = {
+            let measurements = self.measurements.lock().unwrap();
+            let mut names: Vec<String> = measurements
+                .iter()
+                .map(|m| m.operation_name.clone())
+                .collect();
+            names.sort();
+            names.dedup();
+            names
+        };
 
         operation_names
             .into_iter()

@@ -7,6 +7,27 @@ use soroban_sdk::{
     Address, Env, Symbol, TryFromVal,
 };
 
+fn setup_stream_meter(
+    env: &Env,
+    client: &UtilityContractClient,
+    provider: &Address,
+    flow_rate: i128,
+) -> u64 {
+    env.mock_all_auths();
+    let user = Address::generate(env);
+    let token = Address::generate(env);
+    let device_key = soroban_sdk::BytesN::from_array(env, &[1u8; 32]);
+    client.register_meter_with_mode(
+        &user,
+        provider,
+        &flow_rate.max(1),
+        &token,
+        &BillingType::PrePaid,
+        &device_key,
+        &0u32,
+    )
+}
+
 #[test]
 fn test_pause_stream_stops_flow_calculation() {
     let env = Env::default();
@@ -14,18 +35,20 @@ fn test_pause_stream_stops_flow_calculation() {
     let client = UtilityContractClient::new(&env, &contract_id);
 
     let provider = Address::generate(&env);
+    let payer = Address::generate(&env);
     let stream_id = 1u64;
     let flow_rate = 1000i128; // 1000 micro-stroops per second
     let initial_balance = 1000000i128; // 1 XLM in stroops
+    let meter_id = setup_stream_meter(&env, &client, &provider, flow_rate);
 
     // Create stream
     client.create_continuous_stream(
         &stream_id,
-        &0u64,
+        &meter_id,
         &flow_rate,
         &initial_balance,
         &provider,
-        &provider,
+        &payer,
         &0u32,
         &soroban_sdk::BytesN::from_array(&env, &[0u8; 32]),
     );
@@ -58,18 +81,20 @@ fn test_resume_stream_adjusts_timeline() {
     let client = UtilityContractClient::new(&env, &contract_id);
 
     let provider = Address::generate(&env);
+    let payer = Address::generate(&env);
     let stream_id = 2u64;
     let flow_rate = 1000i128;
     let initial_balance = 1000000i128;
+    let meter_id = setup_stream_meter(&env, &client, &provider, flow_rate);
 
     // Create stream
     client.create_continuous_stream(
         &stream_id,
-        &0u64,
+        &meter_id,
         &flow_rate,
         &initial_balance,
         &provider,
-        &provider,
+        &payer,
         &0u32,
         &soroban_sdk::BytesN::from_array(&env, &[0u8; 32]),
     );
@@ -111,24 +136,27 @@ fn test_provider_access_control() {
     let client = UtilityContractClient::new(&env, &contract_id);
 
     let provider = Address::generate(&env);
+    let payer = Address::generate(&env);
     let unauthorized_user = Address::generate(&env);
     let stream_id = 3u64;
     let flow_rate = 1000i128;
     let initial_balance = 1000000i128;
+    let meter_id = setup_stream_meter(&env, &client, &provider, flow_rate);
 
     // Create stream with provider
     client.create_continuous_stream(
         &stream_id,
-        &0u64,
+        &meter_id,
         &flow_rate,
         &initial_balance,
         &provider,
-        &provider,
+        &payer,
         &0u32,
         &soroban_sdk::BytesN::from_array(&env, &[0u8; 32]),
     );
 
     // Try to pause with unauthorized user (should fail)
+    env.mock_auths(&[]);
     let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
         client.pause_stream(&stream_id);
     }));
@@ -141,6 +169,7 @@ fn test_provider_access_control() {
     assert!(result.is_err());
 
     // Pause with authorized provider (should succeed)
+    env.mock_all_auths();
     client.pause_stream(&stream_id);
     let paused_flow = client.get_continuous_flow(&stream_id).unwrap();
     assert_eq!(paused_flow.status, StreamStatus::Paused);
@@ -153,18 +182,20 @@ fn test_edge_case_depleted_during_pause() {
     let client = UtilityContractClient::new(&env, &contract_id);
 
     let provider = Address::generate(&env);
+    let payer = Address::generate(&env);
     let stream_id = 4u64;
     let flow_rate = 1000i128;
     let initial_balance = 1000i128; // Very small balance
+    let meter_id = setup_stream_meter(&env, &client, &provider, flow_rate);
 
     // Create stream
     client.create_continuous_stream(
         &stream_id,
-        &0u64,
+        &meter_id,
         &flow_rate,
         &initial_balance,
         &provider,
-        &provider,
+        &payer,
         &0u32,
         &soroban_sdk::BytesN::from_array(&env, &[0u8; 32]),
     );
@@ -193,18 +224,20 @@ fn test_pause_only_active_streams() {
     let client = UtilityContractClient::new(&env, &contract_id);
 
     let provider = Address::generate(&env);
+    let payer = Address::generate(&env);
     let stream_id = 5u64;
     let flow_rate = 1000i128;
     let initial_balance = 0i128; // Start with paused stream
+    let meter_id = setup_stream_meter(&env, &client, &provider, flow_rate);
 
     // Create paused stream
     client.create_continuous_stream(
         &stream_id,
-        &0u64,
+        &meter_id,
         &flow_rate,
         &initial_balance,
         &provider,
-        &provider,
+        &payer,
         &0u32,
         &soroban_sdk::BytesN::from_array(&env, &[0u8; 32]),
     );
@@ -231,18 +264,20 @@ fn test_resume_only_paused_streams() {
     let client = UtilityContractClient::new(&env, &contract_id);
 
     let provider = Address::generate(&env);
+    let payer = Address::generate(&env);
     let stream_id = 6u64;
     let flow_rate = 1000i128;
     let initial_balance = 1000000i128;
+    let meter_id = setup_stream_meter(&env, &client, &provider, flow_rate);
 
     // Create active stream
     client.create_continuous_stream(
         &stream_id,
-        &0u64,
+        &meter_id,
         &flow_rate,
         &initial_balance,
         &provider,
-        &provider,
+        &payer,
         &0u32,
         &soroban_sdk::BytesN::from_array(&env, &[0u8; 32]),
     );
@@ -270,18 +305,20 @@ fn test_flow_math_adjustment_post_resume() {
     let client = UtilityContractClient::new(&env, &contract_id);
 
     let provider = Address::generate(&env);
+    let payer = Address::generate(&env);
     let stream_id = 7u64;
     let flow_rate = 1000i128;
     let initial_balance = 1000000i128;
+    let meter_id = setup_stream_meter(&env, &client, &provider, flow_rate);
 
     // Create stream
     client.create_continuous_stream(
         &stream_id,
-        &0u64,
+        &meter_id,
         &flow_rate,
         &initial_balance,
         &provider,
-        &provider,
+        &payer,
         &0u32,
         &soroban_sdk::BytesN::from_array(&env, &[0u8; 32]),
     );
@@ -325,18 +362,20 @@ fn test_zero_flow_rate_resume_fails() {
     let client = UtilityContractClient::new(&env, &contract_id);
 
     let provider = Address::generate(&env);
+    let payer = Address::generate(&env);
     let stream_id = 8u64;
     let flow_rate = 1000i128;
     let initial_balance = 1000000i128;
+    let meter_id = setup_stream_meter(&env, &client, &provider, flow_rate);
 
     // Create stream
     client.create_continuous_stream(
         &stream_id,
-        &0u64,
+        &meter_id,
         &flow_rate,
         &initial_balance,
         &provider,
-        &provider,
+        &payer,
         &0u32,
         &soroban_sdk::BytesN::from_array(&env, &[0u8; 32]),
     );
@@ -364,18 +403,20 @@ fn test_pause_resume_events_emitted() {
     let client = UtilityContractClient::new(&env, &contract_id);
 
     let provider = Address::generate(&env);
+    let payer = Address::generate(&env);
     let stream_id = 9u64;
     let flow_rate = 1000i128;
     let initial_balance = 1000000i128;
+    let meter_id = setup_stream_meter(&env, &client, &provider, flow_rate);
 
     // Create stream
     client.create_continuous_stream(
         &stream_id,
-        &0u64,
+        &meter_id,
         &flow_rate,
         &initial_balance,
         &provider,
-        &provider,
+        &payer,
         &0u32,
         &soroban_sdk::BytesN::from_array(&env, &[0u8; 32]),
     );
@@ -388,7 +429,7 @@ fn test_pause_resume_events_emitted() {
 
     // Check for StreamPaused event
     let events = env.events().all();
-    let stream_paused_sym = Symbol::new(&env, "StreamPaused");
+    let stream_paused_sym = Symbol::new(&env, "StrmPasd");
     let pause_event_found = events.iter().any(|(_contract, topics, _data)| {
         topics.len() >= 1
             && Symbol::try_from_val(&env, &topics.get(0).unwrap_or_else(|| panic!("no topic")))
@@ -404,7 +445,7 @@ fn test_pause_resume_events_emitted() {
 
     // Check for StreamResumed event
     let events_after_resume = env.events().all();
-    let stream_resumed_sym = Symbol::new(&env, "StreamResumed");
+    let stream_resumed_sym = Symbol::new(&env, "StrmResum");
     let resume_event_found = events_after_resume
         .iter()
         .any(|(_contract, topics, _data)| {

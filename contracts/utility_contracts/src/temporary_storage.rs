@@ -239,8 +239,10 @@ impl OptimizedFlowCalculator {
         if let Some((temp_accumulation, temp_timestamp)) =
             TempStorageManager::get_flow_accumulation(env, flow.stream_id)
         {
-            // Use temporary data if it's still valid
-            if temp_timestamp >= flow.last_flow_timestamp {
+            // Use temporary data only if it was computed for a strictly later
+            // timestamp than the flow's last update. Otherwise the accumulation
+            // has already been applied to the balance.
+            if temp_timestamp > flow.last_flow_timestamp {
                 return temp_accumulation;
             }
         }
