@@ -1,8 +1,8 @@
 #![cfg(test)]
 
 use crate::{
-    ContinuousFlow, ContractError, StreamStatus, UtilityContract, BUFFER_DURATION_SECONDS,
-    BUFFER_WARNING_THRESHOLD,
+    ContinuousFlow, ContractError, StreamStatus, UtilityContract, UtilityContractClient,
+    BUFFER_DURATION_SECONDS, BUFFER_WARNING_THRESHOLD,
 };
 use soroban_sdk::testutils::{Address as _, Ledger as _};
 use soroban_sdk::{symbol_short, Address, BytesN, Env, Symbol};

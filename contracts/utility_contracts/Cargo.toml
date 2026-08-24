@@ -8,6 +8,11 @@ publish = false
 crate-type = ["lib", "cdylib"]
 doctest = false
 
+[features]
+# Gate pre-existing test modules that need API migration (soroban-sdk 23.x).
+# Enable with: cargo test --features full-tests
+full-tests = []
+
 [dependencies]
 soroban-sdk = { workspace = true }
 
