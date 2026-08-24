@@ -1,0 +1,2951 @@
+{
+  "generators": {
+    "address": 1,
+    "nonce": 0,
+    "mux_id": 0
+  },
+  "auth": [
+    [],
+    []
+  ],
+  "ledger": {
+    "protocol_version": 23,
+    "sequence_number": 0,
+    "timestamp": 0,
+    "network_id": "0000000000000000000000000000000000000000000000000000000000000000",
+    "base_reserve": 0,
+    "min_persistent_entry_ttl": 4096,
+    "min_temp_entry_ttl": 16,
+    "max_entry_ttl": 6312000,
+    "ledger_entries": [
+      [
+        {
+          "contract_data": {
+            "contract": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM",
+            "key": {
+              "vec": [
+                {
+                  "symbol": "DeviceNonce"
+                },
+                {
+                  "bytes": "b6c0f6ae57299ffc0a42b5eb9d76365e9c7a6d44c38885e80582b13d277602b9"
+                }
+              ]
+            },
+            "durability": "persistent"
+          }
+        },
+        [
+          {
+            "last_modified_ledger_seq": 0,
+            "data": {
+              "contract_data": {
+                "ext": "v0",
+                "contract": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM",
+                "key": {
+                  "vec": [
+                    {
+                      "symbol": "DeviceNonce"
+                    },
+                    {
+                      "bytes": "b6c0f6ae57299ffc0a42b5eb9d76365e9c7a6d44c38885e80582b13d277602b9"
+                    }
+                  ]
+                },
+                "durability": "persistent",
+                "val": {
+                  "map": [
+                    {
+                      "key": {
+                        "symbol": "current_nonce"
+                      },
+                      "val": {
+                        "u64": "266"
+                      }
+                    },
+                    {
+                      "key": {
+                        "symbol": "desync_count_24h"
+                      },
+                      "val": {
+                        "u32": 40
+                      }
+                    },
+                    {
+                      "key": {
+                        "symbol": "desync_count_reset"
+                      },
+                      "val": {
+                        "u64": "0"
+                      }
+                    },
+                    {
+                      "key": {
+                        "symbol": "is_suspicious"
+                      },
+                      "val": {
+                        "bool": true
+                      }
+                    },
+                    {
+                      "key": {
+                        "symbol": "last_heartbeat"
+                      },
+                      "val": {
+                        "u64": "0"
+                      }
+                    }
+                  ]
+                }
+              }
+            },
+            "ext": "v0"
+          },
+          4095
+        ]
+      ],
+      [
+        {
+          "contract_data": {
+            "contract": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM",
+            "key": "ledger_key_contract_instance",
+            "durability": "persistent"
+          }
+        },
+        [
+          {
+            "last_modified_ledger_seq": 0,
+            "data": {
+              "contract_data": {
+                "ext": "v0",
+                "contract": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM",
+                "key": "ledger_key_contract_instance",
+                "durability": "persistent",
+                "val": {
+                  "contract_instance": {
+                    "executable": {
+                      "wasm": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+                    },
+                    "storage": null
+                  }
+                }
+              }
+            },
+            "ext": "v0"
+          },
+          4095
+        ]
+      ],
+      [
+        {
+          "contract_code": {
+            "hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          }
+        },
+        [
+          {
+            "last_modified_ledger_seq": 0,
+            "data": {
+              "contract_code": {
+                "ext": "v0",
+                "hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                "code": ""
+              }
+            },
+            "ext": "v0"
+          },
+          4095
+        ]
+      ]
+    ]
+  },
+  "events": [
+    {
+      "event": {
+        "ext": "v0",
+        "contract_id": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM",
+        "type_": "contract",
+        "body": {
+          "v0": {
+            "topics": [
+              {
+                "symbol": "NoncInit"
+              }
+            ],
+            "data": {
+              "vec": [
+                {
+                  "bytes": "b6c0f6ae57299ffc0a42b5eb9d76365e9c7a6d44c38885e80582b13d277602b9"
+                },
+                {
+                  "u64": "266"
+                }
+              ]
+            }
+          }
+        }
+      },
+      "failed_call": false
+    },
+    {
+      "event": {
+        "ext": "v0",
+        "contract_id": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM",
+        "type_": "contract",
+        "body": {
+          "v0": {
+            "topics": [
+              {
+                "symbol": "NoncDsync"
+              }
+            ],
+            "data": {
+              "map": [
+                {
+                  "key": {
+                    "symbol": "alert_type"
+                  },
+                  "val": {
+                    "u32": 1
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "device_mac"
+                  },
+                  "val": {
+                    "bytes": "b6c0f6ae57299ffc0a42b5eb9d76365e9c7a6d44c38885e80582b13d277602b9"
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "expected_nonce"
+                  },
+                  "val": {
+                    "u64": "266"
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "meter_id"
+                  },
+                  "val": {
+                    "u64": "12345"
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "received_nonce"
+                  },
+                  "val": {
+                    "u64": "1228"
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "timestamp"
+                  },
+                  "val": {
+                    "u64": "0"
+                  }
+                }
+              ]
+            }
+          }
+        }
+      },
+      "failed_call": false
+    },
+    {
+      "event": {
+        "ext": "v0",
+        "contract_id": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM",
+        "type_": "contract",
+        "body": {
+          "v0": {
+            "topics": [
+              {
+                "symbol": "NoncDsync"
+              }
+            ],
+            "data": {
+              "map": [
+                {
+                  "key": {
+                    "symbol": "alert_type"
+                  },
+                  "val": {
+                    "u32": 1
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "device_mac"
+                  },
+                  "val": {
+                    "bytes": "b6c0f6ae57299ffc0a42b5eb9d76365e9c7a6d44c38885e80582b13d277602b9"
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "expected_nonce"
+                  },
+                  "val": {
+                    "u64": "266"
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "meter_id"
+                  },
+                  "val": {
+                    "u64": "12345"
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "received_nonce"
+                  },
+                  "val": {
+                    "u64": "1813"
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "timestamp"
+                  },
+                  "val": {
+                    "u64": "0"
+                  }
+                }
+              ]
+            }
+          }
+        }
+      },
+      "failed_call": false
+    },
+    {
+      "event": {
+        "ext": "v0",
+        "contract_id": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM",
+        "type_": "contract",
+        "body": {
+          "v0": {
+            "topics": [
+              {
+                "symbol": "NoncDsync"
+              }
+            ],
+            "data": {
+              "map": [
+                {
+                  "key": {
+                    "symbol": "alert_type"
+                  },
+                  "val": {
+                    "u32": 0
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "device_mac"
+                  },
+                  "val": {
+                    "bytes": "b6c0f6ae57299ffc0a42b5eb9d76365e9c7a6d44c38885e80582b13d277602b9"
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "expected_nonce"
+                  },
+                  "val": {
+                    "u64": "266"
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "meter_id"
+                  },
+                  "val": {
+                    "u64": "12345"
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "received_nonce"
+                  },
+                  "val": {
+                    "u64": "109"
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "timestamp"
+                  },
+                  "val": {
+                    "u64": "0"
+                  }
+                }
+              ]
+            }
+          }
+        }
+      },
+      "failed_call": false
+    },
+    {
+      "event": {
+        "ext": "v0",
+        "contract_id": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM",
+        "type_": "contract",
+        "body": {
+          "v0": {
+            "topics": [
+              {
+                "symbol": "NoncDsync"
+              }
+            ],
+            "data": {
+              "map": [
+                {
+                  "key": {
+                    "symbol": "alert_type"
+                  },
+                  "val": {
+                    "u32": 1
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "device_mac"
+                  },
+                  "val": {
+                    "bytes": "b6c0f6ae57299ffc0a42b5eb9d76365e9c7a6d44c38885e80582b13d277602b9"
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "expected_nonce"
+                  },
+                  "val": {
+                    "u64": "266"
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "meter_id"
+                  },
+                  "val": {
+                    "u64": "12345"
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "received_nonce"
+                  },
+                  "val": {
+                    "u64": "1779"
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "timestamp"
+                  },
+                  "val": {
+                    "u64": "0"
+                  }
+                }
+              ]
+            }
+          }
+        }
+      },
+      "failed_call": false
+    },
+    {
+      "event": {
+        "ext": "v0",
+        "contract_id": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM",
+        "type_": "contract",
+        "body": {
+          "v0": {
+            "topics": [
+              {
+                "symbol": "NoncDsync"
+              }
+            ],
+            "data": {
+              "map": [
+                {
+                  "key": {
+                    "symbol": "alert_type"
+                  },
+                  "val": {
+                    "u32": 1
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "device_mac"
+                  },
+                  "val": {
+                    "bytes": "b6c0f6ae57299ffc0a42b5eb9d76365e9c7a6d44c38885e80582b13d277602b9"
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "expected_nonce"
+                  },
+                  "val": {
+                    "u64": "266"
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "meter_id"
+                  },
+                  "val": {
+                    "u64": "12345"
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "received_nonce"
+                  },
+                  "val": {
+                    "u64": "740"
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "timestamp"
+                  },
+                  "val": {
+                    "u64": "0"
+                  }
+                }
+              ]
+            }
+          }
+        }
+      },
+      "failed_call": false
+    },
+    {
+      "event": {
+        "ext": "v0",
+        "contract_id": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM",
+        "type_": "contract",
+        "body": {
+          "v0": {
+            "topics": [
+              {
+                "symbol": "NoncDsync"
+              }
+            ],
+            "data": {
+              "map": [
+                {
+                  "key": {
+                    "symbol": "alert_type"
+                  },
+                  "val": {
+                    "u32": 1
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "device_mac"
+                  },
+                  "val": {
+                    "bytes": "b6c0f6ae57299ffc0a42b5eb9d76365e9c7a6d44c38885e80582b13d277602b9"
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "expected_nonce"
+                  },
+                  "val": {
+                    "u64": "266"
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "meter_id"
+                  },
+                  "val": {
+                    "u64": "12345"
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "received_nonce"
+                  },
+                  "val": {
+                    "u64": "1926"
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "timestamp"
+                  },
+                  "val": {
+                    "u64": "0"
+                  }
+                }
+              ]
+            }
+          }
+        }
+      },
+      "failed_call": false
+    },
+    {
+      "event": {
+        "ext": "v0",
+        "contract_id": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM",
+        "type_": "contract",
+        "body": {
+          "v0": {
+            "topics": [
+              {
+                "symbol": "NoncDsync"
+              }
+            ],
+            "data": {
+              "map": [
+                {
+                  "key": {
+                    "symbol": "alert_type"
+                  },
+                  "val": {
+                    "u32": 1
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "device_mac"
+                  },
+                  "val": {
+                    "bytes": "b6c0f6ae57299ffc0a42b5eb9d76365e9c7a6d44c38885e80582b13d277602b9"
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "expected_nonce"
+                  },
+                  "val": {
+                    "u64": "266"
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "meter_id"
+                  },
+                  "val": {
+                    "u64": "12345"
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "received_nonce"
+                  },
+                  "val": {
+                    "u64": "320"
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "timestamp"
+                  },
+                  "val": {
+                    "u64": "0"
+                  }
+                }
+              ]
+            }
+          }
+        }
+      },
+      "failed_call": false
+    },
+    {
+      "event": {
+        "ext": "v0",
+        "contract_id": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM",
+        "type_": "contract",
+        "body": {
+          "v0": {
+            "topics": [
+              {
+                "symbol": "NoncDsync"
+              }
+            ],
+            "data": {
+              "map": [
+                {
+                  "key": {
+                    "symbol": "alert_type"
+                  },
+                  "val": {
+                    "u32": 1
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "device_mac"
+                  },
+                  "val": {
+                    "bytes": "b6c0f6ae57299ffc0a42b5eb9d76365e9c7a6d44c38885e80582b13d277602b9"
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "expected_nonce"
+                  },
+                  "val": {
+                    "u64": "266"
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "meter_id"
+                  },
+                  "val": {
+                    "u64": "12345"
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "received_nonce"
+                  },
+                  "val": {
+                    "u64": "1328"
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "timestamp"
+                  },
+                  "val": {
+                    "u64": "0"
+                  }
+                }
+              ]
+            }
+          }
+        }
+      },
+      "failed_call": false
+    },
+    {
+      "event": {
+        "ext": "v0",
+        "contract_id": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM",
+        "type_": "contract",
+        "body": {
+          "v0": {
+            "topics": [
+              {
+                "symbol": "NoncDsync"
+              }
+            ],
+            "data": {
+              "map": [
+                {
+                  "key": {
+                    "symbol": "alert_type"
+                  },
+                  "val": {
+                    "u32": 0
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "device_mac"
+                  },
+                  "val": {
+                    "bytes": "b6c0f6ae57299ffc0a42b5eb9d76365e9c7a6d44c38885e80582b13d277602b9"
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "expected_nonce"
+                  },
+                  "val": {
+                    "u64": "266"
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "meter_id"
+                  },
+                  "val": {
+                    "u64": "12345"
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "received_nonce"
+                  },
+                  "val": {
+                    "u64": "262"
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "timestamp"
+                  },
+                  "val": {
+                    "u64": "0"
+                  }
+                }
+              ]
+            }
+          }
+        }
+      },
+      "failed_call": false
+    },
+    {
+      "event": {
+        "ext": "v0",
+        "contract_id": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM",
+        "type_": "contract",
+        "body": {
+          "v0": {
+            "topics": [
+              {
+                "symbol": "NoncDsync"
+              }
+            ],
+            "data": {
+              "map": [
+                {
+                  "key": {
+                    "symbol": "alert_type"
+                  },
+                  "val": {
+                    "u32": 1
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "device_mac"
+                  },
+                  "val": {
+                    "bytes": "b6c0f6ae57299ffc0a42b5eb9d76365e9c7a6d44c38885e80582b13d277602b9"
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "expected_nonce"
+                  },
+                  "val": {
+                    "u64": "266"
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "meter_id"
+                  },
+                  "val": {
+                    "u64": "12345"
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "received_nonce"
+                  },
+                  "val": {
+                    "u64": "1784"
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "timestamp"
+                  },
+                  "val": {
+                    "u64": "0"
+                  }
+                }
+              ]
+            }
+          }
+        }
+      },
+      "failed_call": false
+    },
+    {
+      "event": {
+        "ext": "v0",
+        "contract_id": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM",
+        "type_": "contract",
+        "body": {
+          "v0": {
+            "topics": [
+              {
+                "symbol": "NoncDsync"
+              }
+            ],
+            "data": {
+              "map": [
+                {
+                  "key": {
+                    "symbol": "alert_type"
+                  },
+                  "val": {
+                    "u32": 1
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "device_mac"
+                  },
+                  "val": {
+                    "bytes": "b6c0f6ae57299ffc0a42b5eb9d76365e9c7a6d44c38885e80582b13d277602b9"
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "expected_nonce"
+                  },
+                  "val": {
+                    "u64": "266"
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "meter_id"
+                  },
+                  "val": {
+                    "u64": "12345"
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "received_nonce"
+                  },
+                  "val": {
+                    "u64": "1889"
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "timestamp"
+                  },
+                  "val": {
+                    "u64": "0"
+                  }
+                }
+              ]
+            }
+          }
+        }
+      },
+      "failed_call": false
+    },
+    {
+      "event": {
+        "ext": "v0",
+        "contract_id": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM",
+        "type_": "contract",
+        "body": {
+          "v0": {
+            "topics": [
+              {
+                "symbol": "NoncDsync"
+              }
+            ],
+            "data": {
+              "map": [
+                {
+                  "key": {
+                    "symbol": "alert_type"
+                  },
+                  "val": {
+                    "u32": 1
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "device_mac"
+                  },
+                  "val": {
+                    "bytes": "b6c0f6ae57299ffc0a42b5eb9d76365e9c7a6d44c38885e80582b13d277602b9"
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "expected_nonce"
+                  },
+                  "val": {
+                    "u64": "266"
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "meter_id"
+                  },
+                  "val": {
+                    "u64": "12345"
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "received_nonce"
+                  },
+                  "val": {
+                    "u64": "742"
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "timestamp"
+                  },
+                  "val": {
+                    "u64": "0"
+                  }
+                }
+              ]
+            }
+          }
+        }
+      },
+      "failed_call": false
+    },
+    {
+      "event": {
+        "ext": "v0",
+        "contract_id": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM",
+        "type_": "contract",
+        "body": {
+          "v0": {
+            "topics": [
+              {
+                "symbol": "NoncDsync"
+              }
+            ],
+            "data": {
+              "map": [
+                {
+                  "key": {
+                    "symbol": "alert_type"
+                  },
+                  "val": {
+                    "u32": 1
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "device_mac"
+                  },
+                  "val": {
+                    "bytes": "b6c0f6ae57299ffc0a42b5eb9d76365e9c7a6d44c38885e80582b13d277602b9"
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "expected_nonce"
+                  },
+                  "val": {
+                    "u64": "266"
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "meter_id"
+                  },
+                  "val": {
+                    "u64": "12345"
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "received_nonce"
+                  },
+                  "val": {
+                    "u64": "1520"
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "timestamp"
+                  },
+                  "val": {
+                    "u64": "0"
+                  }
+                }
+              ]
+            }
+          }
+        }
+      },
+      "failed_call": false
+    },
+    {
+      "event": {
+        "ext": "v0",
+        "contract_id": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM",
+        "type_": "contract",
+        "body": {
+          "v0": {
+            "topics": [
+              {
+                "symbol": "NoncDsync"
+              }
+            ],
+            "data": {
+              "map": [
+                {
+                  "key": {
+                    "symbol": "alert_type"
+                  },
+                  "val": {
+                    "u32": 1
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "device_mac"
+                  },
+                  "val": {
+                    "bytes": "b6c0f6ae57299ffc0a42b5eb9d76365e9c7a6d44c38885e80582b13d277602b9"
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "expected_nonce"
+                  },
+                  "val": {
+                    "u64": "266"
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "meter_id"
+                  },
+                  "val": {
+                    "u64": "12345"
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "received_nonce"
+                  },
+                  "val": {
+                    "u64": "1504"
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "timestamp"
+                  },
+                  "val": {
+                    "u64": "0"
+                  }
+                }
+              ]
+            }
+          }
+        }
+      },
+      "failed_call": false
+    },
+    {
+      "event": {
+        "ext": "v0",
+        "contract_id": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM",
+        "type_": "contract",
+        "body": {
+          "v0": {
+            "topics": [
+              {
+                "symbol": "NoncDsync"
+              }
+            ],
+            "data": {
+              "map": [
+                {
+                  "key": {
+                    "symbol": "alert_type"
+                  },
+                  "val": {
+                    "u32": 1
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "device_mac"
+                  },
+                  "val": {
+                    "bytes": "b6c0f6ae57299ffc0a42b5eb9d76365e9c7a6d44c38885e80582b13d277602b9"
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "expected_nonce"
+                  },
+                  "val": {
+                    "u64": "266"
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "meter_id"
+                  },
+                  "val": {
+                    "u64": "12345"
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "received_nonce"
+                  },
+                  "val": {
+                    "u64": "799"
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "timestamp"
+                  },
+                  "val": {
+                    "u64": "0"
+                  }
+                }
+              ]
+            }
+          }
+        }
+      },
+      "failed_call": false
+    },
+    {
+      "event": {
+        "ext": "v0",
+        "contract_id": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM",
+        "type_": "contract",
+        "body": {
+          "v0": {
+            "topics": [
+              {
+                "symbol": "NoncDsync"
+              }
+            ],
+            "data": {
+              "map": [
+                {
+                  "key": {
+                    "symbol": "alert_type"
+                  },
+                  "val": {
+                    "u32": 0
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "device_mac"
+                  },
+                  "val": {
+                    "bytes": "b6c0f6ae57299ffc0a42b5eb9d76365e9c7a6d44c38885e80582b13d277602b9"
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "expected_nonce"
+                  },
+                  "val": {
+                    "u64": "266"
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "meter_id"
+                  },
+                  "val": {
+                    "u64": "12345"
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "received_nonce"
+                  },
+                  "val": {
+                    "u64": "260"
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "timestamp"
+                  },
+                  "val": {
+                    "u64": "0"
+                  }
+                }
+              ]
+            }
+          }
+        }
+      },
+      "failed_call": false
+    },
+    {
+      "event": {
+        "ext": "v0",
+        "contract_id": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM",
+        "type_": "contract",
+        "body": {
+          "v0": {
+            "topics": [
+              {
+                "symbol": "NoncDsync"
+              }
+            ],
+            "data": {
+              "map": [
+                {
+                  "key": {
+                    "symbol": "alert_type"
+                  },
+                  "val": {
+                    "u32": 1
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "device_mac"
+                  },
+                  "val": {
+                    "bytes": "b6c0f6ae57299ffc0a42b5eb9d76365e9c7a6d44c38885e80582b13d277602b9"
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "expected_nonce"
+                  },
+                  "val": {
+                    "u64": "266"
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "meter_id"
+                  },
+                  "val": {
+                    "u64": "12345"
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "received_nonce"
+                  },
+                  "val": {
+                    "u64": "809"
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "timestamp"
+                  },
+                  "val": {
+                    "u64": "0"
+                  }
+                }
+              ]
+            }
+          }
+        }
+      },
+      "failed_call": false
+    },
+    {
+      "event": {
+        "ext": "v0",
+        "contract_id": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM",
+        "type_": "contract",
+        "body": {
+          "v0": {
+            "topics": [
+              {
+                "symbol": "NoncDsync"
+              }
+            ],
+            "data": {
+              "map": [
+                {
+                  "key": {
+                    "symbol": "alert_type"
+                  },
+                  "val": {
+                    "u32": 0
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "device_mac"
+                  },
+                  "val": {
+                    "bytes": "b6c0f6ae57299ffc0a42b5eb9d76365e9c7a6d44c38885e80582b13d277602b9"
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "expected_nonce"
+                  },
+                  "val": {
+                    "u64": "266"
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "meter_id"
+                  },
+                  "val": {
+                    "u64": "12345"
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "received_nonce"
+                  },
+                  "val": {
+                    "u64": "263"
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "timestamp"
+                  },
+                  "val": {
+                    "u64": "0"
+                  }
+                }
+              ]
+            }
+          }
+        }
+      },
+      "failed_call": false
+    },
+    {
+      "event": {
+        "ext": "v0",
+        "contract_id": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM",
+        "type_": "contract",
+        "body": {
+          "v0": {
+            "topics": [
+              {
+                "symbol": "NoncDsync"
+              }
+            ],
+            "data": {
+              "map": [
+                {
+                  "key": {
+                    "symbol": "alert_type"
+                  },
+                  "val": {
+                    "u32": 1
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "device_mac"
+                  },
+                  "val": {
+                    "bytes": "b6c0f6ae57299ffc0a42b5eb9d76365e9c7a6d44c38885e80582b13d277602b9"
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "expected_nonce"
+                  },
+                  "val": {
+                    "u64": "266"
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "meter_id"
+                  },
+                  "val": {
+                    "u64": "12345"
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "received_nonce"
+                  },
+                  "val": {
+                    "u64": "1600"
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "timestamp"
+                  },
+                  "val": {
+                    "u64": "0"
+                  }
+                }
+              ]
+            }
+          }
+        }
+      },
+      "failed_call": false
+    },
+    {
+      "event": {
+        "ext": "v0",
+        "contract_id": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM",
+        "type_": "contract",
+        "body": {
+          "v0": {
+            "topics": [
+              {
+                "symbol": "NoncDsync"
+              }
+            ],
+            "data": {
+              "map": [
+                {
+                  "key": {
+                    "symbol": "alert_type"
+                  },
+                  "val": {
+                    "u32": 1
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "device_mac"
+                  },
+                  "val": {
+                    "bytes": "b6c0f6ae57299ffc0a42b5eb9d76365e9c7a6d44c38885e80582b13d277602b9"
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "expected_nonce"
+                  },
+                  "val": {
+                    "u64": "266"
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "meter_id"
+                  },
+                  "val": {
+                    "u64": "12345"
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "received_nonce"
+                  },
+                  "val": {
+                    "u64": "1227"
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "timestamp"
+                  },
+                  "val": {
+                    "u64": "0"
+                  }
+                }
+              ]
+            }
+          }
+        }
+      },
+      "failed_call": false
+    },
+    {
+      "event": {
+        "ext": "v0",
+        "contract_id": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM",
+        "type_": "contract",
+        "body": {
+          "v0": {
+            "topics": [
+              {
+                "symbol": "NoncDsync"
+              }
+            ],
+            "data": {
+              "map": [
+                {
+                  "key": {
+                    "symbol": "alert_type"
+                  },
+                  "val": {
+                    "u32": 1
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "device_mac"
+                  },
+                  "val": {
+                    "bytes": "b6c0f6ae57299ffc0a42b5eb9d76365e9c7a6d44c38885e80582b13d277602b9"
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "expected_nonce"
+                  },
+                  "val": {
+                    "u64": "266"
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "meter_id"
+                  },
+                  "val": {
+                    "u64": "12345"
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "received_nonce"
+                  },
+                  "val": {
+                    "u64": "1259"
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "timestamp"
+                  },
+                  "val": {
+                    "u64": "0"
+                  }
+                }
+              ]
+            }
+          }
+        }
+      },
+      "failed_call": false
+    },
+    {
+      "event": {
+        "ext": "v0",
+        "contract_id": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM",
+        "type_": "contract",
+        "body": {
+          "v0": {
+            "topics": [
+              {
+                "symbol": "NoncDsync"
+              }
+            ],
+            "data": {
+              "map": [
+                {
+                  "key": {
+                    "symbol": "alert_type"
+                  },
+                  "val": {
+                    "u32": 0
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "device_mac"
+                  },
+                  "val": {
+                    "bytes": "b6c0f6ae57299ffc0a42b5eb9d76365e9c7a6d44c38885e80582b13d277602b9"
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "expected_nonce"
+                  },
+                  "val": {
+                    "u64": "266"
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "meter_id"
+                  },
+                  "val": {
+                    "u64": "12345"
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "received_nonce"
+                  },
+                  "val": {
+                    "u64": "258"
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "timestamp"
+                  },
+                  "val": {
+                    "u64": "0"
+                  }
+                }
+              ]
+            }
+          }
+        }
+      },
+      "failed_call": false
+    },
+    {
+      "event": {
+        "ext": "v0",
+        "contract_id": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM",
+        "type_": "contract",
+        "body": {
+          "v0": {
+            "topics": [
+              {
+                "symbol": "NoncDsync"
+              }
+            ],
+            "data": {
+              "map": [
+                {
+                  "key": {
+                    "symbol": "alert_type"
+                  },
+                  "val": {
+                    "u32": 1
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "device_mac"
+                  },
+                  "val": {
+                    "bytes": "b6c0f6ae57299ffc0a42b5eb9d76365e9c7a6d44c38885e80582b13d277602b9"
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "expected_nonce"
+                  },
+                  "val": {
+                    "u64": "266"
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "meter_id"
+                  },
+                  "val": {
+                    "u64": "12345"
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "received_nonce"
+                  },
+                  "val": {
+                    "u64": "454"
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "timestamp"
+                  },
+                  "val": {
+                    "u64": "0"
+                  }
+                }
+              ]
+            }
+          }
+        }
+      },
+      "failed_call": false
+    },
+    {
+      "event": {
+        "ext": "v0",
+        "contract_id": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM",
+        "type_": "contract",
+        "body": {
+          "v0": {
+            "topics": [
+              {
+                "symbol": "NoncDsync"
+              }
+            ],
+            "data": {
+              "map": [
+                {
+                  "key": {
+                    "symbol": "alert_type"
+                  },
+                  "val": {
+                    "u32": 1
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "device_mac"
+                  },
+                  "val": {
+                    "bytes": "b6c0f6ae57299ffc0a42b5eb9d76365e9c7a6d44c38885e80582b13d277602b9"
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "expected_nonce"
+                  },
+                  "val": {
+                    "u64": "266"
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "meter_id"
+                  },
+                  "val": {
+                    "u64": "12345"
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "received_nonce"
+                  },
+                  "val": {
+                    "u64": "1366"
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "timestamp"
+                  },
+                  "val": {
+                    "u64": "0"
+                  }
+                }
+              ]
+            }
+          }
+        }
+      },
+      "failed_call": false
+    },
+    {
+      "event": {
+        "ext": "v0",
+        "contract_id": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM",
+        "type_": "contract",
+        "body": {
+          "v0": {
+            "topics": [
+              {
+                "symbol": "NoncDsync"
+              }
+            ],
+            "data": {
+              "map": [
+                {
+                  "key": {
+                    "symbol": "alert_type"
+                  },
+                  "val": {
+                    "u32": 1
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "device_mac"
+                  },
+                  "val": {
+                    "bytes": "b6c0f6ae57299ffc0a42b5eb9d76365e9c7a6d44c38885e80582b13d277602b9"
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "expected_nonce"
+                  },
+                  "val": {
+                    "u64": "266"
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "meter_id"
+                  },
+                  "val": {
+                    "u64": "12345"
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "received_nonce"
+                  },
+                  "val": {
+                    "u64": "689"
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "timestamp"
+                  },
+                  "val": {
+                    "u64": "0"
+                  }
+                }
+              ]
+            }
+          }
+        }
+      },
+      "failed_call": false
+    },
+    {
+      "event": {
+        "ext": "v0",
+        "contract_id": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM",
+        "type_": "contract",
+        "body": {
+          "v0": {
+            "topics": [
+              {
+                "symbol": "NoncDsync"
+              }
+            ],
+            "data": {
+              "map": [
+                {
+                  "key": {
+                    "symbol": "alert_type"
+                  },
+                  "val": {
+                    "u32": 1
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "device_mac"
+                  },
+                  "val": {
+                    "bytes": "b6c0f6ae57299ffc0a42b5eb9d76365e9c7a6d44c38885e80582b13d277602b9"
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "expected_nonce"
+                  },
+                  "val": {
+                    "u64": "266"
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "meter_id"
+                  },
+                  "val": {
+                    "u64": "12345"
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "received_nonce"
+                  },
+                  "val": {
+                    "u64": "1497"
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "timestamp"
+                  },
+                  "val": {
+                    "u64": "0"
+                  }
+                }
+              ]
+            }
+          }
+        }
+      },
+      "failed_call": false
+    },
+    {
+      "event": {
+        "ext": "v0",
+        "contract_id": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM",
+        "type_": "contract",
+        "body": {
+          "v0": {
+            "topics": [
+              {
+                "symbol": "NoncDsync"
+              }
+            ],
+            "data": {
+              "map": [
+                {
+                  "key": {
+                    "symbol": "alert_type"
+                  },
+                  "val": {
+                    "u32": 1
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "device_mac"
+                  },
+                  "val": {
+                    "bytes": "b6c0f6ae57299ffc0a42b5eb9d76365e9c7a6d44c38885e80582b13d277602b9"
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "expected_nonce"
+                  },
+                  "val": {
+                    "u64": "266"
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "meter_id"
+                  },
+                  "val": {
+                    "u64": "12345"
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "received_nonce"
+                  },
+                  "val": {
+                    "u64": "1395"
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "timestamp"
+                  },
+                  "val": {
+                    "u64": "0"
+                  }
+                }
+              ]
+            }
+          }
+        }
+      },
+      "failed_call": false
+    },
+    {
+      "event": {
+        "ext": "v0",
+        "contract_id": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM",
+        "type_": "contract",
+        "body": {
+          "v0": {
+            "topics": [
+              {
+                "symbol": "NoncDsync"
+              }
+            ],
+            "data": {
+              "map": [
+                {
+                  "key": {
+                    "symbol": "alert_type"
+                  },
+                  "val": {
+                    "u32": 1
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "device_mac"
+                  },
+                  "val": {
+                    "bytes": "b6c0f6ae57299ffc0a42b5eb9d76365e9c7a6d44c38885e80582b13d277602b9"
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "expected_nonce"
+                  },
+                  "val": {
+                    "u64": "266"
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "meter_id"
+                  },
+                  "val": {
+                    "u64": "12345"
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "received_nonce"
+                  },
+                  "val": {
+                    "u64": "1323"
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "timestamp"
+                  },
+                  "val": {
+                    "u64": "0"
+                  }
+                }
+              ]
+            }
+          }
+        }
+      },
+      "failed_call": false
+    },
+    {
+      "event": {
+        "ext": "v0",
+        "contract_id": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM",
+        "type_": "contract",
+        "body": {
+          "v0": {
+            "topics": [
+              {
+                "symbol": "NoncDsync"
+              }
+            ],
+            "data": {
+              "map": [
+                {
+                  "key": {
+                    "symbol": "alert_type"
+                  },
+                  "val": {
+                    "u32": 1
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "device_mac"
+                  },
+                  "val": {
+                    "bytes": "b6c0f6ae57299ffc0a42b5eb9d76365e9c7a6d44c38885e80582b13d277602b9"
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "expected_nonce"
+                  },
+                  "val": {
+                    "u64": "266"
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "meter_id"
+                  },
+                  "val": {
+                    "u64": "12345"
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "received_nonce"
+                  },
+                  "val": {
+                    "u64": "1377"
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "timestamp"
+                  },
+                  "val": {
+                    "u64": "0"
+                  }
+                }
+              ]
+            }
+          }
+        }
+      },
+      "failed_call": false
+    },
+    {
+      "event": {
+        "ext": "v0",
+        "contract_id": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM",
+        "type_": "contract",
+        "body": {
+          "v0": {
+            "topics": [
+              {
+                "symbol": "NoncDsync"
+              }
+            ],
+            "data": {
+              "map": [
+                {
+                  "key": {
+                    "symbol": "alert_type"
+                  },
+                  "val": {
+                    "u32": 1
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "device_mac"
+                  },
+                  "val": {
+                    "bytes": "b6c0f6ae57299ffc0a42b5eb9d76365e9c7a6d44c38885e80582b13d277602b9"
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "expected_nonce"
+                  },
+                  "val": {
+                    "u64": "266"
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "meter_id"
+                  },
+                  "val": {
+                    "u64": "12345"
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "received_nonce"
+                  },
+                  "val": {
+                    "u64": "1125"
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "timestamp"
+                  },
+                  "val": {
+                    "u64": "0"
+                  }
+                }
+              ]
+            }
+          }
+        }
+      },
+      "failed_call": false
+    },
+    {
+      "event": {
+        "ext": "v0",
+        "contract_id": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM",
+        "type_": "contract",
+        "body": {
+          "v0": {
+            "topics": [
+              {
+                "symbol": "NoncDsync"
+              }
+            ],
+            "data": {
+              "map": [
+                {
+                  "key": {
+                    "symbol": "alert_type"
+                  },
+                  "val": {
+                    "u32": 1
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "device_mac"
+                  },
+                  "val": {
+                    "bytes": "b6c0f6ae57299ffc0a42b5eb9d76365e9c7a6d44c38885e80582b13d277602b9"
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "expected_nonce"
+                  },
+                  "val": {
+                    "u64": "266"
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "meter_id"
+                  },
+                  "val": {
+                    "u64": "12345"
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "received_nonce"
+                  },
+                  "val": {
+                    "u64": "284"
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "timestamp"
+                  },
+                  "val": {
+                    "u64": "0"
+                  }
+                }
+              ]
+            }
+          }
+        }
+      },
+      "failed_call": false
+    },
+    {
+      "event": {
+        "ext": "v0",
+        "contract_id": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM",
+        "type_": "contract",
+        "body": {
+          "v0": {
+            "topics": [
+              {
+                "symbol": "NoncDsync"
+              }
+            ],
+            "data": {
+              "map": [
+                {
+                  "key": {
+                    "symbol": "alert_type"
+                  },
+                  "val": {
+                    "u32": 1
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "device_mac"
+                  },
+                  "val": {
+                    "bytes": "b6c0f6ae57299ffc0a42b5eb9d76365e9c7a6d44c38885e80582b13d277602b9"
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "expected_nonce"
+                  },
+                  "val": {
+                    "u64": "266"
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "meter_id"
+                  },
+                  "val": {
+                    "u64": "12345"
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "received_nonce"
+                  },
+                  "val": {
+                    "u64": "1298"
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "timestamp"
+                  },
+                  "val": {
+                    "u64": "0"
+                  }
+                }
+              ]
+            }
+          }
+        }
+      },
+      "failed_call": false
+    },
+    {
+      "event": {
+        "ext": "v0",
+        "contract_id": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM",
+        "type_": "contract",
+        "body": {
+          "v0": {
+            "topics": [
+              {
+                "symbol": "NoncDsync"
+              }
+            ],
+            "data": {
+              "map": [
+                {
+                  "key": {
+                    "symbol": "alert_type"
+                  },
+                  "val": {
+                    "u32": 1
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "device_mac"
+                  },
+                  "val": {
+                    "bytes": "b6c0f6ae57299ffc0a42b5eb9d76365e9c7a6d44c38885e80582b13d277602b9"
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "expected_nonce"
+                  },
+                  "val": {
+                    "u64": "266"
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "meter_id"
+                  },
+                  "val": {
+                    "u64": "12345"
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "received_nonce"
+                  },
+                  "val": {
+                    "u64": "1018"
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "timestamp"
+                  },
+                  "val": {
+                    "u64": "0"
+                  }
+                }
+              ]
+            }
+          }
+        }
+      },
+      "failed_call": false
+    },
+    {
+      "event": {
+        "ext": "v0",
+        "contract_id": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM",
+        "type_": "contract",
+        "body": {
+          "v0": {
+            "topics": [
+              {
+                "symbol": "NoncDsync"
+              }
+            ],
+            "data": {
+              "map": [
+                {
+                  "key": {
+                    "symbol": "alert_type"
+                  },
+                  "val": {
+                    "u32": 1
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "device_mac"
+                  },
+                  "val": {
+                    "bytes": "b6c0f6ae57299ffc0a42b5eb9d76365e9c7a6d44c38885e80582b13d277602b9"
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "expected_nonce"
+                  },
+                  "val": {
+                    "u64": "266"
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "meter_id"
+                  },
+                  "val": {
+                    "u64": "12345"
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "received_nonce"
+                  },
+                  "val": {
+                    "u64": "1746"
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "timestamp"
+                  },
+                  "val": {
+                    "u64": "0"
+                  }
+                }
+              ]
+            }
+          }
+        }
+      },
+      "failed_call": false
+    },
+    {
+      "event": {
+        "ext": "v0",
+        "contract_id": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM",
+        "type_": "contract",
+        "body": {
+          "v0": {
+            "topics": [
+              {
+                "symbol": "NoncDsync"
+              }
+            ],
+            "data": {
+              "map": [
+                {
+                  "key": {
+                    "symbol": "alert_type"
+                  },
+                  "val": {
+                    "u32": 1
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "device_mac"
+                  },
+                  "val": {
+                    "bytes": "b6c0f6ae57299ffc0a42b5eb9d76365e9c7a6d44c38885e80582b13d277602b9"
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "expected_nonce"
+                  },
+                  "val": {
+                    "u64": "266"
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "meter_id"
+                  },
+                  "val": {
+                    "u64": "12345"
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "received_nonce"
+                  },
+                  "val": {
+                    "u64": "1220"
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "timestamp"
+                  },
+                  "val": {
+                    "u64": "0"
+                  }
+                }
+              ]
+            }
+          }
+        }
+      },
+      "failed_call": false
+    },
+    {
+      "event": {
+        "ext": "v0",
+        "contract_id": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM",
+        "type_": "contract",
+        "body": {
+          "v0": {
+            "topics": [
+              {
+                "symbol": "NoncDsync"
+              }
+            ],
+            "data": {
+              "map": [
+                {
+                  "key": {
+                    "symbol": "alert_type"
+                  },
+                  "val": {
+                    "u32": 0
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "device_mac"
+                  },
+                  "val": {
+                    "bytes": "b6c0f6ae57299ffc0a42b5eb9d76365e9c7a6d44c38885e80582b13d277602b9"
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "expected_nonce"
+                  },
+                  "val": {
+                    "u64": "266"
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "meter_id"
+                  },
+                  "val": {
+                    "u64": "12345"
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "received_nonce"
+                  },
+                  "val": {
+                    "u64": "20"
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "timestamp"
+                  },
+                  "val": {
+                    "u64": "0"
+                  }
+                }
+              ]
+            }
+          }
+        }
+      },
+      "failed_call": false
+    },
+    {
+      "event": {
+        "ext": "v0",
+        "contract_id": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM",
+        "type_": "contract",
+        "body": {
+          "v0": {
+            "topics": [
+              {
+                "symbol": "NoncDsync"
+              }
+            ],
+            "data": {
+              "map": [
+                {
+                  "key": {
+                    "symbol": "alert_type"
+                  },
+                  "val": {
+                    "u32": 1
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "device_mac"
+                  },
+                  "val": {
+                    "bytes": "b6c0f6ae57299ffc0a42b5eb9d76365e9c7a6d44c38885e80582b13d277602b9"
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "expected_nonce"
+                  },
+                  "val": {
+                    "u64": "266"
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "meter_id"
+                  },
+                  "val": {
+                    "u64": "12345"
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "received_nonce"
+                  },
+                  "val": {
+                    "u64": "1313"
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "timestamp"
+                  },
+                  "val": {
+                    "u64": "0"
+                  }
+                }
+              ]
+            }
+          }
+        }
+      },
+      "failed_call": false
+    },
+    {
+      "event": {
+        "ext": "v0",
+        "contract_id": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM",
+        "type_": "contract",
+        "body": {
+          "v0": {
+            "topics": [
+              {
+                "symbol": "NoncDsync"
+              }
+            ],
+            "data": {
+              "map": [
+                {
+                  "key": {
+                    "symbol": "alert_type"
+                  },
+                  "val": {
+                    "u32": 1
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "device_mac"
+                  },
+                  "val": {
+                    "bytes": "b6c0f6ae57299ffc0a42b5eb9d76365e9c7a6d44c38885e80582b13d277602b9"
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "expected_nonce"
+                  },
+                  "val": {
+                    "u64": "266"
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "meter_id"
+                  },
+                  "val": {
+                    "u64": "12345"
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "received_nonce"
+                  },
+                  "val": {
+                    "u64": "1360"
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "timestamp"
+                  },
+                  "val": {
+                    "u64": "0"
+                  }
+                }
+              ]
+            }
+          }
+        }
+      },
+      "failed_call": false
+    },
+    {
+      "event": {
+        "ext": "v0",
+        "contract_id": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM",
+        "type_": "contract",
+        "body": {
+          "v0": {
+            "topics": [
+              {
+                "symbol": "NoncDsync"
+              }
+            ],
+            "data": {
+              "map": [
+                {
+                  "key": {
+                    "symbol": "alert_type"
+                  },
+                  "val": {
+                    "u32": 0
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "device_mac"
+                  },
+                  "val": {
+                    "bytes": "b6c0f6ae57299ffc0a42b5eb9d76365e9c7a6d44c38885e80582b13d277602b9"
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "expected_nonce"
+                  },
+                  "val": {
+                    "u64": "266"
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "meter_id"
+                  },
+                  "val": {
+                    "u64": "12345"
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "received_nonce"
+                  },
+                  "val": {
+                    "u64": "23"
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "timestamp"
+                  },
+                  "val": {
+                    "u64": "0"
+                  }
+                }
+              ]
+            }
+          }
+        }
+      },
+      "failed_call": false
+    },
+    {
+      "event": {
+        "ext": "v0",
+        "contract_id": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM",
+        "type_": "contract",
+        "body": {
+          "v0": {
+            "topics": [
+              {
+                "symbol": "NoncDsync"
+              }
+            ],
+            "data": {
+              "map": [
+                {
+                  "key": {
+                    "symbol": "alert_type"
+                  },
+                  "val": {
+                    "u32": 1
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "device_mac"
+                  },
+                  "val": {
+                    "bytes": "b6c0f6ae57299ffc0a42b5eb9d76365e9c7a6d44c38885e80582b13d277602b9"
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "expected_nonce"
+                  },
+                  "val": {
+                    "u64": "266"
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "meter_id"
+                  },
+                  "val": {
+                    "u64": "12345"
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "received_nonce"
+                  },
+                  "val": {
+                    "u64": "1594"
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "timestamp"
+                  },
+                  "val": {
+                    "u64": "0"
+                  }
+                }
+              ]
+            }
+          }
+        }
+      },
+      "failed_call": false
+    }
+  ]
+}

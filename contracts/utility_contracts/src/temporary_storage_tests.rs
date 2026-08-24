@@ -49,16 +49,22 @@ mod tests {
             let current_timestamp = 2000;
 
             // First calculation should store in temp storage
-            let result1 =
-                OptimizedFlowCalculator::calculate_with_temp_storage(&env, &flow, current_timestamp);
+            let result1 = OptimizedFlowCalculator::calculate_with_temp_storage(
+                &env,
+                &flow,
+                current_timestamp,
+            );
             assert_eq!(
                 result1,
                 100 * (current_timestamp - flow.last_flow_timestamp) as i128
             );
 
             // Second calculation should use temp storage
-            let result2 =
-                OptimizedFlowCalculator::calculate_with_temp_storage(&env, &flow, current_timestamp);
+            let result2 = OptimizedFlowCalculator::calculate_with_temp_storage(
+                &env,
+                &flow,
+                current_timestamp,
+            );
             assert_eq!(result1, result2);
 
             // Verify temp storage contains the data
@@ -215,8 +221,11 @@ mod tests {
             flow.status = StreamStatus::Paused;
 
             let current_timestamp = 2000;
-            let result =
-                OptimizedFlowCalculator::calculate_with_temp_storage(&env, &flow, current_timestamp);
+            let result = OptimizedFlowCalculator::calculate_with_temp_storage(
+                &env,
+                &flow,
+                current_timestamp,
+            );
 
             // Paused flows should return zero accumulation
             assert_eq!(result, 0);
@@ -257,8 +266,11 @@ mod tests {
             let flow = create_test_flow(&env, stream_id, 100, 1000);
 
             // Store accumulation
-            let result =
-                OptimizedFlowCalculator::calculate_with_temp_storage(&env, &flow, current_timestamp);
+            let result = OptimizedFlowCalculator::calculate_with_temp_storage(
+                &env,
+                &flow,
+                current_timestamp,
+            );
 
             // Verify it's stored
             let stored = TempStorageManager::get_flow_accumulation(&env, stream_id);

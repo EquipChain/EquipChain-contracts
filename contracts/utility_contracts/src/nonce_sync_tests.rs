@@ -141,8 +141,7 @@ pub mod nonce_sync_fuzz_tests {
 
             // Generate multiple desync events to trigger suspicious marking
             for _ in 0..15 {
-                let bad_heartbeat =
-                    create_test_heartbeat(meter_id, device_mac.clone(), 0); // Always nonce 0
+                let bad_heartbeat = create_test_heartbeat(meter_id, device_mac.clone(), 0); // Always nonce 0
                 NonceSyncManager::verify_heartbeat_nonce(env.clone(), bad_heartbeat);
             }
 
