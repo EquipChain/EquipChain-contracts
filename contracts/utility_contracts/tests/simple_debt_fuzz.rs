@@ -59,7 +59,6 @@ fn test_debt_calculation_underflow_protection() {
         "Debt should never be negative: {}",
         meter.debt
     );
-    assert!(meter.debt <= i128::MAX, "Debt should not exceed i128::MAX");
 
     // Test 2: Verify debt clears correctly on top-up
     let debt_to_clear = meter.debt;
@@ -90,10 +89,7 @@ fn test_debt_calculation_underflow_protection() {
         !zero_balance_meter.is_active,
         "Meter should be inactive with negative balance"
     );
-    assert!(
-        zero_balance_meter.balance >= i128::MIN,
-        "Balance should not underflow i128::MIN"
-    );
+    // Saturating arithmetic guarantees no underflow below i128::MIN
 
     // Test 4: Edge case - Maximum i128 values
     let mut edge_meter = MockMeter::new();
@@ -102,9 +98,9 @@ fn test_debt_calculation_underflow_protection() {
     let max_safe_usage = i128::MAX / 1_000_000;
     edge_meter.accumulate_debt(max_safe_usage);
 
-    assert!(edge_meter.debt >= 0 && edge_meter.debt <= i128::MAX);
-    assert!(edge_meter.collateral_limit >= 0 && edge_meter.collateral_limit <= i128::MAX);
-    assert!(edge_meter.balance >= i128::MIN && edge_meter.balance <= i128::MAX);
+    assert!(edge_meter.debt >= 0);
+    assert!(edge_meter.collateral_limit >= 0);
+    // Saturating arithmetic guarantees balance stays within bounds
 
     // Test 5: Multiple extreme scenarios
     let extreme_scenarios = vec![
@@ -123,11 +119,9 @@ fn test_debt_calculation_underflow_protection() {
         scenario_meter.deduct_from_balance(usage);
 
         // All values should remain within valid i128 range
-        assert!(scenario_meter.debt >= 0 && scenario_meter.debt <= i128::MAX);
-        assert!(scenario_meter.balance >= i128::MIN && scenario_meter.balance <= i128::MAX);
-        assert!(
-            scenario_meter.collateral_limit >= 0 && scenario_meter.collateral_limit <= i128::MAX
-        );
+        assert!(scenario_meter.debt >= 0);
+        // Saturating arithmetic keeps balance in bounds
+        assert!(scenario_meter.collateral_limit >= 0);
     }
 
     println!("✅ All debt calculation fuzz tests passed!");
@@ -141,7 +135,7 @@ fn test_debt_calculation_underflow_protection() {
 fn test_saturating_arithmetic_edge_cases() {
     // Test all edge cases that could cause underflow/overflow
 
-    let edge_values = vec![i128::MAX, i128::MIN, i128::MAX - 1, i128::MIN + 1, 0, -1, 1];
+    let edge_values = [i128::MAX, i128::MIN, i128::MAX - 1, i128::MIN + 1, 0, -1, 1];
 
     for &value in edge_values.iter() {
         // Test all arithmetic operations that could underflow
@@ -154,10 +148,10 @@ fn test_saturating_arithmetic_edge_cases() {
         }
 
         // All operations should complete without panic
-        // Results should be within valid i128 range
-        assert!(_add_result >= i128::MIN && _add_result <= i128::MAX);
-        assert!(_mul_result >= i128::MIN && _mul_result <= i128::MAX);
-        assert!(_sub_result >= i128::MIN && _sub_result <= i128::MAX);
+        // Saturating arithmetic guarantees results are within valid i128 range
+        let _ = _add_result;
+        let _ = _mul_result;
+        let _ = _sub_result;
     }
 
     println!("✅ All saturating arithmetic edge cases passed!");

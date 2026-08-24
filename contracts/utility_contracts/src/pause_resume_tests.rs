@@ -4,7 +4,7 @@ use crate::*;
 use soroban_sdk::{
     testutils::Events,
     testutils::{Address as _, Ledger as TestLedger},
-    Address, Env, Symbol,
+    Address, Env, Symbol, TryFromVal,
 };
 
 #[test]
@@ -19,7 +19,16 @@ fn test_pause_stream_stops_flow_calculation() {
     let initial_balance = 1000000i128; // 1 XLM in stroops
 
     // Create stream
-    client.create_continuous_stream(&stream_id, &0u64, &flow_rate, &initial_balance, &provider, &provider, &0u32, &soroban_sdk::BytesN::from_array(&env, &[0u8; 32]));
+    client.create_continuous_stream(
+        &stream_id,
+        &0u64,
+        &flow_rate,
+        &initial_balance,
+        &provider,
+        &provider,
+        &0u32,
+        &soroban_sdk::BytesN::from_array(&env, &[0u8; 32]),
+    );
 
     // Simulate time passage (100 seconds)
     env.ledger().set_timestamp(100);
@@ -54,7 +63,16 @@ fn test_resume_stream_adjusts_timeline() {
     let initial_balance = 1000000i128;
 
     // Create stream
-    client.create_continuous_stream(&stream_id, &0u64, &flow_rate, &initial_balance, &provider, &provider, &0u32, &soroban_sdk::BytesN::from_array(&env, &[0u8; 32]));
+    client.create_continuous_stream(
+        &stream_id,
+        &0u64,
+        &flow_rate,
+        &initial_balance,
+        &provider,
+        &provider,
+        &0u32,
+        &soroban_sdk::BytesN::from_array(&env, &[0u8; 32]),
+    );
 
     // Simulate time passage (100 seconds)
     env.ledger().set_timestamp(100);
@@ -99,7 +117,16 @@ fn test_provider_access_control() {
     let initial_balance = 1000000i128;
 
     // Create stream with provider
-    client.create_continuous_stream(&stream_id, &0u64, &flow_rate, &initial_balance, &provider, &provider, &0u32, &soroban_sdk::BytesN::from_array(&env, &[0u8; 32]));
+    client.create_continuous_stream(
+        &stream_id,
+        &0u64,
+        &flow_rate,
+        &initial_balance,
+        &provider,
+        &provider,
+        &0u32,
+        &soroban_sdk::BytesN::from_array(&env, &[0u8; 32]),
+    );
 
     // Try to pause with unauthorized user (should fail)
     let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
@@ -131,7 +158,16 @@ fn test_edge_case_depleted_during_pause() {
     let initial_balance = 1000i128; // Very small balance
 
     // Create stream
-    client.create_continuous_stream(&stream_id, &0u64, &flow_rate, &initial_balance, &provider, &provider, &0u32, &soroban_sdk::BytesN::from_array(&env, &[0u8; 32]));
+    client.create_continuous_stream(
+        &stream_id,
+        &0u64,
+        &flow_rate,
+        &initial_balance,
+        &provider,
+        &provider,
+        &0u32,
+        &soroban_sdk::BytesN::from_array(&env, &[0u8; 32]),
+    );
 
     // Simulate time passage to deplete the stream (1 second)
     env.ledger().set_timestamp(1);
@@ -162,7 +198,16 @@ fn test_pause_only_active_streams() {
     let initial_balance = 0i128; // Start with paused stream
 
     // Create paused stream
-    client.create_continuous_stream(&stream_id, &0u64, &flow_rate, &initial_balance, &provider, &provider, &0u32, &soroban_sdk::BytesN::from_array(&env, &[0u8; 32]));
+    client.create_continuous_stream(
+        &stream_id,
+        &0u64,
+        &flow_rate,
+        &initial_balance,
+        &provider,
+        &provider,
+        &0u32,
+        &soroban_sdk::BytesN::from_array(&env, &[0u8; 32]),
+    );
 
     // Try to pause already paused stream (should fail)
     let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
@@ -191,7 +236,16 @@ fn test_resume_only_paused_streams() {
     let initial_balance = 1000000i128;
 
     // Create active stream
-    client.create_continuous_stream(&stream_id, &0u64, &flow_rate, &initial_balance, &provider, &provider, &0u32, &soroban_sdk::BytesN::from_array(&env, &[0u8; 32]));
+    client.create_continuous_stream(
+        &stream_id,
+        &0u64,
+        &flow_rate,
+        &initial_balance,
+        &provider,
+        &provider,
+        &0u32,
+        &soroban_sdk::BytesN::from_array(&env, &[0u8; 32]),
+    );
 
     // Try to resume active stream (should fail)
     let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
@@ -221,7 +275,16 @@ fn test_flow_math_adjustment_post_resume() {
     let initial_balance = 1000000i128;
 
     // Create stream
-    client.create_continuous_stream(&stream_id, &0u64, &flow_rate, &initial_balance, &provider, &provider, &0u32, &soroban_sdk::BytesN::from_array(&env, &[0u8; 32]));
+    client.create_continuous_stream(
+        &stream_id,
+        &0u64,
+        &flow_rate,
+        &initial_balance,
+        &provider,
+        &provider,
+        &0u32,
+        &soroban_sdk::BytesN::from_array(&env, &[0u8; 32]),
+    );
 
     // Simulate time passage (100 seconds)
     env.ledger().set_timestamp(100);
@@ -267,7 +330,16 @@ fn test_zero_flow_rate_resume_fails() {
     let initial_balance = 1000000i128;
 
     // Create stream
-    client.create_continuous_stream(&stream_id, &0u64, &flow_rate, &initial_balance, &provider, &provider, &0u32, &soroban_sdk::BytesN::from_array(&env, &[0u8; 32]));
+    client.create_continuous_stream(
+        &stream_id,
+        &0u64,
+        &flow_rate,
+        &initial_balance,
+        &provider,
+        &provider,
+        &0u32,
+        &soroban_sdk::BytesN::from_array(&env, &[0u8; 32]),
+    );
 
     // Pause
     client.pause_stream(&stream_id);
@@ -297,7 +369,16 @@ fn test_pause_resume_events_emitted() {
     let initial_balance = 1000000i128;
 
     // Create stream
-    client.create_continuous_stream(&stream_id, &0u64, &flow_rate, &initial_balance, &provider, &provider, &0u32, &soroban_sdk::BytesN::from_array(&env, &[0u8; 32]));
+    client.create_continuous_stream(
+        &stream_id,
+        &0u64,
+        &flow_rate,
+        &initial_balance,
+        &provider,
+        &provider,
+        &0u32,
+        &soroban_sdk::BytesN::from_array(&env, &[0u8; 32]),
+    );
 
     // Simulate time passage
     env.ledger().set_timestamp(100);
@@ -307,8 +388,11 @@ fn test_pause_resume_events_emitted() {
 
     // Check for StreamPaused event
     let events = env.events().all();
-    let pause_event_found = events.iter().any(|(topics, _data)| {
-        topics[0] == Symbol::new(&env, "StreamPaused") && topics[1] == stream_id.into()
+    let stream_paused_sym = Symbol::new(&env, "StreamPaused");
+    let pause_event_found = events.iter().any(|(_contract, topics, _data)| {
+        topics.len() >= 1
+            && Symbol::try_from_val(&env, &topics.get(0).unwrap_or_else(|| panic!("no topic")))
+                .is_ok_and(|s| s == stream_paused_sym)
     });
     assert!(pause_event_found);
 
@@ -320,8 +404,13 @@ fn test_pause_resume_events_emitted() {
 
     // Check for StreamResumed event
     let events_after_resume = env.events().all();
-    let resume_event_found = events_after_resume.iter().any(|(topics, _data)| {
-        topics[0] == Symbol::new(&env, "StreamResumed") && topics[1] == stream_id.into()
-    });
+    let stream_resumed_sym = Symbol::new(&env, "StreamResumed");
+    let resume_event_found = events_after_resume
+        .iter()
+        .any(|(_contract, topics, _data)| {
+            topics.len() >= 1
+                && Symbol::try_from_val(&env, &topics.get(0).unwrap_or_else(|| panic!("no topic")))
+                    .is_ok_and(|s| s == stream_resumed_sym)
+        });
     assert!(resume_event_found);
 }

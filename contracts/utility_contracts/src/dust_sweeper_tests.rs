@@ -10,10 +10,10 @@ fn test_dust_detection() {
     let client = UtilityContractClient::new(&env, &contract_id);
 
     // Test dust detection logic
-    assert!(is_dust_amount(0) == false); // 0 is not dust
-    assert!(is_dust_amount(1) == false); // 1 stroop is not dust (threshold is < 1)
-    assert!(is_dust_amount(0) == false); // 0 is not dust
-    assert!(is_dust_amount(-1) == false); // negative amounts are not dust
+    assert!(!is_dust_amount(0)); // 0 is not dust
+    assert!(!is_dust_amount(1)); // 1 stroop is not dust (threshold is < 1)
+    assert!(!is_dust_amount(0)); // 0 is not dust
+    assert!(!is_dust_amount(-1)); // negative amounts are not dust
 }
 
 #[test]
@@ -98,7 +98,16 @@ fn test_dust_sweeping_single_stream() {
     let dust_amount = 0i128; // Less than 1 stroop
     let provider = Address::generate(&env);
     env.mock_all_auths();
-    client.create_continuous_stream(&stream_id, &0u64, &1000, &dust_amount, &provider, &provider, &0u32, &soroban_sdk::BytesN::from_array(&env, &[0u8; 32]));
+    client.create_continuous_stream(
+        &stream_id,
+        &0u64,
+        &1000,
+        &dust_amount,
+        &provider,
+        &provider,
+        &0u32,
+        &soroban_sdk::BytesN::from_array(&env, &[0u8; 32]),
+    );
 
     // Manually set stream to depleted status with dust
     let flow = ContinuousFlow {
@@ -151,7 +160,16 @@ fn test_dust_sweeping_with_actual_dust() {
     for i in 1u64..=10u64 {
         // Create stream with small amount that will become dust
         let provider = Address::generate(&env);
-        client.create_continuous_stream(&i, &0u64, &1000, &1000, &provider, &provider, &0u32, &soroban_sdk::BytesN::from_array(&env, &[0u8; 32]));
+        client.create_continuous_stream(
+            &i,
+            &0u64,
+            &1000,
+            &1000,
+            &provider,
+            &provider,
+            &0u32,
+            &soroban_sdk::BytesN::from_array(&env, &[0u8; 32]),
+        );
 
         // Simulate flow to create dust remainder
         let flow = ContinuousFlow {
@@ -231,7 +249,16 @@ fn test_multi_asset_dust_handling() {
     // XLM streams
     for i in 1u64..=5u64 {
         let provider = Address::generate(&env);
-        client.create_continuous_stream(&i, &0u64, &1000, &500, &provider, &provider, &0u32, &soroban_sdk::BytesN::from_array(&env, &[0u8; 32]));
+        client.create_continuous_stream(
+            &i,
+            &0u64,
+            &1000,
+            &500,
+            &provider,
+            &provider,
+            &0u32,
+            &soroban_sdk::BytesN::from_array(&env, &[0u8; 32]),
+        );
         let flow = ContinuousFlow {
             stream_id: i,
             flow_rate_per_second: 1000,
@@ -257,7 +284,16 @@ fn test_multi_asset_dust_handling() {
     // USDC streams
     for i in 6u64..=10u64 {
         let provider = Address::generate(&env);
-        client.create_continuous_stream(&i, &0u64, &1000, &500, &provider, &provider, &0u32, &soroban_sdk::BytesN::from_array(&env, &[0u8; 32]));
+        client.create_continuous_stream(
+            &i,
+            &0u64,
+            &1000,
+            &500,
+            &provider,
+            &provider,
+            &0u32,
+            &soroban_sdk::BytesN::from_array(&env, &[0u8; 32]),
+        );
         let flow = ContinuousFlow {
             stream_id: i,
             flow_rate_per_second: 1000,
@@ -320,7 +356,16 @@ fn test_gas_bounty_mechanism() {
     // Create stream with dust
     let provider = Address::generate(&env);
     env.mock_all_auths();
-    client.create_continuous_stream(&1u64, &0u64, &1000, &1000, &provider, &provider, &0u32, &soroban_sdk::BytesN::from_array(&env, &[0u8; 32]));
+    client.create_continuous_stream(
+        &1u64,
+        &0u64,
+        &1000,
+        &1000,
+        &provider,
+        &provider,
+        &0u32,
+        &soroban_sdk::BytesN::from_array(&env, &[0u8; 32]),
+    );
     let flow = ContinuousFlow {
         stream_id: 1,
         flow_rate_per_second: 1000,
@@ -381,7 +426,16 @@ fn test_massive_dust_sweeping_performance() {
 
         for stream_id in batch_start..=batch_end {
             let provider = Address::generate(&env);
-            client.create_continuous_stream(&stream_id, &0u64, &1000, &1000, &provider, &provider, &0u32, &soroban_sdk::BytesN::from_array(&env, &[0u8; 32]));
+            client.create_continuous_stream(
+                &stream_id,
+                &0u64,
+                &1000,
+                &1000,
+                &provider,
+                &provider,
+                &0u32,
+                &soroban_sdk::BytesN::from_array(&env, &[0u8; 32]),
+            );
 
             let flow = ContinuousFlow {
                 stream_id,
@@ -469,7 +523,16 @@ fn test_total_supply_invariant() {
     for (i, &balance) in initial_balances.iter().enumerate() {
         let stream_id = (i + 1) as u64;
         let provider = Address::generate(&env);
-        client.create_continuous_stream(&stream_id, &0u64, &100, &balance, &provider, &provider, &0u32, &soroban_sdk::BytesN::from_array(&env, &[0u8; 32]));
+        client.create_continuous_stream(
+            &stream_id,
+            &0u64,
+            &100,
+            &balance,
+            &provider,
+            &provider,
+            &0u32,
+            &soroban_sdk::BytesN::from_array(&env, &[0u8; 32]),
+        );
         total_initial += balance;
     }
 

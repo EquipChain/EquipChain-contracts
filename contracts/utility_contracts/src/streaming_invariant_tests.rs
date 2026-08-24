@@ -7,7 +7,7 @@
 ///   2. No combination of edge-case inputs can break the formula.
 ///   3. The proof serves as core documentation for security auditors.
 use super::*;
-use soroban_sdk::{testutils::Address as _, Address, Env};
+use soroban_sdk::{testutils::Address as _, testutils::Ledger as _, Address, Env};
 
 // ---------------------------------------------------------------------------
 // Core invariant checker
@@ -249,7 +249,16 @@ fn test_contract_level_streaming_invariant() {
 
     // Create stream
     env.ledger().set_timestamp(0);
-    client.create_continuous_stream(&stream_id, &0u64, &flow_rate, &initial_balance, &provider, &payer, &0u32, &soroban_sdk::BytesN::from_array(&env, &[0u8; 32]));
+    client.create_continuous_stream(
+        &stream_id,
+        &0u64,
+        &flow_rate,
+        &initial_balance,
+        &provider,
+        &payer,
+        &0u32,
+        &soroban_sdk::BytesN::from_array(&env, &[0u8; 32]),
+    );
 
     // Advance time by 50 seconds
     env.ledger().set_timestamp(50);
@@ -304,7 +313,16 @@ fn test_contract_level_invariant_with_fee() {
     let deposited = initial_balance;
 
     env.ledger().set_timestamp(0);
-    client.create_continuous_stream(&stream_id, &0u64, &flow_rate, &initial_balance, &provider, &payer, &0u32, &soroban_sdk::BytesN::from_array(&env, &[0u8; 32]));
+    client.create_continuous_stream(
+        &stream_id,
+        &0u64,
+        &flow_rate,
+        &initial_balance,
+        &provider,
+        &payer,
+        &0u32,
+        &soroban_sdk::BytesN::from_array(&env, &[0u8; 32]),
+    );
 
     // Advance 50 seconds
     env.ledger().set_timestamp(50);

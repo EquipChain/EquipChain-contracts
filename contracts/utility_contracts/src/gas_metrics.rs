@@ -27,7 +27,6 @@ use std::vec::Vec;
 ///   2. Metrics are captured with minimal overhead
 ///   3. Reports show gas vs estimated costs
 ///   4. Regression detection alerts on unexpected increases
-use std::cell::RefCell;
 use std::collections::BTreeMap;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Mutex;
@@ -127,16 +126,16 @@ impl GasStatistics {
 
 /// Global gas meter for collecting metrics across all tests
 pub struct GasMeter {
-    measurements: RefCell<Vec<GasMeasurement>>,
-    test_stack: RefCell<Vec<String>>,
+    measurements: Mutex<Vec<GasMeasurement>>,
+    test_stack: Mutex<Vec<String>>,
     operation_counter: AtomicUsize,
 }
 
 impl GasMeter {
     fn new() -> Self {
         GasMeter {
-            measurements: RefCell::new(Vec::new()),
-            test_stack: RefCell::new(Vec::new()),
+            measurements: Mutex::new(Vec::new()),
+            test_stack: Mutex::new(Vec::new()),
             operation_counter: AtomicUsize::new(0),
         }
     }
@@ -151,7 +150,8 @@ impl GasMeter {
         let operation_name = operation_name.into();
         let test_name = self
             .test_stack
-            .borrow()
+            .lock()
+            .unwrap()
             .last()
             .cloned()
             .unwrap_or_else(|| "unknown".to_string());
@@ -167,29 +167,30 @@ impl GasMeter {
             test_name,
         };
 
-        self.measurements.borrow_mut().push(measurement);
+        self.measurements.lock().unwrap().push(measurement);
         self.operation_counter.fetch_add(1, Ordering::SeqCst);
     }
 
     /// Begin a test context
     pub fn push_test(&self, test_name: impl Into<String>) {
-        self.test_stack.borrow_mut().push(test_name.into());
+        self.test_stack.lock().unwrap().push(test_name.into());
     }
 
     /// End a test context
     pub fn pop_test(&self) {
-        self.test_stack.borrow_mut().pop();
+        self.test_stack.lock().unwrap().pop();
     }
 
     /// Get all measurements
     pub fn get_measurements(&self) -> Vec<GasMeasurement> {
-        self.measurements.borrow().clone()
+        self.measurements.lock().unwrap().clone()
     }
 
     /// Get measurements for a specific operation
     pub fn get_operation_measurements(&self, operation_name: &str) -> Vec<GasMeasurement> {
         self.measurements
-            .borrow()
+            .lock()
+            .unwrap()
             .iter()
             .filter(|m| m.operation_name == operation_name)
             .cloned()
@@ -225,15 +226,15 @@ impl GasMeter {
 
     /// Get statistics for all operations
     pub fn get_all_statistics(&self) -> BTreeMap<String, GasStatistics> {
-        let measurements = self.measurements.borrow();
-        let mut operation_names: std::collections::HashSet<_> = measurements
+        let measurements = self.measurements.lock().unwrap();
+        let operation_names: std::collections::HashSet<_> = measurements
             .iter()
             .map(|m| m.operation_name.clone())
             .collect();
 
         operation_names
             .into_iter()
-            .filter_map(|op_name: &String| {
+            .filter_map(|op_name| {
                 self.get_operation_statistics(&op_name)
                     .map(|stats| (op_name.clone(), stats))
             })
@@ -243,7 +244,8 @@ impl GasMeter {
     /// Get measurements exceeding a gas threshold
     pub fn get_expensive_operations(&self, threshold: i128) -> Vec<GasMeasurement> {
         self.measurements
-            .borrow()
+            .lock()
+            .unwrap()
             .iter()
             .filter(|m| m.actual_gas > threshold)
             .cloned()
@@ -253,7 +255,8 @@ impl GasMeter {
     /// Get measurements deviating from estimates
     pub fn get_deviations(&self, tolerance_percent: f64) -> Vec<GasMeasurement> {
         self.measurements
-            .borrow()
+            .lock()
+            .unwrap()
             .iter()
             .filter(|m| !m.is_within_tolerance(tolerance_percent))
             .cloned()
@@ -262,8 +265,8 @@ impl GasMeter {
 
     /// Clear all measurements
     pub fn clear(&self) {
-        self.measurements.borrow_mut().clear();
-        self.test_stack.borrow_mut().clear();
+        self.measurements.lock().unwrap().clear();
+        self.test_stack.lock().unwrap().clear();
         self.operation_counter.store(0, Ordering::SeqCst);
     }
 
@@ -289,7 +292,7 @@ impl GasMeter {
     }
 }
 
-/// Global gas meter instance
+// Global gas meter instance
 lazy_static::lazy_static! {
     pub static ref GAS_METER: GasMeter = GasMeter::new();
 }
@@ -459,7 +462,7 @@ pub fn get_gas_hotspots(limit: usize) -> Vec<(String, i128)> {
         .into_iter()
         .map(|(name, stat)| (name, stat.total_gas))
         .collect();
-    hotspots.sort_by(|a, b| b.1.cmp(&a.1));
+    hotspots.sort_by_key(|a| std::cmp::Reverse(a.1));
     hotspots.truncate(limit);
     hotspots
 }

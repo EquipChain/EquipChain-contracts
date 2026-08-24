@@ -42,7 +42,16 @@ fn test_buffer_creation_requirement() {
     // Test 3: Successful stream creation with buffer
     env.mock_all_auths();
 
-    client.create_continuous_stream(&stream_id, &0u64, &flow_rate, &initial_balance, &provider, &payer, &0u32, &soroban_sdk::BytesN::from_array(&env, &[0u8; 32]));
+    client.create_continuous_stream(
+        &stream_id,
+        &0u64,
+        &flow_rate,
+        &initial_balance,
+        &provider,
+        &payer,
+        &0u32,
+        &soroban_sdk::BytesN::from_array(&env, &[0u8; 32]),
+    );
 
     // Verify stream was created with correct buffer
     let stream = client.get_continuous_flow(&stream_id).unwrap();
@@ -69,7 +78,16 @@ fn test_buffer_depletion_logic() {
 
     // Create stream
     env.mock_all_auths();
-    client.create_continuous_stream(&stream_id, &0u64, &flow_rate, &initial_balance, &provider, &payer, &0u32, &soroban_sdk::BytesN::from_array(&env, &[0u8; 32]));
+    client.create_continuous_stream(
+        &stream_id,
+        &0u64,
+        &flow_rate,
+        &initial_balance,
+        &provider,
+        &payer,
+        &0u32,
+        &soroban_sdk::BytesN::from_array(&env, &[0u8; 32]),
+    );
 
     // Advance time to deplete main balance
     env.ledger().set_timestamp(env.ledger().timestamp() + 3); // 3 seconds
@@ -112,7 +130,16 @@ fn test_buffer_warning_event() {
 
     // Create stream
     env.mock_all_auths();
-    client.create_continuous_stream(&stream_id, &0u64, &flow_rate, &initial_balance, &provider, &payer, &0u32, &soroban_sdk::BytesN::from_array(&env, &[0u8; 32]));
+    client.create_continuous_stream(
+        &stream_id,
+        &0u64,
+        &flow_rate,
+        &initial_balance,
+        &provider,
+        &payer,
+        &0u32,
+        &soroban_sdk::BytesN::from_array(&env, &[0u8; 32]),
+    );
 
     // Advance time to near buffer depletion
     let warning_time = buffer_amount / flow_rate - BUFFER_WARNING_THRESHOLD + 100;
@@ -142,7 +169,16 @@ fn test_buffer_depletion_and_termination() {
 
     // Create stream
     env.mock_all_auths();
-    client.create_continuous_stream(&stream_id, &0u64, &flow_rate, &initial_balance, &provider, &payer, &0u32, &soroban_sdk::BytesN::from_array(&env, &[0u8; 32]));
+    client.create_continuous_stream(
+        &stream_id,
+        &0u64,
+        &flow_rate,
+        &initial_balance,
+        &provider,
+        &payer,
+        &0u32,
+        &soroban_sdk::BytesN::from_array(&env, &[0u8; 32]),
+    );
 
     // Advance time beyond buffer depletion
     let total_depletion_time = (initial_balance + buffer_amount) / flow_rate + 100;
@@ -180,7 +216,16 @@ fn test_amicable_closure_refund() {
     // Create stream
     env.mock_all_auths();
 
-    client.create_continuous_stream(&stream_id, &0u64, &flow_rate, &initial_balance, &provider, &payer, &0u32, &soroban_sdk::BytesN::from_array(&env, &[0u8; 32]));
+    client.create_continuous_stream(
+        &stream_id,
+        &0u64,
+        &flow_rate,
+        &initial_balance,
+        &provider,
+        &payer,
+        &0u32,
+        &soroban_sdk::BytesN::from_array(&env, &[0u8; 32]),
+    );
 
     // Close stream amicably before depletion
     env.mock_all_auths();
@@ -213,7 +258,16 @@ fn test_additional_buffer_deposit() {
     // Create stream
     env.mock_all_auths();
 
-    client.create_continuous_stream(&stream_id, &0u64, &flow_rate, &initial_balance, &provider, &payer, &0u32, &soroban_sdk::BytesN::from_array(&env, &[0u8; 32]));
+    client.create_continuous_stream(
+        &stream_id,
+        &0u64,
+        &flow_rate,
+        &initial_balance,
+        &provider,
+        &payer,
+        &0u32,
+        &soroban_sdk::BytesN::from_array(&env, &[0u8; 32]),
+    );
 
     let initial_buffer = client.get_buffer_balance(&stream_id).unwrap();
 
@@ -241,7 +295,16 @@ fn test_buffer_security_against_malicious_draining() {
     // Create stream
     env.mock_all_auths();
 
-    client.create_continuous_stream(&stream_id, &0u64, &flow_rate, &initial_balance, &provider, &payer, &0u32, &soroban_sdk::BytesN::from_array(&env, &[0u8; 32]));
+    client.create_continuous_stream(
+        &stream_id,
+        &0u64,
+        &flow_rate,
+        &initial_balance,
+        &provider,
+        &payer,
+        &0u32,
+        &soroban_sdk::BytesN::from_array(&env, &[0u8; 32]),
+    );
 
     let initial_buffer = client.get_buffer_balance(&stream_id).unwrap();
 
@@ -285,7 +348,16 @@ fn test_buffer_math_precision() {
 
     // Create stream with minimal flow rate
     env.mock_all_auths();
-    client.create_continuous_stream(&stream_id, &0u64, &flow_rate, &initial_balance, &provider, &payer, &0u32, &soroban_sdk::BytesN::from_array(&env, &[0u8; 32]));
+    client.create_continuous_stream(
+        &stream_id,
+        &0u64,
+        &flow_rate,
+        &initial_balance,
+        &provider,
+        &payer,
+        &0u32,
+        &soroban_sdk::BytesN::from_array(&env, &[0u8; 32]),
+    );
 
     let expected_buffer = BUFFER_DURATION_SECONDS as i128;
     let actual_buffer = client.get_buffer_balance(&stream_id).unwrap();
@@ -348,7 +420,16 @@ fn test_buffer_refund_only_on_amicable_closure() {
     // Create stream
     env.mock_all_auths();
 
-    client.create_continuous_stream(&stream_id, &0u64, &flow_rate, &initial_balance, &provider, &payer, &0u32, &soroban_sdk::BytesN::from_array(&env, &[0u8; 32]));
+    client.create_continuous_stream(
+        &stream_id,
+        &0u64,
+        &flow_rate,
+        &initial_balance,
+        &provider,
+        &payer,
+        &0u32,
+        &soroban_sdk::BytesN::from_array(&env, &[0u8; 32]),
+    );
 
     // Let stream deplete naturally
     let total_depletion_time =

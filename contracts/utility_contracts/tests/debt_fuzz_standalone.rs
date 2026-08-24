@@ -1,9 +1,6 @@
-use soroban_sdk::{testutils::Address as _, Address, BytesN, Env};
-
 // Mock contract for testing debt calculation fuzz scenarios
 #[cfg(test)]
 mod debt_calculation_fuzz_tests {
-    use super::*;
 
     #[derive(Clone)]
     struct MockMeter {
@@ -67,8 +64,7 @@ mod debt_calculation_fuzz_tests {
                 meter.debt
             );
 
-            // Verify debt stays within i128 bounds
-            assert!(meter.debt <= i128::MAX, "Debt should not exceed i128::MAX");
+            // Verify debt stays within i128 bounds (saturating arithmetic guarantees this)
         }
     }
 
@@ -94,7 +90,7 @@ mod debt_calculation_fuzz_tests {
 
         for payment in settlement_amounts {
             let debt_before = meter.debt;
-            let collateral_before = meter.collateral_limit;
+            let _collateral_before = meter.collateral_limit;
 
             meter.settle_debt(payment);
 
@@ -137,10 +133,7 @@ mod debt_calculation_fuzz_tests {
             meter.deduct_from_balance(amount);
 
             // Balance should be able to go negative without underflow
-            assert!(
-                meter.balance >= i128::MIN,
-                "Balance should stay within i128 bounds"
-            );
+            // Saturating arithmetic guarantees no underflow below i128::MIN
 
             // Meter should be inactive with negative balance
             if meter.balance < 500 {
@@ -169,7 +162,6 @@ mod debt_calculation_fuzz_tests {
             meter.debt >= 0,
             "Debt should never be negative in extreme scenarios"
         );
-        assert!(meter.debt <= i128::MAX, "Debt should not exceed i128::MAX");
 
         // Verify the debt amount is reasonable
         assert_eq!(
@@ -187,7 +179,7 @@ mod debt_calculation_fuzz_tests {
         let mut meter = MockMeter::new();
 
         // Test edge case values that could cause underflow
-        let edge_cases = vec![i128::MIN, i128::MAX, i128::MIN + 1, i128::MAX - 1, 0, -1, 1];
+        let edge_cases = [i128::MIN, i128::MAX, i128::MIN + 1, i128::MAX - 1, 0, -1, 1];
 
         for &initial_value in edge_cases.iter() {
             meter.debt = initial_value.max(0); // Debt can't be negative initially
@@ -199,9 +191,9 @@ mod debt_calculation_fuzz_tests {
             meter.deduct_from_balance(1);
 
             // Verify all values remain in valid range
-            assert!(meter.debt >= 0 && meter.debt <= i128::MAX);
-            assert!(meter.balance >= i128::MIN && meter.balance <= i128::MAX);
-            assert!(meter.collateral_limit >= 0 && meter.collateral_limit <= i128::MAX);
+            assert!(meter.debt >= 0);
+            // Saturating arithmetic keeps balance/collateral in bounds
+            assert!(meter.collateral_limit >= 0);
         }
     }
 
@@ -218,18 +210,12 @@ mod debt_calculation_fuzz_tests {
         meter.collateral_limit = i128::MAX - 1000;
         meter.settle_debt(2000); // Should handle overflow in collateral calculation
 
-        assert!(
-            meter.collateral_limit <= i128::MAX,
-            "Collateral should stay within bounds"
-        );
+        // Saturating arithmetic keeps collateral within bounds
 
         meter.balance = i128::MIN + 1000;
         meter.deduct_from_balance(2000); // Should handle underflow gracefully
 
-        assert!(
-            meter.balance >= i128::MIN,
-            "Balance should stay within bounds"
-        );
+        // Saturating arithmetic keeps balance within bounds
     }
 
     #[test]
@@ -250,9 +236,6 @@ mod debt_calculation_fuzz_tests {
             !meter.is_active,
             "Meter should be inactive with negative balance"
         );
-        assert!(
-            meter.balance >= i128::MIN,
-            "Balance should not underflow i128::MIN"
-        );
+        // Saturating arithmetic guarantees no underflow below i128::MIN
     }
 }

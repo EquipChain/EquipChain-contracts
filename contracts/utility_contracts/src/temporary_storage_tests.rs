@@ -7,7 +7,7 @@
 mod tests {
     use crate::{
         temporary_storage::{OptimizedFlowCalculator, OptimizedUsageTracker, TempStorageManager},
-        BillingType, ContinuousFlow, DataKey, Meter, StreamStatus, UsageData,
+        ContinuousFlow, StreamStatus,
     };
     use soroban_sdk::{
         testutils::Address as _, testutils::Ledger, Address, BytesN, Env, Symbol, Vec,
@@ -151,17 +151,18 @@ mod tests {
     fn test_temp_storage_batch_operations() {
         let env = create_test_env();
         let operation = Symbol::new(&env, "TEST_BATCH");
-        let data: Vec<i128> = Vec::from_array(&env, &[100, 200, 300]);
+        let data: Vec<i128> = Vec::from_array(&env, [100, 200, 300]);
 
         // Store batch data
-        TempStorageManager::store_batch_data(&env, operation, &data);
+        TempStorageManager::store_batch_data(&env, operation.clone(), &data);
 
         // Retrieve batch data
-        let retrieved: Vec<i128> = TempStorageManager::get_batch_data(&env, operation).unwrap();
+        let retrieved: Vec<i128> =
+            TempStorageManager::get_batch_data(&env, operation.clone()).unwrap();
         assert_eq!(retrieved, data);
 
         // Clear batch data
-        TempStorageManager::clear_batch_data(&env, operation);
+        TempStorageManager::clear_batch_data(&env, operation.clone());
 
         // Should be None after clearing
         let result: Option<Vec<i128>> = TempStorageManager::get_batch_data(&env, operation);
@@ -308,6 +309,6 @@ mod tests {
         // Verify temp storage was used (should contain the cached result)
         let stored = TempStorageManager::get_flow_accumulation(&env, stream_id);
         assert!(stored.is_some());
-        assert_eq!(stored.unwrap().0, *results.get(0));
+        assert_eq!(stored.unwrap().0, results.get(0).unwrap());
     }
 }

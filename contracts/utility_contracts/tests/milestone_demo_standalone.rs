@@ -31,6 +31,7 @@ pub struct MilestoneManager {
     milestones: HashMap<(u64, u32), MaintenanceMilestone>,
 }
 
+#[allow(clippy::new_without_default)]
 impl MilestoneManager {
     pub fn new() -> Self {
         Self {
@@ -137,7 +138,7 @@ impl MilestoneManager {
 
         // Now perform the mutations
         let funding_amount = milestone.funding_amount;
-        let mut milestone_mut = self
+        let milestone_mut = self
             .milestones
             .get_mut(&(meter_id, milestone_number))
             .unwrap();

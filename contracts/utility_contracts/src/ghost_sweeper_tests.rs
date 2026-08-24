@@ -3,6 +3,7 @@ use crate::{ContinuousFlow, DataKey, StreamStatus};
 use soroban_sdk::{testutils::Address as _, testutils::BytesN as _, Address, BytesN, Env, Vec};
 
 #[cfg(test)]
+#[allow(clippy::module_inception)]
 pub mod ghost_sweeper_tests {
     use super::*;
 
@@ -257,11 +258,14 @@ pub mod ghost_sweeper_tests {
 
         // Simulate long-term storage decay
         let mut total_initial_storage = 0u64;
-        let stream_ids: Vec<u64> = (1..=100).collect();
+        let mut stream_ids: Vec<u64> = Vec::new(&env);
+        for stream_id in 1..=100u64 {
+            stream_ids.push_back(stream_id);
+        }
 
         for stream_id in stream_ids.iter() {
-            let stream = create_ghost_stream(&env, *stream_id, provider.clone(), payer.clone());
-            let stream_key = DataKey::ContinuousFlow(*stream_id);
+            let stream = create_ghost_stream(&env, stream_id, provider.clone(), payer.clone());
+            let stream_key = DataKey::ContinuousFlow(stream_id);
             env.storage().persistent().set(&stream_key, &stream);
 
             // Estimate storage size
@@ -269,8 +273,7 @@ pub mod ghost_sweeper_tests {
         }
 
         // Run sweeper
-        let stream_ids_vec = Vec::from_array(&env, stream_ids);
-        let result = GhostSweeper::batch_prune_ghost_streams(env.clone(), stream_ids_vec, relayer);
+        let result = GhostSweeper::batch_prune_ghost_streams(env.clone(), stream_ids, relayer);
 
         // Verify storage recovery
         assert_eq!(result.streams_pruned, 100);
@@ -436,8 +439,8 @@ mod ghost_sweeper_property_tests {
         #[test]
         fn test_pruning_eligibility_properties(
             days_inactive in 0u64..200u64,
-            has_balance in bool::ANY,
-            has_buffer in bool::ANY,
+            has_balance in any::<bool>(),
+            has_buffer in any::<bool>(),
         ) {
             let env = Env::default();
             let contract_address = Address::generate(&env);
@@ -451,7 +454,7 @@ mod ghost_sweeper_property_tests {
             let current_time = env.ledger().timestamp();
             let inactive_timestamp = current_time - days_inactive * 24 * 60 * 60;
 
-            let mut stream = ContinuousFlow {
+            let stream = ContinuousFlow {
                 stream_id,
                 flow_rate_per_second: 0,
                 accumulated_balance: if has_balance { 1000 } else { 0 },

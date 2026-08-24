@@ -5,7 +5,7 @@
 ///   2. Fractional remains are properly assigned to the dust sweeper.
 ///   3. High-frequency micro-streams execute without logic faults.
 use super::*;
-use soroban_sdk::{testutils::Address as _, Address, Env};
+use soroban_sdk::{testutils::Address as _, testutils::Ledger as _, Address, BytesN, Env};
 
 // ---------------------------------------------------------------------------
 // Helper: create a minimal ContinuousFlow for unit-level testing
@@ -24,6 +24,10 @@ fn make_flow(env: &Env, stream_id: u64, rate: i128, balance: i128) -> Continuous
         buffer_balance: 0,
         buffer_warning_sent: false,
         payer: Address::generate(env),
+        priority_tier: 0,
+        grid_epoch_seen: 0,
+        device_mac_pubkey: BytesN::from_array(env, &[0u8; 32]),
+        is_unreliable: false,
     }
 }
 
@@ -141,8 +145,7 @@ fn test_high_frequency_micro_stream_no_logic_faults() {
         // AC-3a: balance never negative
         assert!(balance >= 0, "balance went negative at tick {tick}");
 
-        // AC-3b: no overflow — balance stays within i128 range
-        assert!(balance <= i128::MAX);
+        // AC-3b: no overflow — balance stays within i128 range (saturating arithmetic guarantees this)
     }
 
     // AC-3c: stream is depleted after all balance is consumed

@@ -3,10 +3,12 @@ use crate::tariff_oracle::{
 };
 use crate::DataKey;
 use soroban_sdk::{
-    testutils::Address as _, testutils::BytesN as _, Address, BytesN, Env, IntoVal, Val, Vec,
+    testutils::Address as _, testutils::BytesN as _, testutils::Ledger as _, Address, BytesN, Env,
+    Vec,
 };
 
 #[cfg(test)]
+#[allow(clippy::module_inception)]
 pub mod tariff_oracle_tests {
     use super::*;
 
@@ -15,7 +17,7 @@ pub mod tariff_oracle_tests {
     fn test_tariff_oracle_initialization() {
         let env = Env::default();
         let contract_address = Address::generate(&env);
-        env.register_contract_at(&contract_address, TariffOracle, ());
+        env.register_contract(Some(&contract_address), TariffOracle);
 
         let grid_admin = Address::generate(&env);
         let initial_schedule = create_test_schedule(&env);
@@ -40,7 +42,7 @@ pub mod tariff_oracle_tests {
     fn test_tariff_update_proposal() {
         let env = Env::default();
         let contract_address = Address::generate(&env);
-        env.register_contract_at(&contract_address, TariffOracle, ());
+        env.register_contract(Some(&contract_address), TariffOracle);
 
         let grid_admin = Address::generate(&env);
         let initial_schedule = create_test_schedule(&env);
@@ -74,7 +76,7 @@ pub mod tariff_oracle_tests {
     fn test_tariff_update_execution() {
         let env = Env::default();
         let contract_address = Address::generate(&env);
-        env.register_contract_at(&contract_address, TariffOracle, ());
+        env.register_contract(Some(&contract_address), TariffOracle);
 
         let grid_admin = Address::generate(&env);
         let initial_schedule = create_test_schedule(&env);
@@ -115,7 +117,7 @@ pub mod tariff_oracle_tests {
     fn test_current_flow_rate_calculation() {
         let env = Env::default();
         let contract_address = Address::generate(&env);
-        env.register_contract_at(&contract_address, TariffOracle, ());
+        env.register_contract(Some(&contract_address), TariffOracle);
 
         let grid_admin = Address::generate(&env);
         let initial_schedule = create_test_schedule(&env);
@@ -143,7 +145,7 @@ pub mod tariff_oracle_tests {
     fn test_stream_spanning_midnight_blended_rate() {
         let env = Env::default();
         let contract_address = Address::generate(&env);
-        env.register_contract_at(&contract_address, TariffOracle, ());
+        env.register_contract(Some(&contract_address), TariffOracle);
 
         let grid_admin = Address::generate(&env);
         let initial_schedule = create_test_schedule(&env);
@@ -153,7 +155,7 @@ pub mod tariff_oracle_tests {
 
         // Set up time period from 11:59 PM to 12:01 AM (spans midnight)
         let start_timestamp = 23 * 3600 + 59 * 60; // 23:59
-        let end_timestamp = 24 * 3600 + 1 * 60; // 00:01 next day
+        let end_timestamp = 24 * 3600 + 60; // 00:01 next day
         let consumption_rate = 1000i128; // 1 kWh per second
 
         // Calculate flow for the period
@@ -190,7 +192,7 @@ pub mod tariff_oracle_tests {
     fn test_flow_within_single_window() {
         let env = Env::default();
         let contract_address = Address::generate(&env);
-        env.register_contract_at(&contract_address, TariffOracle, ());
+        env.register_contract(Some(&contract_address), TariffOracle);
 
         let grid_admin = Address::generate(&env);
         let initial_schedule = create_test_schedule(&env);
@@ -229,7 +231,7 @@ pub mod tariff_oracle_tests {
     fn test_tariff_schedule_validation() {
         let env = Env::default();
         let contract_address = Address::generate(&env);
-        env.register_contract_at(&contract_address, TariffOracle, ());
+        env.register_contract(Some(&contract_address), TariffOracle);
 
         let grid_admin = Address::generate(&env);
 
@@ -253,7 +255,7 @@ pub mod tariff_oracle_tests {
     fn test_default_schedule_fallback() {
         let env = Env::default();
         let contract_address = Address::generate(&env);
-        env.register_contract_at(&contract_address, TariffOracle, ());
+        env.register_contract(Some(&contract_address), TariffOracle);
 
         // Try to get tariff without initialization
         let tariff = TariffOracle::get_current_tariff(env.clone(), 12);
@@ -271,7 +273,7 @@ pub mod tariff_oracle_tests {
     fn test_temporary_storage_optimization() {
         let env = Env::default();
         let contract_address = Address::generate(&env);
-        env.register_contract_at(&contract_address, TariffOracle, ());
+        env.register_contract(Some(&contract_address), TariffOracle);
 
         let grid_admin = Address::generate(&env);
         let initial_schedule = create_test_schedule(&env);
@@ -296,7 +298,7 @@ pub mod tariff_oracle_tests {
     fn test_renewable_energy_hours() {
         let env = Env::default();
         let contract_address = Address::generate(&env);
-        env.register_contract_at(&contract_address, TariffOracle, ());
+        env.register_contract(Some(&contract_address), TariffOracle);
 
         let grid_admin = Address::generate(&env);
         let initial_schedule = create_test_schedule(&env);
@@ -322,7 +324,7 @@ pub mod tariff_oracle_tests {
     fn test_multiple_window_crossings() {
         let env = Env::default();
         let contract_address = Address::generate(&env);
-        env.register_contract_at(&contract_address, TariffOracle, ());
+        env.register_contract(Some(&contract_address), TariffOracle);
 
         let grid_admin = Address::generate(&env);
         let initial_schedule = create_test_schedule(&env);
@@ -460,6 +462,7 @@ pub mod tariff_oracle_tests {
 #[cfg(test)]
 mod tariff_property_tests {
     use super::*;
+    use crate::tariff_oracle_tests::tariff_oracle_tests::create_test_schedule;
     use proptest::prelude::*;
 
     proptest! {
@@ -473,7 +476,7 @@ mod tariff_property_tests {
         ) {
             let env = Env::default();
             let contract_address = Address::generate(&env);
-            env.register_contract_at(&contract_address, TariffOracle, ());
+            env.register_contract(Some(&contract_address), TariffOracle);
 
             let grid_admin = Address::generate(&env);
             let initial_schedule = create_test_schedule(&env);
