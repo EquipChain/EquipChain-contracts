@@ -1174,6 +1174,8 @@ pub enum ContractError {
     // Issue #23 - Token Security
     UnapprovedToken = 117,
     TokenBalanceMismatch = 118,
+    // Issue #39 — Accrue post-paid debt access control
+    UnauthorizedProvider = 119,
 }
 
 #[contracttype]
@@ -1419,9 +1421,7 @@ fn require_approved_token(env: &Env, token: &Address) {
     // Skip whitelist enforcement in test mode
     #[cfg(not(test))]
     {
-        let approved: Option<Vec<Address>> = env.storage()
-            .instance()
-            .get(&DataKey::ApprovedTokens);
+        let approved: Option<Vec<Address>> = env.storage().instance().get(&DataKey::ApprovedTokens);
         if let Some(tokens) = approved {
             if tokens.len() > 0 && !tokens.contains(token) {
                 panic_with_error!(env, ContractError::UnapprovedToken);
@@ -3056,13 +3056,16 @@ impl UtilityContract {
     /// Only callable by the contract admin.
     pub fn approve_token(env: Env, token: Address, decimals: u32) {
         require_admin_auth(&env);
-        let mut approved: Vec<Address> = env.storage()
+        let mut approved: Vec<Address> = env
+            .storage()
             .instance()
             .get(&DataKey::ApprovedTokens)
             .unwrap_or(Vec::new(&env));
         if !approved.contains(&token) {
             approved.push_back(token.clone());
-            env.storage().instance().set(&DataKey::ApprovedTokens, &approved);
+            env.storage()
+                .instance()
+                .set(&DataKey::ApprovedTokens, &approved);
         }
         let info = TokenInfo {
             token: token.clone(),
@@ -3071,20 +3074,25 @@ impl UtilityContract {
             approved_at: env.ledger().timestamp(),
             approved_by: get_admin_or_panic(&env),
         };
-        env.storage().instance().set(&DataKey::TokenInfo(token), &info);
+        env.storage()
+            .instance()
+            .set(&DataKey::TokenInfo(token), &info);
     }
 
     /// Revoke a token from the protocol whitelist.
     /// Only callable by the contract admin.
     pub fn revoke_token(env: Env, token: Address) {
         require_admin_auth(&env);
-        let mut approved: Vec<Address> = env.storage()
+        let mut approved: Vec<Address> = env
+            .storage()
             .instance()
             .get(&DataKey::ApprovedTokens)
             .unwrap_or(Vec::new(&env));
         if let Some(pos) = approved.first_index_of(&token) {
             approved.remove(pos);
-            env.storage().instance().set(&DataKey::ApprovedTokens, &approved);
+            env.storage()
+                .instance()
+                .set(&DataKey::ApprovedTokens, &approved);
             env.storage().instance().remove(&DataKey::TokenInfo(token));
         }
     }
@@ -3099,9 +3107,7 @@ impl UtilityContract {
 
     /// Get token info for a specific token.
     pub fn get_token_info(env: Env, token: Address) -> Option<TokenInfo> {
-        env.storage()
-            .instance()
-            .get(&DataKey::TokenInfo(token))
+        env.storage().instance().get(&DataKey::TokenInfo(token))
     }
 
     pub fn set_admin(env: Env, admin_address: Address) {
@@ -8581,13 +8587,60 @@ impl UtilityContract {
 
     /// Accrue post-paid debt against a guarantor deposit.
     ///
-    /// Called internally by the provider when billing a post-paid stream.
+    /// Called by the provider when billing a post-paid stream.
+    /// The provider must authorize the call and have at least one active
+    /// post-paid meter registered for the owner.
+    ///
+    /// # Access control
+    /// - `provider.require_auth()` is enforced on every call.
+    /// - The provider is verified to have at least one active post-paid meter
+    ///   for `owner`.  If not, the call panics with `UnauthorizedProvider`.
+    ///
+    /// # Panics
+    /// - `GuarantorDepositNotFound` if no deposit exists for `owner`.
+    /// - `DepositAlreadySlashed` if the deposit has already been slashed.
+    /// - `UnauthorizedProvider` if the provider does not hold an active
+    ///   post-paid meter for this owner.
+    ///
     /// Emits `CreditLimitApproached` at 80 % and slashes at 100 %.
-    pub fn accrue_postpaid_debt(env: Env, owner: Address, debt_amount: i128) {
+    pub fn accrue_postpaid_debt(env: Env, owner: Address, provider: Address, debt_amount: i128) {
+        provider.require_auth();
+
         if debt_amount <= 0 {
             return;
         }
 
+        // ---- verify that the provider has at least one active post-paid
+        //       meter for this owner ---------------------------------------
+        let count: u64 = env
+            .storage()
+            .instance()
+            .get::<DataKey, u64>(&DataKey::Count)
+            .unwrap_or(0);
+
+        let mut has_active_meter = false;
+        for meter_id in 1..=count {
+            if let Some(meter) = env
+                .storage()
+                .instance()
+                .get::<DataKey, Meter>(&DataKey::Meter(meter_id))
+            {
+                if meter.user == owner
+                    && meter.provider == provider
+                    && meter.billing_type == BillingType::PostPaid
+                    && meter.is_active
+                {
+                    has_active_meter = true;
+                    break;
+                }
+            }
+        }
+
+        if !has_active_meter {
+            panic_with_error!(&env, ContractError::UnauthorizedProvider);
+        }
+
+        // ---- debt accrual ----------------------------------------------------
         let mut deposit: GuarantorDeposit = env
             .storage()
             .instance()
@@ -8609,19 +8662,12 @@ impl UtilityContract {
         };
 
         if ratio_bps >= SLASH_THRESHOLD_BPS {
-            // Slash: transfer collateral to provider and terminate.
+            // Slash: transfer collateral to the authenticated provider and
+            // close every active post-paid meter they hold for this owner.
             let slashed = deposit.locked_amount;
             deposit.is_slashed = true;
             deposit.locked_amount = 0;
 
-            // Identify the provider from the first active post-paid meter.
-            let count: u64 = env
-                .storage()
-                .instance()
-                .get::<DataKey, u64>(&DataKey::Count)
-                .unwrap_or(0);
-
-            let mut provider_opt: Option<Address> = None;
             for meter_id in 1..=count {
                 if let Some(mut meter) = env
                     .storage()
@@ -8629,10 +8675,10 @@ impl UtilityContract {
                     .get::<DataKey, Meter>(&DataKey::Meter(meter_id))
                 {
                     if meter.user == owner
+                        && meter.provider == provider
                         && meter.billing_type == BillingType::PostPaid
                         && meter.is_active
                     {
-                        provider_opt = Some(meter.provider.clone());
                         meter.is_active = false;
                         meter.is_closed = true;
                         env.storage()
@@ -8642,20 +8688,18 @@ impl UtilityContract {
                 }
             }
 
-            if let Some(provider) = provider_opt {
-                let token_client = token::Client::new(&env, &deposit.collateral_token);
-                token_client.transfer(&env.current_contract_address(), &provider, &slashed);
+            let token_client = token::Client::new(&env, &deposit.collateral_token);
+            token_client.transfer(&env.current_contract_address(), &provider, &slashed);
 
-                env.events().publish(
-                    (symbol_short!("GDepSlsh"),),
-                    GuarantorSlashed {
-                        owner: owner.clone(),
-                        slashed_amount: slashed,
-                        provider,
-                        timestamp: now,
-                    },
-                );
-            }
+            env.events().publish(
+                (symbol_short!("GDepSlsh"),),
+                GuarantorSlashed {
+                    owner: owner.clone(),
+                    slashed_amount: slashed,
+                    provider,
+                    timestamp: now,
+                },
+            );
         } else if ratio_bps >= MARGIN_CALL_THRESHOLD_BPS && !deposit.margin_call_sent {
             deposit.margin_call_sent = true;
             env.events().publish(
