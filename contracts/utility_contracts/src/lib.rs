@@ -2447,6 +2447,8 @@ fn update_continuous_flow(
                 .instance()
                 .set(&DataKey::ContinuousFlow(flow.stream_id), &flow.clone());
 
+            TempStorageManager::clear_flow_accumulation(env, flow.stream_id);
+
             return Ok(total_deduction);
         }
 
@@ -2488,6 +2490,8 @@ fn update_continuous_flow(
     {
         flow.status = StreamStatus::Active;
     }
+
+    TempStorageManager::clear_flow_accumulation(env, flow.stream_id);
 
     Ok(total_deduction)
 }

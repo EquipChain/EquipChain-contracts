@@ -68,6 +68,16 @@ impl TempStorageManager {
         Some((accumulation, timestamp))
     }
 
+    /// Clear flow accumulation from temporary storage
+    pub fn clear_flow_accumulation(env: &Env, stream_id: u64) {
+        env.storage()
+            .temporary()
+            .remove(&TempStorageKey::FlowAccumulation(stream_id));
+        env.storage()
+            .temporary()
+            .remove(&TempStorageKey::FlowTimestamp(stream_id));
+    }
+
     /// Store meter usage delta temporarily
     pub fn store_meter_usage_delta(env: &Env, meter_id: u64, usage_delta: i128, timestamp: u64) {
         env.storage()
@@ -239,10 +249,9 @@ impl OptimizedFlowCalculator {
         if let Some((temp_accumulation, temp_timestamp)) =
             TempStorageManager::get_flow_accumulation(env, flow.stream_id)
         {
-            // Use temporary data only if it was computed for a strictly later
-            // timestamp than the flow's last update. Otherwise the accumulation
-            // has already been applied to the balance.
-            if temp_timestamp > flow.last_flow_timestamp {
+            // Use temporary data only if it was computed for this exact
+            // timestamp. Otherwise recompute the accumulation.
+            if temp_timestamp == current_timestamp {
                 return temp_accumulation;
             }
         }
