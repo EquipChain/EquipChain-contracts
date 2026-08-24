@@ -83,10 +83,10 @@ pub struct GhostStreamCandidate {
     pub device_mac: BytesN<32>,
     pub provider: Address,
     pub zero_balance_since: u64,
-    days_zero_balance: u64,
-    last_activity: u64,
-    estimated_storage_bytes: u64,
-    is_eligible_for_pruning: bool,
+    pub days_zero_balance: u64,
+    pub last_activity: u64,
+    pub estimated_storage_bytes: u64,
+    pub is_eligible_for_pruning: bool,
 }
 
 /// Sweeper operation result
@@ -385,7 +385,7 @@ impl GhostSweeper {
     }
 
     /// Calculate gas bounty for relayer
-    fn calculate_gas_bounty(storage_bytes: u64) -> i128 {
+    pub fn calculate_gas_bounty(storage_bytes: u64) -> i128 {
         // Bounty is proportional to storage reclaimed, with minimum
         let base_bounty = (storage_bytes as i128) * (RELAYER_BOUNTY_BPS as i128) / 10000;
         base_bounty.max(MIN_GAS_BOUNTY)

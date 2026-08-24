@@ -156,6 +156,7 @@ fn test_debt_calculation_underflow_protection() {
         &token_address,
         &BillingType::PostPaid,
         &device_public_key,
+        &0u32,
     );
 
     // Test 1: High rate, long duration, zero balance scenario
@@ -225,9 +226,8 @@ fn test_debt_calculation_underflow_protection() {
     let max_meter = client.get_meter(&meter_id).unwrap();
 
     // All values should remain within valid i128 range
-    assert!(max_meter.debt >= 0 && max_meter.debt <= i128::MAX);
-    assert!(max_meter.collateral_limit >= 0 && max_meter.collateral_limit <= i128::MAX);
-    assert!(max_meter.balance >= i128::MIN && max_meter.balance <= i128::MAX);
+    assert!(max_meter.debt >= 0);
+    assert!(max_meter.collateral_limit >= 0);
 }
 
 #[test]
@@ -255,6 +255,7 @@ fn test_prepaid_negative_balance_handling() {
         &token_address,
         &BillingType::PrePaid,
         &device_public_key,
+        &0u32,
     );
 
     // Pair the meter
@@ -290,8 +291,7 @@ fn test_prepaid_negative_balance_handling() {
         "Meter should be inactive with negative balance"
     );
 
-    // Balance should be within valid i128 range
-    assert!(meter.balance >= i128::MIN && meter.balance <= i128::MAX);
+    // Balance should be within valid i128 range (no overflow/underflow)
 }
 
 // Issue #204: Fuzz Test: Epoch Timestamp Manipulation

@@ -28,9 +28,9 @@ fn test_buffer_creation_requirement() {
 
     // Test 2: Stream creation should fail without proper authorization
     env.mock_auths(&[]);
-    let result = std::panic::catch_unwind(|| {
-        client.create_continuous_stream(&stream_id, &flow_rate, &initial_balance, &provider, &payer);
-    });
+    let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+        client.create_continuous_stream(&stream_id, &0u64, &flow_rate, &initial_balance, &provider, &payer, &0u32, &soroban_sdk::BytesN::from_array(&env, &[0u8; 32]));
+    }));
     assert!(result.is_err());
 
     // Test 3: Successful stream creation with buffer
@@ -39,7 +39,7 @@ fn test_buffer_creation_requirement() {
         (&payer, &Symbol::new(&env, "create_continuous_stream")),
     ]);
     
-    client.create_continuous_stream(&stream_id, &flow_rate, &initial_balance, &provider, &payer);
+    client.create_continuous_stream(&stream_id, &0u64, &flow_rate, &initial_balance, &provider, &payer, &0u32, &soroban_sdk::BytesN::from_array(&env, &[0u8; 32]));
 
     // Verify stream was created with correct buffer
     let stream = client.get_continuous_flow(&stream_id).unwrap();
@@ -69,7 +69,7 @@ fn test_buffer_depletion_logic() {
         (&provider, &Symbol::new(&env, "create_continuous_stream")),
         (&payer, &Symbol::new(&env, "create_continuous_stream")),
     ]);
-    client.create_continuous_stream(&stream_id, &flow_rate, &initial_balance, &provider, &payer);
+    client.create_continuous_stream(&stream_id, &0u64, &flow_rate, &initial_balance, &provider, &payer, &0u32, &soroban_sdk::BytesN::from_array(&env, &[0u8; 32]));
 
     // Advance time to deplete main balance
     env.ledger().set_timestamp(env.ledger().timestamp() + 3); // 3 seconds
@@ -109,7 +109,7 @@ fn test_buffer_warning_event() {
         (&provider, &Symbol::new(&env, "create_continuous_stream")),
         (&payer, &Symbol::new(&env, "create_continuous_stream")),
     ]);
-    client.create_continuous_stream(&stream_id, &flow_rate, &initial_balance, &provider, &payer);
+    client.create_continuous_stream(&stream_id, &0u64, &flow_rate, &initial_balance, &provider, &payer, &0u32, &soroban_sdk::BytesN::from_array(&env, &[0u8; 32]));
 
     // Advance time to near buffer depletion
     let warning_time = buffer_amount / flow_rate - BUFFER_WARNING_THRESHOLD + 100;
@@ -141,7 +141,7 @@ fn test_buffer_depletion_and_termination() {
         (&provider, &Symbol::new(&env, "create_continuous_stream")),
         (&payer, &Symbol::new(&env, "create_continuous_stream")),
     ]);
-    client.create_continuous_stream(&stream_id, &flow_rate, &initial_balance, &provider, &payer);
+    client.create_continuous_stream(&stream_id, &0u64, &flow_rate, &initial_balance, &provider, &payer, &0u32, &soroban_sdk::BytesN::from_array(&env, &[0u8; 32]));
 
     // Advance time beyond buffer depletion
     let total_depletion_time = (initial_balance + buffer_amount) / flow_rate + 100;
@@ -176,7 +176,7 @@ fn test_amicable_closure_refund() {
         (&provider, &Symbol::new(&env, "create_continuous_stream")),
         (&payer, &Symbol::new(&env, "create_continuous_stream")),
     ]);
-    client.create_continuous_stream(&stream_id, &flow_rate, &initial_balance, &provider, &payer);
+    client.create_continuous_stream(&stream_id, &0u64, &flow_rate, &initial_balance, &provider, &payer, &0u32, &soroban_sdk::BytesN::from_array(&env, &[0u8; 32]));
 
     // Close stream amicably before depletion
     env.mock_auths(&[(&provider, &Symbol::new(&env, "close_stream_amicably"))]);
@@ -208,7 +208,7 @@ fn test_additional_buffer_deposit() {
         (&provider, &Symbol::new(&env, "create_continuous_stream")),
         (&payer, &Symbol::new(&env, "create_continuous_stream")),
     ]);
-    client.create_continuous_stream(&stream_id, &flow_rate, &initial_balance, &provider, &payer);
+    client.create_continuous_stream(&stream_id, &0u64, &flow_rate, &initial_balance, &provider, &payer, &0u32, &soroban_sdk::BytesN::from_array(&env, &[0u8; 32]));
 
     let initial_buffer = client.get_buffer_balance(&stream_id).unwrap();
 
@@ -238,15 +238,15 @@ fn test_buffer_security_against_malicious_draining() {
         (&provider, &Symbol::new(&env, "create_continuous_stream")),
         (&payer, &Symbol::new(&env, "create_continuous_stream")),
     ]);
-    client.create_continuous_stream(&stream_id, &flow_rate, &initial_balance, &provider, &payer);
+    client.create_continuous_stream(&stream_id, &0u64, &flow_rate, &initial_balance, &provider, &payer, &0u32, &soroban_sdk::BytesN::from_array(&env, &[0u8; 32]));
 
     let initial_buffer = client.get_buffer_balance(&stream_id).unwrap();
 
     // Test 1: Unauthorized withdrawal should fail
     env.mock_auths(&[(&attacker, &Symbol::new(&env, "withdraw_continuous"))]);
-    let result = std::panic::catch_unwind(|| {
+    let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
         client.withdraw_continuous(&stream_id, &1000);
-    });
+    }));
     assert!(result.is_err(), "Unauthorized withdrawal should fail");
 
     // Test 2: Even authorized withdrawal should only affect main balance, not buffer
@@ -259,9 +259,9 @@ fn test_buffer_security_against_malicious_draining() {
 
     // Test 3: Unauthorized buffer addition should fail
     env.mock_auths(&[(&attacker, &Symbol::new(&env, "add_continuous_buffer"))]);
-    let result = std::panic::catch_unwind(|| {
+    let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
         client.add_continuous_buffer(&stream_id, &1000);
-    });
+    }));
     assert!(result.is_err(), "Unauthorized buffer addition should fail");
 }
 
@@ -282,7 +282,7 @@ fn test_buffer_math_precision() {
         (&provider, &Symbol::new(&env, "create_continuous_stream")),
         (&payer, &Symbol::new(&env, "create_continuous_stream")),
     ]);
-    client.create_continuous_stream(&stream_id, &flow_rate, &initial_balance, &provider, &payer);
+    client.create_continuous_stream(&stream_id, &0u64, &flow_rate, &initial_balance, &provider, &payer, &0u32, &soroban_sdk::BytesN::from_array(&env, &[0u8; 32]));
 
     let expected_buffer = BUFFER_DURATION_SECONDS as i128;
     let actual_buffer = client.get_buffer_balance(&stream_id).unwrap();
@@ -309,9 +309,9 @@ fn test_stream_creation_without_buffer_fails() {
     // Attempt to create stream without proper authorization for buffer transfer
     env.mock_auths(&[(&provider, &Symbol::new(&env, "create_continuous_stream"))]);
     
-    let result = std::panic::catch_unwind(|| {
-        client.create_continuous_stream(&stream_id, &flow_rate, &initial_balance, &provider, &payer);
-    });
+    let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+        client.create_continuous_stream(&stream_id, &0u64, &flow_rate, &initial_balance, &provider, &payer, &0u32, &soroban_sdk::BytesN::from_array(&env, &[0u8; 32]));
+    }));
     assert!(result.is_err(), "Stream creation should fail without payer authorization for buffer");
 
     // Verify no stream was created
@@ -335,7 +335,7 @@ fn test_buffer_refund_only_on_amicable_closure() {
         (&provider, &Symbol::new(&env, "create_continuous_stream")),
         (&payer, &Symbol::new(&env, "create_continuous_stream")),
     ]);
-    client.create_continuous_stream(&stream_id, &flow_rate, &initial_balance, &provider, &payer);
+    client.create_continuous_stream(&stream_id, &0u64, &flow_rate, &initial_balance, &provider, &payer, &0u32, &soroban_sdk::BytesN::from_array(&env, &[0u8; 32]));
 
     // Let stream deplete naturally
     let total_depletion_time = (initial_balance + (flow_rate * BUFFER_DURATION_SECONDS as i128)) / flow_rate + 100;
@@ -345,9 +345,9 @@ fn test_buffer_refund_only_on_amicable_closure() {
 
     // Attempt refund on depleted stream should fail
     env.mock_auths(&[(&provider, &Symbol::new(&env, "close_stream_amicably"))]);
-    let result = std::panic::catch_unwind(|| {
+    let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
         client.close_stream_amicably(&stream_id);
-    });
+    }));
     assert!(result.is_err(), "Refund should fail on depleted stream");
 }
 

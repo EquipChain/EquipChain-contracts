@@ -10,6 +10,27 @@ use soroban_sdk::{
 mod pause_resume_fuzz {
     use super::*;
 
+    fn setup_stream_meter(
+        env: &Env,
+        client: &UtilityContractClient,
+        provider: &Address,
+        flow_rate: i128,
+    ) -> u64 {
+        env.mock_all_auths();
+        let user = Address::generate(env);
+        let token = Address::generate(env);
+        let device_key = soroban_sdk::BytesN::from_array(env, &[1u8; 32]);
+        client.register_meter_with_mode(
+            &user,
+            provider,
+            &flow_rate.max(1),
+            &token,
+            &BillingType::PrePaid,
+            &device_key,
+            &0u32,
+        )
+    }
+
     #[test]
     fn test_rapid_pause_resume_cycles() {
         let env = Env::default();
@@ -17,12 +38,23 @@ mod pause_resume_fuzz {
         let client = UtilityContractClient::new(&env, &contract_id);
 
         let provider = Address::generate(&env);
+        let payer = Address::generate(&env);
         let stream_id = 100u64;
         let flow_rate = 1000i128;
         let initial_balance = 10000000i128; // Large balance for many cycles
+        let meter_id = setup_stream_meter(&env, &client, &provider, flow_rate);
 
         // Create stream
-        client.create_continuous_stream(&stream_id, &flow_rate, &initial_balance, &provider);
+        client.create_continuous_stream(
+            &stream_id,
+            &meter_id,
+            &flow_rate,
+            &initial_balance,
+            &provider,
+            &payer,
+            &0u32,
+            &soroban_sdk::BytesN::from_array(&env, &[0u8; 32]),
+        );
 
         // Perform rapid pause/resume cycles
         for cycle in 0..100 {
@@ -62,12 +94,23 @@ mod pause_resume_fuzz {
         let client = UtilityContractClient::new(&env, &contract_id);
 
         let provider = Address::generate(&env);
+        let payer = Address::generate(&env);
         let stream_id = 101u64;
         let flow_rate = 1000i128;
         let initial_balance = 1000000i128;
+        let meter_id = setup_stream_meter(&env, &client, &provider, flow_rate);
 
         // Create stream
-        client.create_continuous_stream(&stream_id, &flow_rate, &initial_balance, &provider);
+        client.create_continuous_stream(
+            &stream_id,
+            &meter_id,
+            &flow_rate,
+            &initial_balance,
+            &provider,
+            &payer,
+            &0u32,
+            &soroban_sdk::BytesN::from_array(&env, &[0u8; 32]),
+        );
 
         env.ledger().set_timestamp(100);
 
@@ -93,12 +136,23 @@ mod pause_resume_fuzz {
         let client = UtilityContractClient::new(&env, &contract_id);
 
         let provider = Address::generate(&env);
+        let payer = Address::generate(&env);
         let stream_id = 102u64;
         let flow_rate = 1000i128;
         let initial_balance = 1000000i128;
+        let meter_id = setup_stream_meter(&env, &client, &provider, flow_rate);
 
         // Create stream
-        client.create_continuous_stream(&stream_id, &flow_rate, &initial_balance, &provider);
+        client.create_continuous_stream(
+            &stream_id,
+            &meter_id,
+            &flow_rate,
+            &initial_balance,
+            &provider,
+            &payer,
+            &0u32,
+            &soroban_sdk::BytesN::from_array(&env, &[0u8; 32]),
+        );
 
         env.ledger().set_timestamp(100);
 
@@ -129,12 +183,23 @@ mod pause_resume_fuzz {
         let client = UtilityContractClient::new(&env, &contract_id);
 
         let provider = Address::generate(&env);
+        let payer = Address::generate(&env);
         let stream_id = 103u64;
         let flow_rate = 1000i128;
         let initial_balance = 1000000i128;
+        let meter_id = setup_stream_meter(&env, &client, &provider, flow_rate);
 
         // Create stream
-        client.create_continuous_stream(&stream_id, &flow_rate, &initial_balance, &provider);
+        client.create_continuous_stream(
+            &stream_id,
+            &meter_id,
+            &flow_rate,
+            &initial_balance,
+            &provider,
+            &payer,
+            &0u32,
+            &soroban_sdk::BytesN::from_array(&env, &[0u8; 32]),
+        );
 
         // Test with rapid timestamp changes including backwards timestamps
         let timestamps = vec![100, 150, 120, 200, 180, 250, 300];
@@ -168,12 +233,23 @@ mod pause_resume_fuzz {
         let client = UtilityContractClient::new(&env, &contract_id);
 
         let provider = Address::generate(&env);
+        let payer = Address::generate(&env);
         let stream_id = 104u64;
         let flow_rate = 1000i128;
         let initial_balance = 1000000i128;
+        let meter_id = setup_stream_meter(&env, &client, &provider, flow_rate);
 
         // Create stream
-        client.create_continuous_stream(&stream_id, &flow_rate, &initial_balance, &provider);
+        client.create_continuous_stream(
+            &stream_id,
+            &meter_id,
+            &flow_rate,
+            &initial_balance,
+            &provider,
+            &payer,
+            &0u32,
+            &soroban_sdk::BytesN::from_array(&env, &[0u8; 32]),
+        );
 
         // Let stream run for a bit
         env.ledger().set_timestamp(100);
@@ -206,12 +282,23 @@ mod pause_resume_fuzz {
         let client = UtilityContractClient::new(&env, &contract_id);
 
         let provider = Address::generate(&env);
+        let payer = Address::generate(&env);
         let stream_id = 105u64;
         let flow_rate = 1000i128;
         let initial_balance = 1000000i128;
+        let meter_id = setup_stream_meter(&env, &client, &provider, flow_rate);
 
         // Create stream
-        client.create_continuous_stream(&stream_id, &flow_rate, &initial_balance, &provider);
+        client.create_continuous_stream(
+            &stream_id,
+            &meter_id,
+            &flow_rate,
+            &initial_balance,
+            &provider,
+            &payer,
+            &0u32,
+            &soroban_sdk::BytesN::from_array(&env, &[0u8; 32]),
+        );
 
         env.ledger().set_timestamp(100);
 
@@ -235,12 +322,22 @@ mod pause_resume_fuzz {
         let env = Env::default();
         let contract_id = env.register(UtilityContract, ());
         let client = UtilityContractClient::new(&env, &contract_id);
-
         let provider = Address::generate(&env);
+        let payer = Address::generate(&env);
+        let meter_id = setup_stream_meter(&env, &client, &provider, 1_000_000i128);
 
         // Test with minimum balance
         let stream_id_min = 106u64;
-        client.create_continuous_stream(&stream_id_min, &1i128, &1i128, &provider);
+        client.create_continuous_stream(
+            &stream_id_min,
+            &meter_id,
+            &1i128,
+            &1i128,
+            &provider,
+            &payer,
+            &0u32,
+            &soroban_sdk::BytesN::from_array(&env, &[0u8; 32]),
+        );
         env.ledger().set_timestamp(1);
         client.pause_stream(&stream_id_min);
         client.resume_stream(&stream_id_min, &1i128);
@@ -249,7 +346,16 @@ mod pause_resume_fuzz {
         let stream_id_max = 107u64;
         let max_balance = i128::MAX / 1000; // Prevent overflow in calculations
         let max_flow_rate = 1000000i128;
-        client.create_continuous_stream(&stream_id_max, &max_flow_rate, &max_balance, &provider);
+        client.create_continuous_stream(
+            &stream_id_max,
+            &meter_id,
+            &max_flow_rate,
+            &max_balance,
+            &provider,
+            &payer,
+            &0u32,
+            &soroban_sdk::BytesN::from_array(&env, &[0u8; 32]),
+        );
         env.ledger().set_timestamp(1000);
         client.pause_stream(&stream_id_max);
         client.resume_stream(&stream_id_max, &max_flow_rate);
@@ -270,12 +376,23 @@ mod pause_resume_fuzz {
         let client = UtilityContractClient::new(&env, &contract_id);
 
         let provider = Address::generate(&env);
+        let payer = Address::generate(&env);
         let stream_id = 108u64;
         let flow_rate = 1000i128;
         let initial_balance = 1000000i128;
+        let meter_id = setup_stream_meter(&env, &client, &provider, flow_rate);
 
         // Create stream
-        client.create_continuous_stream(&stream_id, &flow_rate, &initial_balance, &provider);
+        client.create_continuous_stream(
+            &stream_id,
+            &meter_id,
+            &flow_rate,
+            &initial_balance,
+            &provider,
+            &payer,
+            &0u32,
+            &soroban_sdk::BytesN::from_array(&env, &[0u8; 32]),
+        );
 
         // Interleave various operations rapidly
         for i in 0..50 {

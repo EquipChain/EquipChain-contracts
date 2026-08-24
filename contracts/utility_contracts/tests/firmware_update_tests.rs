@@ -25,8 +25,15 @@ fn setup_meter() -> (Env, Address, u64, BytesN<32>) {
     token_admin_client.mint(&user, &10_000);
 
     let device_public_key = BytesN::from_array(&env, &[7u8; 32]);
-    let meter_id = client.register_meter(&user, &provider, &10, &token_address, &device_public_key);
-    client.top_up(&meter_id, &5_000);
+    let meter_id = client.register_meter(
+        &user,
+        &provider,
+        &10,
+        &token_address,
+        &device_public_key,
+        &0u32,
+    );
+    client.top_up(&meter_id, &5_000, &user);
     client.initiate_pairing(&meter_id);
     client.complete_pairing(&meter_id, &BytesN::from_array(&env, &[2u8; 64]));
 

@@ -1,9 +1,6 @@
-use soroban_sdk::testutils::{Address as _, Events, Ledger};
-use soroban_sdk::{symbol_short, token, Address, BytesN, Env, Symbol};
-use utility_contracts::{
-    BillingType, Meter, SLAState, SignedUsageData, StreamStatus, UtilityContract,
-    UtilityContractClient,
-};
+use soroban_sdk::testutils::{Address as _, Ledger};
+use soroban_sdk::{testutils::Events, token, Address, BytesN, Env};
+use utility_contracts::{SignedUsageData, StreamStatus, UtilityContract, UtilityContractClient};
 
 // Helper to create a 32-byte key
 fn device_key(env: &Env, byte: u8) -> BytesN<32> {
@@ -11,7 +8,7 @@ fn device_key(env: &Env, byte: u8) -> BytesN<32> {
 }
 
 mod mock_oracle {
-    use soroban_sdk::{contract, contractimpl, Address, Env};
+    use soroban_sdk::{contract, contractimpl, Env};
     #[contract]
     pub struct MockOracle;
     #[contractimpl]
@@ -105,10 +102,13 @@ fn test_final_e2e_integration_hardware_to_dex() {
 
     client.create_continuous_stream(
         &stream_id,
+        &0u64,
         &flow_rate,
         &stream_initial_balance,
         &provider,
         &provider,
+        &0u32,
+        &soroban_sdk::BytesN::from_array(&env, &[0u8; 32]),
     );
 
     // Advance time
@@ -135,5 +135,5 @@ fn test_final_e2e_integration_hardware_to_dex() {
 
     // Verify Events
     let events = env.events().all();
-    assert!(events.len() > 0);
+    assert!(!events.is_empty());
 }

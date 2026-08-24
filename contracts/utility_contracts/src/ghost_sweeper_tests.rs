@@ -1,11 +1,9 @@
-use crate::ghost_sweeper::{
-    GhostStreamCandidate, GhostStreamPruned, GhostSweeper, PruneReason, StreamArchive,
-    SweeperResult, SweeperStatistics, GHOST_STREAM_THRESHOLD_DAYS,
-};
-use crate::{ContinuousFlow, ContractError, DataKey, StreamStatus};
+use crate::ghost_sweeper::{GhostSweeper, PruneReason, StreamArchive, GHOST_STREAM_THRESHOLD_DAYS};
+use crate::{ContinuousFlow, DataKey, StreamStatus};
 use soroban_sdk::{testutils::Address as _, testutils::BytesN as _, Address, BytesN, Env, Vec};
 
 #[cfg(test)]
+#[allow(clippy::module_inception)]
 pub mod ghost_sweeper_tests {
     use super::*;
 
@@ -13,12 +11,12 @@ pub mod ghost_sweeper_tests {
     #[test]
     fn test_prune_ghost_stream_basic() {
         let env = Env::default();
-        let contract_address = Address::random(&env);
-        env.register_contract_at(&contract_address, GhostSweeper, ());
+        let contract_address = Address::generate(&env);
+        env.register_contract(Some(&contract_address), GhostSweeper);
 
-        let relayer = Address::random(&env);
-        let provider = Address::random(&env);
-        let payer = Address::random(&env);
+        let relayer = Address::generate(&env);
+        let provider = Address::generate(&env);
+        let payer = Address::generate(&env);
         let stream_id = 1u64;
 
         // Create a ghost stream (zero balance for >90 days)
@@ -54,11 +52,11 @@ pub mod ghost_sweeper_tests {
     #[test]
     fn test_pruning_eligibility() {
         let env = Env::default();
-        let contract_address = Address::random(&env);
-        env.register_contract_at(&contract_address, GhostSweeper, ());
+        let contract_address = Address::generate(&env);
+        env.register_contract(Some(&contract_address), GhostSweeper);
 
-        let provider = Address::random(&env);
-        let payer = Address::random(&env);
+        let provider = Address::generate(&env);
+        let payer = Address::generate(&env);
         let stream_id = 1u64;
 
         // Create a stream that's not eligible (recent activity)
@@ -72,10 +70,10 @@ pub mod ghost_sweeper_tests {
         assert!(!candidate.unwrap().is_eligible_for_pruning);
 
         // Try to prune (should fail)
-        let relayer = Address::random(&env);
-        let result = std::panic::catch_unwind(|| {
+        let relayer = Address::generate(&env);
+        let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
             GhostSweeper::prune_ghost_stream(env.clone(), stream_id, relayer);
-        });
+        }));
         assert!(result.is_err());
     }
 
@@ -83,13 +81,13 @@ pub mod ghost_sweeper_tests {
     #[test]
     fn test_stream_with_pending_buffer() {
         let env = Env::default();
-        let contract_address = Address::random(&env);
-        env.register_contract_at(&contract_address, GhostSweeper, ());
+        let contract_address = Address::generate(&env);
+        env.register_contract(Some(&contract_address), GhostSweeper);
 
-        let provider = Address::random(&env);
-        let payer = Address::random(&env);
+        let provider = Address::generate(&env);
+        let payer = Address::generate(&env);
         let stream_id = 1u64;
-        let relayer = Address::random(&env);
+        let relayer = Address::generate(&env);
 
         // Create a ghost stream with buffer balance
         let mut ghost_stream = create_ghost_stream(&env, stream_id, provider, payer);
@@ -99,9 +97,9 @@ pub mod ghost_sweeper_tests {
         env.storage().persistent().set(&stream_key, &ghost_stream);
 
         // Try to prune (should fail)
-        let result = std::panic::catch_unwind(|| {
+        let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
             GhostSweeper::prune_ghost_stream(env.clone(), stream_id, relayer);
-        });
+        }));
         assert!(result.is_err());
     }
 
@@ -109,12 +107,12 @@ pub mod ghost_sweeper_tests {
     #[test]
     fn test_batch_prune_ghost_streams() {
         let env = Env::default();
-        let contract_address = Address::random(&env);
-        env.register_contract_at(&contract_address, GhostSweeper, ());
+        let contract_address = Address::generate(&env);
+        env.register_contract(Some(&contract_address), GhostSweeper);
 
-        let provider = Address::random(&env);
-        let payer = Address::random(&env);
-        let relayer = Address::random(&env);
+        let provider = Address::generate(&env);
+        let payer = Address::generate(&env);
+        let relayer = Address::generate(&env);
 
         // Create multiple ghost streams — 5 fixed IDs, pre-built with vec! macro
         let stream_ids = soroban_sdk::vec![&env, 1u64, 2u64, 3u64, 4u64, 5u64];
@@ -145,11 +143,11 @@ pub mod ghost_sweeper_tests {
     #[test]
     fn test_get_ghost_stream_candidates() {
         let env = Env::default();
-        let contract_address = Address::random(&env);
-        env.register_contract_at(&contract_address, GhostSweeper, ());
+        let contract_address = Address::generate(&env);
+        env.register_contract(Some(&contract_address), GhostSweeper);
 
-        let provider = Address::random(&env);
-        let payer = Address::random(&env);
+        let provider = Address::generate(&env);
+        let payer = Address::generate(&env);
 
         // Create mix of ghost and active streams
         for i in 1..=10 {
@@ -182,12 +180,12 @@ pub mod ghost_sweeper_tests {
     #[test]
     fn test_archive_integrity() {
         let env = Env::default();
-        let contract_address = Address::random(&env);
-        env.register_contract_at(&contract_address, GhostSweeper, ());
+        let contract_address = Address::generate(&env);
+        env.register_contract(Some(&contract_address), GhostSweeper);
 
-        let relayer = Address::random(&env);
-        let provider = Address::random(&env);
-        let payer = Address::random(&env);
+        let relayer = Address::generate(&env);
+        let provider = Address::generate(&env);
+        let payer = Address::generate(&env);
         let stream_id = 1u64;
 
         // Create and prune ghost stream
@@ -216,12 +214,12 @@ pub mod ghost_sweeper_tests {
     #[test]
     fn test_gas_bounty_calculation() {
         let env = Env::default();
-        let contract_address = Address::random(&env);
-        env.register_contract_at(&contract_address, GhostSweeper, ());
+        let contract_address = Address::generate(&env);
+        env.register_contract(Some(&contract_address), GhostSweeper);
 
-        let relayer = Address::random(&env);
-        let provider = Address::random(&env);
-        let payer = Address::random(&env);
+        let relayer = Address::generate(&env);
+        let provider = Address::generate(&env);
+        let payer = Address::generate(&env);
 
         // Create streams with different sizes
         let small_stream_id = 1u64;
@@ -251,20 +249,23 @@ pub mod ghost_sweeper_tests {
     #[test]
     fn test_storage_decay_simulation() {
         let env = Env::default();
-        let contract_address = Address::random(&env);
-        env.register_contract_at(&contract_address, GhostSweeper, ());
+        let contract_address = Address::generate(&env);
+        env.register_contract(Some(&contract_address), GhostSweeper);
 
-        let provider = Address::random(&env);
-        let payer = Address::random(&env);
-        let relayer = Address::random(&env);
+        let provider = Address::generate(&env);
+        let payer = Address::generate(&env);
+        let relayer = Address::generate(&env);
 
         // Simulate long-term storage decay
         let mut total_initial_storage = 0u64;
-        let stream_ids: Vec<u64> = (1..=100).collect();
+        let mut stream_ids: Vec<u64> = Vec::new(&env);
+        for stream_id in 1..=100u64 {
+            stream_ids.push_back(stream_id);
+        }
 
         for stream_id in stream_ids.iter() {
-            let stream = create_ghost_stream(&env, *stream_id, provider.clone(), payer.clone());
-            let stream_key = DataKey::ContinuousFlow(*stream_id);
+            let stream = create_ghost_stream(&env, stream_id, provider.clone(), payer.clone());
+            let stream_key = DataKey::ContinuousFlow(stream_id);
             env.storage().persistent().set(&stream_key, &stream);
 
             // Estimate storage size
@@ -272,8 +273,7 @@ pub mod ghost_sweeper_tests {
         }
 
         // Run sweeper
-        let stream_ids_vec = Vec::from_array(&env, stream_ids);
-        let result = GhostSweeper::batch_prune_ghost_streams(env.clone(), stream_ids_vec, relayer);
+        let result = GhostSweeper::batch_prune_ghost_streams(env.clone(), stream_ids, relayer);
 
         // Verify storage recovery
         assert_eq!(result.streams_pruned, 100);
@@ -290,16 +290,16 @@ pub mod ghost_sweeper_tests {
     #[test]
     fn test_stream_not_found() {
         let env = Env::default();
-        let contract_address = Address::random(&env);
-        env.register_contract_at(&contract_address, GhostSweeper, ());
+        let contract_address = Address::generate(&env);
+        env.register_contract(Some(&contract_address), GhostSweeper);
 
-        let relayer = Address::random(&env);
+        let relayer = Address::generate(&env);
         let stream_id = 999u64; // Non-existent stream
 
         // Try to prune non-existent stream
-        let result = std::panic::catch_unwind(|| {
+        let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
             GhostSweeper::prune_ghost_stream(env.clone(), stream_id, relayer);
-        });
+        }));
         assert!(result.is_err());
     }
 
@@ -307,12 +307,12 @@ pub mod ghost_sweeper_tests {
     #[test]
     fn test_mac_address_cleanup() {
         let env = Env::default();
-        let contract_address = Address::random(&env);
-        env.register_contract_at(&contract_address, GhostSweeper, ());
+        let contract_address = Address::generate(&env);
+        env.register_contract(Some(&contract_address), GhostSweeper);
 
-        let relayer = Address::random(&env);
-        let provider = Address::random(&env);
-        let payer = Address::random(&env);
+        let relayer = Address::generate(&env);
+        let provider = Address::generate(&env);
+        let payer = Address::generate(&env);
         let stream_id = 1u64;
         let device_mac = BytesN::random(&env);
 
@@ -423,8 +423,8 @@ mod ghost_sweeper_property_tests {
             storage_bytes in 200u64..2000u64,
         ) {
             let env = Env::default();
-            let contract_address = Address::random(&env);
-            env.register_contract_at(&contract_address, GhostSweeper, ());
+            let contract_address = Address::generate(&env);
+            env.register_contract(Some(&contract_address), GhostSweeper);
 
             // Property: bounty should be proportional to storage size
             let bounty = GhostSweeper::calculate_gas_bounty(storage_bytes);
@@ -439,22 +439,22 @@ mod ghost_sweeper_property_tests {
         #[test]
         fn test_pruning_eligibility_properties(
             days_inactive in 0u64..200u64,
-            has_balance in bool::ANY,
-            has_buffer in bool::ANY,
+            has_balance in any::<bool>(),
+            has_buffer in any::<bool>(),
         ) {
             let env = Env::default();
-            let contract_address = Address::random(&env);
-            env.register_contract_at(&contract_address, GhostSweeper, ());
+            let contract_address = Address::generate(&env);
+            env.register_contract(Some(&contract_address), GhostSweeper);
 
-            let provider = Address::random(&env);
-            let payer = Address::random(&env);
+            let provider = Address::generate(&env);
+            let payer = Address::generate(&env);
             let stream_id = 1u64;
 
             // Create stream with specified properties
             let current_time = env.ledger().timestamp();
             let inactive_timestamp = current_time - days_inactive * 24 * 60 * 60;
 
-            let mut stream = ContinuousFlow {
+            let stream = ContinuousFlow {
                 stream_id,
                 flow_rate_per_second: 0,
                 accumulated_balance: if has_balance { 1000 } else { 0 },

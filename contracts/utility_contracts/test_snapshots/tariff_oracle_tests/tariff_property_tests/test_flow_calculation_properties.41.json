@@ -1,0 +1,2128 @@
+{
+  "generators": {
+    "address": 3,
+    "nonce": 0,
+    "mux_id": 0
+  },
+  "auth": [
+    [],
+    []
+  ],
+  "ledger": {
+    "protocol_version": 23,
+    "sequence_number": 0,
+    "timestamp": 0,
+    "network_id": "0000000000000000000000000000000000000000000000000000000000000000",
+    "base_reserve": 0,
+    "min_persistent_entry_ttl": 4096,
+    "min_temp_entry_ttl": 16,
+    "max_entry_ttl": 6312000,
+    "ledger_entries": [
+      [
+        {
+          "contract_data": {
+            "contract": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM",
+            "key": {
+              "vec": [
+                {
+                  "symbol": "CurrentTariffSchedule"
+                }
+              ]
+            },
+            "durability": "persistent"
+          }
+        },
+        [
+          {
+            "last_modified_ledger_seq": 0,
+            "data": {
+              "contract_data": {
+                "ext": "v0",
+                "contract": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM",
+                "key": {
+                  "vec": [
+                    {
+                      "symbol": "CurrentTariffSchedule"
+                    }
+                  ]
+                },
+                "durability": "persistent",
+                "val": {
+                  "map": [
+                    {
+                      "key": {
+                        "symbol": "admin_signature"
+                      },
+                      "val": {
+                        "bytes": "e67e9ee6f03ef81559e1db5529d482ac6e9c5ff02ff0bf73fcb2a6926fc571edc55d417e58d45b752163099db8dbddc49ebe3ffe56f5d5ce0c9db00fea6d4872"
+                      }
+                    },
+                    {
+                      "key": {
+                        "symbol": "created_at"
+                      },
+                      "val": {
+                        "u64": "0"
+                      }
+                    },
+                    {
+                      "key": {
+                        "symbol": "effective_at"
+                      },
+                      "val": {
+                        "u64": "0"
+                      }
+                    },
+                    {
+                      "key": {
+                        "symbol": "hourly_rates"
+                      },
+                      "val": {
+                        "vec": [
+                          {
+                            "map": [
+                              {
+                                "key": {
+                                  "symbol": "hour"
+                                },
+                                "val": {
+                                  "u32": 0
+                                }
+                              },
+                              {
+                                "key": {
+                                  "symbol": "is_renewable_hour"
+                                },
+                                "val": {
+                                  "bool": false
+                                }
+                              },
+                              {
+                                "key": {
+                                  "symbol": "rate_cents_per_kwh"
+                                },
+                                "val": {
+                                  "i128": "8"
+                                }
+                              },
+                              {
+                                "key": {
+                                  "symbol": "tier"
+                                },
+                                "val": {
+                                  "u32": 0
+                                }
+                              }
+                            ]
+                          },
+                          {
+                            "map": [
+                              {
+                                "key": {
+                                  "symbol": "hour"
+                                },
+                                "val": {
+                                  "u32": 1
+                                }
+                              },
+                              {
+                                "key": {
+                                  "symbol": "is_renewable_hour"
+                                },
+                                "val": {
+                                  "bool": false
+                                }
+                              },
+                              {
+                                "key": {
+                                  "symbol": "rate_cents_per_kwh"
+                                },
+                                "val": {
+                                  "i128": "8"
+                                }
+                              },
+                              {
+                                "key": {
+                                  "symbol": "tier"
+                                },
+                                "val": {
+                                  "u32": 0
+                                }
+                              }
+                            ]
+                          },
+                          {
+                            "map": [
+                              {
+                                "key": {
+                                  "symbol": "hour"
+                                },
+                                "val": {
+                                  "u32": 2
+                                }
+                              },
+                              {
+                                "key": {
+                                  "symbol": "is_renewable_hour"
+                                },
+                                "val": {
+                                  "bool": false
+                                }
+                              },
+                              {
+                                "key": {
+                                  "symbol": "rate_cents_per_kwh"
+                                },
+                                "val": {
+                                  "i128": "8"
+                                }
+                              },
+                              {
+                                "key": {
+                                  "symbol": "tier"
+                                },
+                                "val": {
+                                  "u32": 0
+                                }
+                              }
+                            ]
+                          },
+                          {
+                            "map": [
+                              {
+                                "key": {
+                                  "symbol": "hour"
+                                },
+                                "val": {
+                                  "u32": 3
+                                }
+                              },
+                              {
+                                "key": {
+                                  "symbol": "is_renewable_hour"
+                                },
+                                "val": {
+                                  "bool": false
+                                }
+                              },
+                              {
+                                "key": {
+                                  "symbol": "rate_cents_per_kwh"
+                                },
+                                "val": {
+                                  "i128": "8"
+                                }
+                              },
+                              {
+                                "key": {
+                                  "symbol": "tier"
+                                },
+                                "val": {
+                                  "u32": 0
+                                }
+                              }
+                            ]
+                          },
+                          {
+                            "map": [
+                              {
+                                "key": {
+                                  "symbol": "hour"
+                                },
+                                "val": {
+                                  "u32": 4
+                                }
+                              },
+                              {
+                                "key": {
+                                  "symbol": "is_renewable_hour"
+                                },
+                                "val": {
+                                  "bool": false
+                                }
+                              },
+                              {
+                                "key": {
+                                  "symbol": "rate_cents_per_kwh"
+                                },
+                                "val": {
+                                  "i128": "8"
+                                }
+                              },
+                              {
+                                "key": {
+                                  "symbol": "tier"
+                                },
+                                "val": {
+                                  "u32": 0
+                                }
+                              }
+                            ]
+                          },
+                          {
+                            "map": [
+                              {
+                                "key": {
+                                  "symbol": "hour"
+                                },
+                                "val": {
+                                  "u32": 5
+                                }
+                              },
+                              {
+                                "key": {
+                                  "symbol": "is_renewable_hour"
+                                },
+                                "val": {
+                                  "bool": false
+                                }
+                              },
+                              {
+                                "key": {
+                                  "symbol": "rate_cents_per_kwh"
+                                },
+                                "val": {
+                                  "i128": "8"
+                                }
+                              },
+                              {
+                                "key": {
+                                  "symbol": "tier"
+                                },
+                                "val": {
+                                  "u32": 0
+                                }
+                              }
+                            ]
+                          },
+                          {
+                            "map": [
+                              {
+                                "key": {
+                                  "symbol": "hour"
+                                },
+                                "val": {
+                                  "u32": 6
+                                }
+                              },
+                              {
+                                "key": {
+                                  "symbol": "is_renewable_hour"
+                                },
+                                "val": {
+                                  "bool": false
+                                }
+                              },
+                              {
+                                "key": {
+                                  "symbol": "rate_cents_per_kwh"
+                                },
+                                "val": {
+                                  "i128": "8"
+                                }
+                              },
+                              {
+                                "key": {
+                                  "symbol": "tier"
+                                },
+                                "val": {
+                                  "u32": 0
+                                }
+                              }
+                            ]
+                          },
+                          {
+                            "map": [
+                              {
+                                "key": {
+                                  "symbol": "hour"
+                                },
+                                "val": {
+                                  "u32": 7
+                                }
+                              },
+                              {
+                                "key": {
+                                  "symbol": "is_renewable_hour"
+                                },
+                                "val": {
+                                  "bool": false
+                                }
+                              },
+                              {
+                                "key": {
+                                  "symbol": "rate_cents_per_kwh"
+                                },
+                                "val": {
+                                  "i128": "15"
+                                }
+                              },
+                              {
+                                "key": {
+                                  "symbol": "tier"
+                                },
+                                "val": {
+                                  "u32": 2
+                                }
+                              }
+                            ]
+                          },
+                          {
+                            "map": [
+                              {
+                                "key": {
+                                  "symbol": "hour"
+                                },
+                                "val": {
+                                  "u32": 8
+                                }
+                              },
+                              {
+                                "key": {
+                                  "symbol": "is_renewable_hour"
+                                },
+                                "val": {
+                                  "bool": false
+                                }
+                              },
+                              {
+                                "key": {
+                                  "symbol": "rate_cents_per_kwh"
+                                },
+                                "val": {
+                                  "i128": "15"
+                                }
+                              },
+                              {
+                                "key": {
+                                  "symbol": "tier"
+                                },
+                                "val": {
+                                  "u32": 2
+                                }
+                              }
+                            ]
+                          },
+                          {
+                            "map": [
+                              {
+                                "key": {
+                                  "symbol": "hour"
+                                },
+                                "val": {
+                                  "u32": 9
+                                }
+                              },
+                              {
+                                "key": {
+                                  "symbol": "is_renewable_hour"
+                                },
+                                "val": {
+                                  "bool": false
+                                }
+                              },
+                              {
+                                "key": {
+                                  "symbol": "rate_cents_per_kwh"
+                                },
+                                "val": {
+                                  "i128": "15"
+                                }
+                              },
+                              {
+                                "key": {
+                                  "symbol": "tier"
+                                },
+                                "val": {
+                                  "u32": 2
+                                }
+                              }
+                            ]
+                          },
+                          {
+                            "map": [
+                              {
+                                "key": {
+                                  "symbol": "hour"
+                                },
+                                "val": {
+                                  "u32": 10
+                                }
+                              },
+                              {
+                                "key": {
+                                  "symbol": "is_renewable_hour"
+                                },
+                                "val": {
+                                  "bool": false
+                                }
+                              },
+                              {
+                                "key": {
+                                  "symbol": "rate_cents_per_kwh"
+                                },
+                                "val": {
+                                  "i128": "15"
+                                }
+                              },
+                              {
+                                "key": {
+                                  "symbol": "tier"
+                                },
+                                "val": {
+                                  "u32": 2
+                                }
+                              }
+                            ]
+                          },
+                          {
+                            "map": [
+                              {
+                                "key": {
+                                  "symbol": "hour"
+                                },
+                                "val": {
+                                  "u32": 11
+                                }
+                              },
+                              {
+                                "key": {
+                                  "symbol": "is_renewable_hour"
+                                },
+                                "val": {
+                                  "bool": true
+                                }
+                              },
+                              {
+                                "key": {
+                                  "symbol": "rate_cents_per_kwh"
+                                },
+                                "val": {
+                                  "i128": "12"
+                                }
+                              },
+                              {
+                                "key": {
+                                  "symbol": "tier"
+                                },
+                                "val": {
+                                  "u32": 1
+                                }
+                              }
+                            ]
+                          },
+                          {
+                            "map": [
+                              {
+                                "key": {
+                                  "symbol": "hour"
+                                },
+                                "val": {
+                                  "u32": 12
+                                }
+                              },
+                              {
+                                "key": {
+                                  "symbol": "is_renewable_hour"
+                                },
+                                "val": {
+                                  "bool": true
+                                }
+                              },
+                              {
+                                "key": {
+                                  "symbol": "rate_cents_per_kwh"
+                                },
+                                "val": {
+                                  "i128": "12"
+                                }
+                              },
+                              {
+                                "key": {
+                                  "symbol": "tier"
+                                },
+                                "val": {
+                                  "u32": 1
+                                }
+                              }
+                            ]
+                          },
+                          {
+                            "map": [
+                              {
+                                "key": {
+                                  "symbol": "hour"
+                                },
+                                "val": {
+                                  "u32": 13
+                                }
+                              },
+                              {
+                                "key": {
+                                  "symbol": "is_renewable_hour"
+                                },
+                                "val": {
+                                  "bool": true
+                                }
+                              },
+                              {
+                                "key": {
+                                  "symbol": "rate_cents_per_kwh"
+                                },
+                                "val": {
+                                  "i128": "12"
+                                }
+                              },
+                              {
+                                "key": {
+                                  "symbol": "tier"
+                                },
+                                "val": {
+                                  "u32": 1
+                                }
+                              }
+                            ]
+                          },
+                          {
+                            "map": [
+                              {
+                                "key": {
+                                  "symbol": "hour"
+                                },
+                                "val": {
+                                  "u32": 14
+                                }
+                              },
+                              {
+                                "key": {
+                                  "symbol": "is_renewable_hour"
+                                },
+                                "val": {
+                                  "bool": true
+                                }
+                              },
+                              {
+                                "key": {
+                                  "symbol": "rate_cents_per_kwh"
+                                },
+                                "val": {
+                                  "i128": "12"
+                                }
+                              },
+                              {
+                                "key": {
+                                  "symbol": "tier"
+                                },
+                                "val": {
+                                  "u32": 1
+                                }
+                              }
+                            ]
+                          },
+                          {
+                            "map": [
+                              {
+                                "key": {
+                                  "symbol": "hour"
+                                },
+                                "val": {
+                                  "u32": 15
+                                }
+                              },
+                              {
+                                "key": {
+                                  "symbol": "is_renewable_hour"
+                                },
+                                "val": {
+                                  "bool": true
+                                }
+                              },
+                              {
+                                "key": {
+                                  "symbol": "rate_cents_per_kwh"
+                                },
+                                "val": {
+                                  "i128": "12"
+                                }
+                              },
+                              {
+                                "key": {
+                                  "symbol": "tier"
+                                },
+                                "val": {
+                                  "u32": 1
+                                }
+                              }
+                            ]
+                          },
+                          {
+                            "map": [
+                              {
+                                "key": {
+                                  "symbol": "hour"
+                                },
+                                "val": {
+                                  "u32": 16
+                                }
+                              },
+                              {
+                                "key": {
+                                  "symbol": "is_renewable_hour"
+                                },
+                                "val": {
+                                  "bool": true
+                                }
+                              },
+                              {
+                                "key": {
+                                  "symbol": "rate_cents_per_kwh"
+                                },
+                                "val": {
+                                  "i128": "12"
+                                }
+                              },
+                              {
+                                "key": {
+                                  "symbol": "tier"
+                                },
+                                "val": {
+                                  "u32": 1
+                                }
+                              }
+                            ]
+                          },
+                          {
+                            "map": [
+                              {
+                                "key": {
+                                  "symbol": "hour"
+                                },
+                                "val": {
+                                  "u32": 17
+                                }
+                              },
+                              {
+                                "key": {
+                                  "symbol": "is_renewable_hour"
+                                },
+                                "val": {
+                                  "bool": false
+                                }
+                              },
+                              {
+                                "key": {
+                                  "symbol": "rate_cents_per_kwh"
+                                },
+                                "val": {
+                                  "i128": "15"
+                                }
+                              },
+                              {
+                                "key": {
+                                  "symbol": "tier"
+                                },
+                                "val": {
+                                  "u32": 2
+                                }
+                              }
+                            ]
+                          },
+                          {
+                            "map": [
+                              {
+                                "key": {
+                                  "symbol": "hour"
+                                },
+                                "val": {
+                                  "u32": 18
+                                }
+                              },
+                              {
+                                "key": {
+                                  "symbol": "is_renewable_hour"
+                                },
+                                "val": {
+                                  "bool": false
+                                }
+                              },
+                              {
+                                "key": {
+                                  "symbol": "rate_cents_per_kwh"
+                                },
+                                "val": {
+                                  "i128": "15"
+                                }
+                              },
+                              {
+                                "key": {
+                                  "symbol": "tier"
+                                },
+                                "val": {
+                                  "u32": 2
+                                }
+                              }
+                            ]
+                          },
+                          {
+                            "map": [
+                              {
+                                "key": {
+                                  "symbol": "hour"
+                                },
+                                "val": {
+                                  "u32": 19
+                                }
+                              },
+                              {
+                                "key": {
+                                  "symbol": "is_renewable_hour"
+                                },
+                                "val": {
+                                  "bool": false
+                                }
+                              },
+                              {
+                                "key": {
+                                  "symbol": "rate_cents_per_kwh"
+                                },
+                                "val": {
+                                  "i128": "15"
+                                }
+                              },
+                              {
+                                "key": {
+                                  "symbol": "tier"
+                                },
+                                "val": {
+                                  "u32": 2
+                                }
+                              }
+                            ]
+                          },
+                          {
+                            "map": [
+                              {
+                                "key": {
+                                  "symbol": "hour"
+                                },
+                                "val": {
+                                  "u32": 20
+                                }
+                              },
+                              {
+                                "key": {
+                                  "symbol": "is_renewable_hour"
+                                },
+                                "val": {
+                                  "bool": false
+                                }
+                              },
+                              {
+                                "key": {
+                                  "symbol": "rate_cents_per_kwh"
+                                },
+                                "val": {
+                                  "i128": "15"
+                                }
+                              },
+                              {
+                                "key": {
+                                  "symbol": "tier"
+                                },
+                                "val": {
+                                  "u32": 2
+                                }
+                              }
+                            ]
+                          },
+                          {
+                            "map": [
+                              {
+                                "key": {
+                                  "symbol": "hour"
+                                },
+                                "val": {
+                                  "u32": 21
+                                }
+                              },
+                              {
+                                "key": {
+                                  "symbol": "is_renewable_hour"
+                                },
+                                "val": {
+                                  "bool": false
+                                }
+                              },
+                              {
+                                "key": {
+                                  "symbol": "rate_cents_per_kwh"
+                                },
+                                "val": {
+                                  "i128": "10"
+                                }
+                              },
+                              {
+                                "key": {
+                                  "symbol": "tier"
+                                },
+                                "val": {
+                                  "u32": 1
+                                }
+                              }
+                            ]
+                          },
+                          {
+                            "map": [
+                              {
+                                "key": {
+                                  "symbol": "hour"
+                                },
+                                "val": {
+                                  "u32": 22
+                                }
+                              },
+                              {
+                                "key": {
+                                  "symbol": "is_renewable_hour"
+                                },
+                                "val": {
+                                  "bool": false
+                                }
+                              },
+                              {
+                                "key": {
+                                  "symbol": "rate_cents_per_kwh"
+                                },
+                                "val": {
+                                  "i128": "8"
+                                }
+                              },
+                              {
+                                "key": {
+                                  "symbol": "tier"
+                                },
+                                "val": {
+                                  "u32": 0
+                                }
+                              }
+                            ]
+                          },
+                          {
+                            "map": [
+                              {
+                                "key": {
+                                  "symbol": "hour"
+                                },
+                                "val": {
+                                  "u32": 23
+                                }
+                              },
+                              {
+                                "key": {
+                                  "symbol": "is_renewable_hour"
+                                },
+                                "val": {
+                                  "bool": false
+                                }
+                              },
+                              {
+                                "key": {
+                                  "symbol": "rate_cents_per_kwh"
+                                },
+                                "val": {
+                                  "i128": "8"
+                                }
+                              },
+                              {
+                                "key": {
+                                  "symbol": "tier"
+                                },
+                                "val": {
+                                  "u32": 0
+                                }
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    },
+                    {
+                      "key": {
+                        "symbol": "schedule_date"
+                      },
+                      "val": {
+                        "u32": 20240101
+                      }
+                    },
+                    {
+                      "key": {
+                        "symbol": "signed_by"
+                      },
+                      "val": {
+                        "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHK3M"
+                      }
+                    }
+                  ]
+                }
+              }
+            },
+            "ext": "v0"
+          },
+          4095
+        ]
+      ],
+      [
+        {
+          "contract_data": {
+            "contract": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM",
+            "key": {
+              "vec": [
+                {
+                  "symbol": "TariffOracleAdmin"
+                }
+              ]
+            },
+            "durability": "persistent"
+          }
+        },
+        [
+          {
+            "last_modified_ledger_seq": 0,
+            "data": {
+              "contract_data": {
+                "ext": "v0",
+                "contract": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM",
+                "key": {
+                  "vec": [
+                    {
+                      "symbol": "TariffOracleAdmin"
+                    }
+                  ]
+                },
+                "durability": "persistent",
+                "val": {
+                  "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAFCT4"
+                }
+              }
+            },
+            "ext": "v0"
+          },
+          4095
+        ]
+      ],
+      [
+        {
+          "contract_data": {
+            "contract": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM",
+            "key": {
+              "vec": [
+                {
+                  "symbol": "TariffProposalCounter"
+                }
+              ]
+            },
+            "durability": "persistent"
+          }
+        },
+        [
+          {
+            "last_modified_ledger_seq": 0,
+            "data": {
+              "contract_data": {
+                "ext": "v0",
+                "contract": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM",
+                "key": {
+                  "vec": [
+                    {
+                      "symbol": "TariffProposalCounter"
+                    }
+                  ]
+                },
+                "durability": "persistent",
+                "val": {
+                  "u64": "0"
+                }
+              }
+            },
+            "ext": "v0"
+          },
+          4095
+        ]
+      ],
+      [
+        {
+          "contract_data": {
+            "contract": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM",
+            "key": {
+              "vec": [
+                {
+                  "symbol": "TariffScheduleHash"
+                }
+              ]
+            },
+            "durability": "persistent"
+          }
+        },
+        [
+          {
+            "last_modified_ledger_seq": 0,
+            "data": {
+              "contract_data": {
+                "ext": "v0",
+                "contract": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM",
+                "key": {
+                  "vec": [
+                    {
+                      "symbol": "TariffScheduleHash"
+                    }
+                  ]
+                },
+                "durability": "persistent",
+                "val": {
+                  "bytes": "bc5266ae529f8e062ce33aa4061a414f40e94c43c6f8de6fcb681543015e7198"
+                }
+              }
+            },
+            "ext": "v0"
+          },
+          4095
+        ]
+      ],
+      [
+        {
+          "contract_data": {
+            "contract": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM",
+            "key": {
+              "vec": [
+                {
+                  "symbol": "TodayTariffSchedule"
+                }
+              ]
+            },
+            "durability": "temporary"
+          }
+        },
+        [
+          {
+            "last_modified_ledger_seq": 0,
+            "data": {
+              "contract_data": {
+                "ext": "v0",
+                "contract": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM",
+                "key": {
+                  "vec": [
+                    {
+                      "symbol": "TodayTariffSchedule"
+                    }
+                  ]
+                },
+                "durability": "temporary",
+                "val": {
+                  "map": [
+                    {
+                      "key": {
+                        "symbol": "admin_signature"
+                      },
+                      "val": {
+                        "bytes": "e67e9ee6f03ef81559e1db5529d482ac6e9c5ff02ff0bf73fcb2a6926fc571edc55d417e58d45b752163099db8dbddc49ebe3ffe56f5d5ce0c9db00fea6d4872"
+                      }
+                    },
+                    {
+                      "key": {
+                        "symbol": "created_at"
+                      },
+                      "val": {
+                        "u64": "0"
+                      }
+                    },
+                    {
+                      "key": {
+                        "symbol": "effective_at"
+                      },
+                      "val": {
+                        "u64": "0"
+                      }
+                    },
+                    {
+                      "key": {
+                        "symbol": "hourly_rates"
+                      },
+                      "val": {
+                        "vec": [
+                          {
+                            "map": [
+                              {
+                                "key": {
+                                  "symbol": "hour"
+                                },
+                                "val": {
+                                  "u32": 0
+                                }
+                              },
+                              {
+                                "key": {
+                                  "symbol": "is_renewable_hour"
+                                },
+                                "val": {
+                                  "bool": false
+                                }
+                              },
+                              {
+                                "key": {
+                                  "symbol": "rate_cents_per_kwh"
+                                },
+                                "val": {
+                                  "i128": "8"
+                                }
+                              },
+                              {
+                                "key": {
+                                  "symbol": "tier"
+                                },
+                                "val": {
+                                  "u32": 0
+                                }
+                              }
+                            ]
+                          },
+                          {
+                            "map": [
+                              {
+                                "key": {
+                                  "symbol": "hour"
+                                },
+                                "val": {
+                                  "u32": 1
+                                }
+                              },
+                              {
+                                "key": {
+                                  "symbol": "is_renewable_hour"
+                                },
+                                "val": {
+                                  "bool": false
+                                }
+                              },
+                              {
+                                "key": {
+                                  "symbol": "rate_cents_per_kwh"
+                                },
+                                "val": {
+                                  "i128": "8"
+                                }
+                              },
+                              {
+                                "key": {
+                                  "symbol": "tier"
+                                },
+                                "val": {
+                                  "u32": 0
+                                }
+                              }
+                            ]
+                          },
+                          {
+                            "map": [
+                              {
+                                "key": {
+                                  "symbol": "hour"
+                                },
+                                "val": {
+                                  "u32": 2
+                                }
+                              },
+                              {
+                                "key": {
+                                  "symbol": "is_renewable_hour"
+                                },
+                                "val": {
+                                  "bool": false
+                                }
+                              },
+                              {
+                                "key": {
+                                  "symbol": "rate_cents_per_kwh"
+                                },
+                                "val": {
+                                  "i128": "8"
+                                }
+                              },
+                              {
+                                "key": {
+                                  "symbol": "tier"
+                                },
+                                "val": {
+                                  "u32": 0
+                                }
+                              }
+                            ]
+                          },
+                          {
+                            "map": [
+                              {
+                                "key": {
+                                  "symbol": "hour"
+                                },
+                                "val": {
+                                  "u32": 3
+                                }
+                              },
+                              {
+                                "key": {
+                                  "symbol": "is_renewable_hour"
+                                },
+                                "val": {
+                                  "bool": false
+                                }
+                              },
+                              {
+                                "key": {
+                                  "symbol": "rate_cents_per_kwh"
+                                },
+                                "val": {
+                                  "i128": "8"
+                                }
+                              },
+                              {
+                                "key": {
+                                  "symbol": "tier"
+                                },
+                                "val": {
+                                  "u32": 0
+                                }
+                              }
+                            ]
+                          },
+                          {
+                            "map": [
+                              {
+                                "key": {
+                                  "symbol": "hour"
+                                },
+                                "val": {
+                                  "u32": 4
+                                }
+                              },
+                              {
+                                "key": {
+                                  "symbol": "is_renewable_hour"
+                                },
+                                "val": {
+                                  "bool": false
+                                }
+                              },
+                              {
+                                "key": {
+                                  "symbol": "rate_cents_per_kwh"
+                                },
+                                "val": {
+                                  "i128": "8"
+                                }
+                              },
+                              {
+                                "key": {
+                                  "symbol": "tier"
+                                },
+                                "val": {
+                                  "u32": 0
+                                }
+                              }
+                            ]
+                          },
+                          {
+                            "map": [
+                              {
+                                "key": {
+                                  "symbol": "hour"
+                                },
+                                "val": {
+                                  "u32": 5
+                                }
+                              },
+                              {
+                                "key": {
+                                  "symbol": "is_renewable_hour"
+                                },
+                                "val": {
+                                  "bool": false
+                                }
+                              },
+                              {
+                                "key": {
+                                  "symbol": "rate_cents_per_kwh"
+                                },
+                                "val": {
+                                  "i128": "8"
+                                }
+                              },
+                              {
+                                "key": {
+                                  "symbol": "tier"
+                                },
+                                "val": {
+                                  "u32": 0
+                                }
+                              }
+                            ]
+                          },
+                          {
+                            "map": [
+                              {
+                                "key": {
+                                  "symbol": "hour"
+                                },
+                                "val": {
+                                  "u32": 6
+                                }
+                              },
+                              {
+                                "key": {
+                                  "symbol": "is_renewable_hour"
+                                },
+                                "val": {
+                                  "bool": false
+                                }
+                              },
+                              {
+                                "key": {
+                                  "symbol": "rate_cents_per_kwh"
+                                },
+                                "val": {
+                                  "i128": "8"
+                                }
+                              },
+                              {
+                                "key": {
+                                  "symbol": "tier"
+                                },
+                                "val": {
+                                  "u32": 0
+                                }
+                              }
+                            ]
+                          },
+                          {
+                            "map": [
+                              {
+                                "key": {
+                                  "symbol": "hour"
+                                },
+                                "val": {
+                                  "u32": 7
+                                }
+                              },
+                              {
+                                "key": {
+                                  "symbol": "is_renewable_hour"
+                                },
+                                "val": {
+                                  "bool": false
+                                }
+                              },
+                              {
+                                "key": {
+                                  "symbol": "rate_cents_per_kwh"
+                                },
+                                "val": {
+                                  "i128": "15"
+                                }
+                              },
+                              {
+                                "key": {
+                                  "symbol": "tier"
+                                },
+                                "val": {
+                                  "u32": 2
+                                }
+                              }
+                            ]
+                          },
+                          {
+                            "map": [
+                              {
+                                "key": {
+                                  "symbol": "hour"
+                                },
+                                "val": {
+                                  "u32": 8
+                                }
+                              },
+                              {
+                                "key": {
+                                  "symbol": "is_renewable_hour"
+                                },
+                                "val": {
+                                  "bool": false
+                                }
+                              },
+                              {
+                                "key": {
+                                  "symbol": "rate_cents_per_kwh"
+                                },
+                                "val": {
+                                  "i128": "15"
+                                }
+                              },
+                              {
+                                "key": {
+                                  "symbol": "tier"
+                                },
+                                "val": {
+                                  "u32": 2
+                                }
+                              }
+                            ]
+                          },
+                          {
+                            "map": [
+                              {
+                                "key": {
+                                  "symbol": "hour"
+                                },
+                                "val": {
+                                  "u32": 9
+                                }
+                              },
+                              {
+                                "key": {
+                                  "symbol": "is_renewable_hour"
+                                },
+                                "val": {
+                                  "bool": false
+                                }
+                              },
+                              {
+                                "key": {
+                                  "symbol": "rate_cents_per_kwh"
+                                },
+                                "val": {
+                                  "i128": "15"
+                                }
+                              },
+                              {
+                                "key": {
+                                  "symbol": "tier"
+                                },
+                                "val": {
+                                  "u32": 2
+                                }
+                              }
+                            ]
+                          },
+                          {
+                            "map": [
+                              {
+                                "key": {
+                                  "symbol": "hour"
+                                },
+                                "val": {
+                                  "u32": 10
+                                }
+                              },
+                              {
+                                "key": {
+                                  "symbol": "is_renewable_hour"
+                                },
+                                "val": {
+                                  "bool": false
+                                }
+                              },
+                              {
+                                "key": {
+                                  "symbol": "rate_cents_per_kwh"
+                                },
+                                "val": {
+                                  "i128": "15"
+                                }
+                              },
+                              {
+                                "key": {
+                                  "symbol": "tier"
+                                },
+                                "val": {
+                                  "u32": 2
+                                }
+                              }
+                            ]
+                          },
+                          {
+                            "map": [
+                              {
+                                "key": {
+                                  "symbol": "hour"
+                                },
+                                "val": {
+                                  "u32": 11
+                                }
+                              },
+                              {
+                                "key": {
+                                  "symbol": "is_renewable_hour"
+                                },
+                                "val": {
+                                  "bool": true
+                                }
+                              },
+                              {
+                                "key": {
+                                  "symbol": "rate_cents_per_kwh"
+                                },
+                                "val": {
+                                  "i128": "12"
+                                }
+                              },
+                              {
+                                "key": {
+                                  "symbol": "tier"
+                                },
+                                "val": {
+                                  "u32": 1
+                                }
+                              }
+                            ]
+                          },
+                          {
+                            "map": [
+                              {
+                                "key": {
+                                  "symbol": "hour"
+                                },
+                                "val": {
+                                  "u32": 12
+                                }
+                              },
+                              {
+                                "key": {
+                                  "symbol": "is_renewable_hour"
+                                },
+                                "val": {
+                                  "bool": true
+                                }
+                              },
+                              {
+                                "key": {
+                                  "symbol": "rate_cents_per_kwh"
+                                },
+                                "val": {
+                                  "i128": "12"
+                                }
+                              },
+                              {
+                                "key": {
+                                  "symbol": "tier"
+                                },
+                                "val": {
+                                  "u32": 1
+                                }
+                              }
+                            ]
+                          },
+                          {
+                            "map": [
+                              {
+                                "key": {
+                                  "symbol": "hour"
+                                },
+                                "val": {
+                                  "u32": 13
+                                }
+                              },
+                              {
+                                "key": {
+                                  "symbol": "is_renewable_hour"
+                                },
+                                "val": {
+                                  "bool": true
+                                }
+                              },
+                              {
+                                "key": {
+                                  "symbol": "rate_cents_per_kwh"
+                                },
+                                "val": {
+                                  "i128": "12"
+                                }
+                              },
+                              {
+                                "key": {
+                                  "symbol": "tier"
+                                },
+                                "val": {
+                                  "u32": 1
+                                }
+                              }
+                            ]
+                          },
+                          {
+                            "map": [
+                              {
+                                "key": {
+                                  "symbol": "hour"
+                                },
+                                "val": {
+                                  "u32": 14
+                                }
+                              },
+                              {
+                                "key": {
+                                  "symbol": "is_renewable_hour"
+                                },
+                                "val": {
+                                  "bool": true
+                                }
+                              },
+                              {
+                                "key": {
+                                  "symbol": "rate_cents_per_kwh"
+                                },
+                                "val": {
+                                  "i128": "12"
+                                }
+                              },
+                              {
+                                "key": {
+                                  "symbol": "tier"
+                                },
+                                "val": {
+                                  "u32": 1
+                                }
+                              }
+                            ]
+                          },
+                          {
+                            "map": [
+                              {
+                                "key": {
+                                  "symbol": "hour"
+                                },
+                                "val": {
+                                  "u32": 15
+                                }
+                              },
+                              {
+                                "key": {
+                                  "symbol": "is_renewable_hour"
+                                },
+                                "val": {
+                                  "bool": true
+                                }
+                              },
+                              {
+                                "key": {
+                                  "symbol": "rate_cents_per_kwh"
+                                },
+                                "val": {
+                                  "i128": "12"
+                                }
+                              },
+                              {
+                                "key": {
+                                  "symbol": "tier"
+                                },
+                                "val": {
+                                  "u32": 1
+                                }
+                              }
+                            ]
+                          },
+                          {
+                            "map": [
+                              {
+                                "key": {
+                                  "symbol": "hour"
+                                },
+                                "val": {
+                                  "u32": 16
+                                }
+                              },
+                              {
+                                "key": {
+                                  "symbol": "is_renewable_hour"
+                                },
+                                "val": {
+                                  "bool": true
+                                }
+                              },
+                              {
+                                "key": {
+                                  "symbol": "rate_cents_per_kwh"
+                                },
+                                "val": {
+                                  "i128": "12"
+                                }
+                              },
+                              {
+                                "key": {
+                                  "symbol": "tier"
+                                },
+                                "val": {
+                                  "u32": 1
+                                }
+                              }
+                            ]
+                          },
+                          {
+                            "map": [
+                              {
+                                "key": {
+                                  "symbol": "hour"
+                                },
+                                "val": {
+                                  "u32": 17
+                                }
+                              },
+                              {
+                                "key": {
+                                  "symbol": "is_renewable_hour"
+                                },
+                                "val": {
+                                  "bool": false
+                                }
+                              },
+                              {
+                                "key": {
+                                  "symbol": "rate_cents_per_kwh"
+                                },
+                                "val": {
+                                  "i128": "15"
+                                }
+                              },
+                              {
+                                "key": {
+                                  "symbol": "tier"
+                                },
+                                "val": {
+                                  "u32": 2
+                                }
+                              }
+                            ]
+                          },
+                          {
+                            "map": [
+                              {
+                                "key": {
+                                  "symbol": "hour"
+                                },
+                                "val": {
+                                  "u32": 18
+                                }
+                              },
+                              {
+                                "key": {
+                                  "symbol": "is_renewable_hour"
+                                },
+                                "val": {
+                                  "bool": false
+                                }
+                              },
+                              {
+                                "key": {
+                                  "symbol": "rate_cents_per_kwh"
+                                },
+                                "val": {
+                                  "i128": "15"
+                                }
+                              },
+                              {
+                                "key": {
+                                  "symbol": "tier"
+                                },
+                                "val": {
+                                  "u32": 2
+                                }
+                              }
+                            ]
+                          },
+                          {
+                            "map": [
+                              {
+                                "key": {
+                                  "symbol": "hour"
+                                },
+                                "val": {
+                                  "u32": 19
+                                }
+                              },
+                              {
+                                "key": {
+                                  "symbol": "is_renewable_hour"
+                                },
+                                "val": {
+                                  "bool": false
+                                }
+                              },
+                              {
+                                "key": {
+                                  "symbol": "rate_cents_per_kwh"
+                                },
+                                "val": {
+                                  "i128": "15"
+                                }
+                              },
+                              {
+                                "key": {
+                                  "symbol": "tier"
+                                },
+                                "val": {
+                                  "u32": 2
+                                }
+                              }
+                            ]
+                          },
+                          {
+                            "map": [
+                              {
+                                "key": {
+                                  "symbol": "hour"
+                                },
+                                "val": {
+                                  "u32": 20
+                                }
+                              },
+                              {
+                                "key": {
+                                  "symbol": "is_renewable_hour"
+                                },
+                                "val": {
+                                  "bool": false
+                                }
+                              },
+                              {
+                                "key": {
+                                  "symbol": "rate_cents_per_kwh"
+                                },
+                                "val": {
+                                  "i128": "15"
+                                }
+                              },
+                              {
+                                "key": {
+                                  "symbol": "tier"
+                                },
+                                "val": {
+                                  "u32": 2
+                                }
+                              }
+                            ]
+                          },
+                          {
+                            "map": [
+                              {
+                                "key": {
+                                  "symbol": "hour"
+                                },
+                                "val": {
+                                  "u32": 21
+                                }
+                              },
+                              {
+                                "key": {
+                                  "symbol": "is_renewable_hour"
+                                },
+                                "val": {
+                                  "bool": false
+                                }
+                              },
+                              {
+                                "key": {
+                                  "symbol": "rate_cents_per_kwh"
+                                },
+                                "val": {
+                                  "i128": "10"
+                                }
+                              },
+                              {
+                                "key": {
+                                  "symbol": "tier"
+                                },
+                                "val": {
+                                  "u32": 1
+                                }
+                              }
+                            ]
+                          },
+                          {
+                            "map": [
+                              {
+                                "key": {
+                                  "symbol": "hour"
+                                },
+                                "val": {
+                                  "u32": 22
+                                }
+                              },
+                              {
+                                "key": {
+                                  "symbol": "is_renewable_hour"
+                                },
+                                "val": {
+                                  "bool": false
+                                }
+                              },
+                              {
+                                "key": {
+                                  "symbol": "rate_cents_per_kwh"
+                                },
+                                "val": {
+                                  "i128": "8"
+                                }
+                              },
+                              {
+                                "key": {
+                                  "symbol": "tier"
+                                },
+                                "val": {
+                                  "u32": 0
+                                }
+                              }
+                            ]
+                          },
+                          {
+                            "map": [
+                              {
+                                "key": {
+                                  "symbol": "hour"
+                                },
+                                "val": {
+                                  "u32": 23
+                                }
+                              },
+                              {
+                                "key": {
+                                  "symbol": "is_renewable_hour"
+                                },
+                                "val": {
+                                  "bool": false
+                                }
+                              },
+                              {
+                                "key": {
+                                  "symbol": "rate_cents_per_kwh"
+                                },
+                                "val": {
+                                  "i128": "8"
+                                }
+                              },
+                              {
+                                "key": {
+                                  "symbol": "tier"
+                                },
+                                "val": {
+                                  "u32": 0
+                                }
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    },
+                    {
+                      "key": {
+                        "symbol": "schedule_date"
+                      },
+                      "val": {
+                        "u32": 20240101
+                      }
+                    },
+                    {
+                      "key": {
+                        "symbol": "signed_by"
+                      },
+                      "val": {
+                        "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHK3M"
+                      }
+                    }
+                  ]
+                }
+              }
+            },
+            "ext": "v0"
+          },
+          15
+        ]
+      ],
+      [
+        {
+          "contract_data": {
+            "contract": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM",
+            "key": "ledger_key_contract_instance",
+            "durability": "persistent"
+          }
+        },
+        [
+          {
+            "last_modified_ledger_seq": 0,
+            "data": {
+              "contract_data": {
+                "ext": "v0",
+                "contract": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM",
+                "key": "ledger_key_contract_instance",
+                "durability": "persistent",
+                "val": {
+                  "contract_instance": {
+                    "executable": {
+                      "wasm": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+                    },
+                    "storage": null
+                  }
+                }
+              }
+            },
+            "ext": "v0"
+          },
+          4095
+        ]
+      ],
+      [
+        {
+          "contract_code": {
+            "hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          }
+        },
+        [
+          {
+            "last_modified_ledger_seq": 0,
+            "data": {
+              "contract_code": {
+                "ext": "v0",
+                "hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                "code": ""
+              }
+            },
+            "ext": "v0"
+          },
+          4095
+        ]
+      ]
+    ]
+  },
+  "events": [
+    {
+      "event": {
+        "ext": "v0",
+        "contract_id": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM",
+        "type_": "contract",
+        "body": {
+          "v0": {
+            "topics": [
+              {
+                "symbol": "TarOraInit"
+              }
+            ],
+            "data": {
+              "vec": [
+                {
+                  "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAFCT4"
+                },
+                {
+                  "u32": 20240101
+                }
+              ]
+            }
+          }
+        }
+      },
+      "failed_call": false
+    }
+  ]
+}

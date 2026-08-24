@@ -1,4 +1,5 @@
 #[cfg(test)]
+#[allow(clippy::module_inception)]
 mod debt_fuzz_tests {
     use crate::*;
     use soroban_sdk::{testutils::Address as _, Address, BytesN, Env};
@@ -29,6 +30,7 @@ mod debt_fuzz_tests {
             &token_address,
             &BillingType::PostPaid,
             &device_public_key,
+            &0u32,
         );
 
         // Test 1: High rate, long duration, zero balance scenario
@@ -65,7 +67,7 @@ mod debt_fuzz_tests {
         let debt_to_clear = meter.debt;
         token_admin_client.mint(&user, &debt_to_clear);
 
-        client.top_up(&meter_id, &debt_to_clear);
+        client.top_up(&meter_id, &debt_to_clear, &user);
 
         let meter_after_settlement = client.get_meter(&meter_id).unwrap();
 
@@ -98,9 +100,8 @@ mod debt_fuzz_tests {
         let max_meter = client.get_meter(&meter_id).unwrap();
 
         // All values should remain within valid i128 range
-        assert!(max_meter.debt >= 0 && max_meter.debt <= i128::MAX);
-        assert!(max_meter.collateral_limit >= 0 && max_meter.collateral_limit <= i128::MAX);
-        assert!(max_meter.balance >= i128::MIN && max_meter.balance <= i128::MAX);
+        assert!(max_meter.debt >= 0);
+        assert!(max_meter.collateral_limit >= 0);
     }
 
     #[test]
@@ -128,6 +129,7 @@ mod debt_fuzz_tests {
             &token_address,
             &BillingType::PrePaid,
             &device_public_key,
+            &0u32,
         );
 
         // Pair meter
@@ -163,8 +165,7 @@ mod debt_fuzz_tests {
             "Meter should be inactive with negative balance"
         );
 
-        // Balance should be within valid i128 range
-        assert!(meter.balance >= i128::MIN && meter.balance <= i128::MAX);
+        // Balance should be within valid i128 range (no overflow/underflow)
     }
 
     #[test]

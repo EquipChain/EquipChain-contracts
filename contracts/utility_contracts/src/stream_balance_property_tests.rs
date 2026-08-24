@@ -1,5 +1,8 @@
 #![cfg(test)]
 
+use std::string::String;
+use std::vec::Vec;
+
 /// Property-Based Testing for Stream Balance Invariants
 ///
 /// This module uses proptest to verify critical stream balance invariants:

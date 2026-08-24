@@ -1,6 +1,9 @@
 // Standalone test for SLA Penalty Hooks
 // This test validates the math and state transitions for SLA penalties.
 
+fn main() {}
+
+#[allow(dead_code)]
 #[derive(Clone, Debug, PartialEq)]
 enum BillingType {
     PrePaid,
@@ -143,5 +146,3 @@ mod tests {
         assert!(meter.sla_state.is_penalty_active);
     }
 }
-
-fn main() {}

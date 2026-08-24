@@ -1,11 +1,32 @@
 #![cfg(test)]
 
 use crate::{
-    ContinuousFlow, ContractError, StreamStatus, UtilityContract, BUFFER_DURATION_SECONDS,
+    BillingType, StreamStatus, UtilityContract, UtilityContractClient, BUFFER_DURATION_SECONDS,
     BUFFER_WARNING_THRESHOLD,
 };
 use soroban_sdk::testutils::{Address as _, Ledger as _};
-use soroban_sdk::{symbol_short, Address, BytesN, Env, Symbol};
+use soroban_sdk::{Address, Env};
+
+fn setup_stream_meter(
+    env: &Env,
+    client: &UtilityContractClient,
+    provider: &Address,
+    flow_rate: i128,
+) -> u64 {
+    env.mock_all_auths();
+    let user = Address::generate(env);
+    let token = Address::generate(env);
+    let device_key = soroban_sdk::BytesN::from_array(env, &[1u8; 32]);
+    client.register_meter_with_mode(
+        &user,
+        provider,
+        &flow_rate.max(1),
+        &token,
+        &BillingType::PrePaid,
+        &device_key,
+        &0u32,
+    )
+}
 
 #[test]
 fn test_buffer_creation_requirement() {
@@ -18,6 +39,7 @@ fn test_buffer_creation_requirement() {
     let stream_id = 1;
     let flow_rate = 1000; // 1000 stroops per second
     let initial_balance = 5000;
+    let meter_id = setup_stream_meter(&env, &client, &provider, flow_rate);
 
     // Test 1: Verify required buffer calculation (24 hours)
     let expected_buffer = flow_rate * BUFFER_DURATION_SECONDS as i128;
@@ -25,24 +47,33 @@ fn test_buffer_creation_requirement() {
 
     // Test 2: Stream creation should fail without proper authorization
     env.mock_auths(&[]);
-    let result = std::panic::catch_unwind(|| {
+    let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
         client.create_continuous_stream(
             &stream_id,
+            &meter_id,
             &flow_rate,
             &initial_balance,
             &provider,
             &payer,
+            &0u32,
+            &soroban_sdk::BytesN::from_array(&env, &[0u8; 32]),
         );
-    });
+    }));
     assert!(result.is_err());
 
     // Test 3: Successful stream creation with buffer
-    env.mock_auths(&[
-        (&provider, &Symbol::new(&env, "create_continuous_stream")),
-        (&payer, &Symbol::new(&env, "create_continuous_stream")),
-    ]);
+    env.mock_all_auths();
 
-    client.create_continuous_stream(&stream_id, &flow_rate, &initial_balance, &provider, &payer);
+    client.create_continuous_stream(
+        &stream_id,
+        &meter_id,
+        &flow_rate,
+        &initial_balance,
+        &provider,
+        &payer,
+        &0u32,
+        &soroban_sdk::BytesN::from_array(&env, &[0u8; 32]),
+    );
 
     // Verify stream was created with correct buffer
     let stream = client.get_continuous_flow(&stream_id).unwrap();
@@ -66,13 +97,20 @@ fn test_buffer_depletion_logic() {
     let flow_rate = 1000; // 1000 stroops per second
     let initial_balance = 2000; // Small initial balance to trigger buffer usage
     let buffer_amount = flow_rate * BUFFER_DURATION_SECONDS as i128;
+    let meter_id = setup_stream_meter(&env, &client, &provider, flow_rate);
 
     // Create stream
-    env.mock_auths(&[
-        (&provider, &Symbol::new(&env, "create_continuous_stream")),
-        (&payer, &Symbol::new(&env, "create_continuous_stream")),
-    ]);
-    client.create_continuous_stream(&stream_id, &flow_rate, &initial_balance, &provider, &payer);
+    env.mock_all_auths();
+    client.create_continuous_stream(
+        &stream_id,
+        &meter_id,
+        &flow_rate,
+        &initial_balance,
+        &provider,
+        &payer,
+        &0u32,
+        &soroban_sdk::BytesN::from_array(&env, &[0u8; 32]),
+    );
 
     // Advance time to deplete main balance
     env.ledger().set_timestamp(env.ledger().timestamp() + 3); // 3 seconds
@@ -112,13 +150,20 @@ fn test_buffer_warning_event() {
     let flow_rate = 1000;
     let initial_balance = 1000;
     let buffer_amount = flow_rate * BUFFER_DURATION_SECONDS as i128;
+    let meter_id = setup_stream_meter(&env, &client, &provider, flow_rate);
 
     // Create stream
-    env.mock_auths(&[
-        (&provider, &Symbol::new(&env, "create_continuous_stream")),
-        (&payer, &Symbol::new(&env, "create_continuous_stream")),
-    ]);
-    client.create_continuous_stream(&stream_id, &flow_rate, &initial_balance, &provider, &payer);
+    env.mock_all_auths();
+    client.create_continuous_stream(
+        &stream_id,
+        &meter_id,
+        &flow_rate,
+        &initial_balance,
+        &provider,
+        &payer,
+        &0u32,
+        &soroban_sdk::BytesN::from_array(&env, &[0u8; 32]),
+    );
 
     // Advance time to near buffer depletion
     let warning_time = buffer_amount / flow_rate - BUFFER_WARNING_THRESHOLD + 100;
@@ -145,13 +190,20 @@ fn test_buffer_depletion_and_termination() {
     let flow_rate = 1000;
     let initial_balance = 1000;
     let buffer_amount = flow_rate * BUFFER_DURATION_SECONDS as i128;
+    let meter_id = setup_stream_meter(&env, &client, &provider, flow_rate);
 
     // Create stream
-    env.mock_auths(&[
-        (&provider, &Symbol::new(&env, "create_continuous_stream")),
-        (&payer, &Symbol::new(&env, "create_continuous_stream")),
-    ]);
-    client.create_continuous_stream(&stream_id, &flow_rate, &initial_balance, &provider, &payer);
+    env.mock_all_auths();
+    client.create_continuous_stream(
+        &stream_id,
+        &meter_id,
+        &flow_rate,
+        &initial_balance,
+        &provider,
+        &payer,
+        &0u32,
+        &soroban_sdk::BytesN::from_array(&env, &[0u8; 32]),
+    );
 
     // Advance time beyond buffer depletion
     let total_depletion_time = (initial_balance + buffer_amount) / flow_rate + 100;
@@ -185,16 +237,24 @@ fn test_amicable_closure_refund() {
     let flow_rate = 1000;
     let initial_balance = 5000;
     let buffer_amount = flow_rate * BUFFER_DURATION_SECONDS as i128;
+    let meter_id = setup_stream_meter(&env, &client, &provider, flow_rate);
 
     // Create stream
-    env.mock_auths(&[
-        (&provider, &Symbol::new(&env, "create_continuous_stream")),
-        (&payer, &Symbol::new(&env, "create_continuous_stream")),
-    ]);
-    client.create_continuous_stream(&stream_id, &flow_rate, &initial_balance, &provider, &payer);
+    env.mock_all_auths();
+
+    client.create_continuous_stream(
+        &stream_id,
+        &meter_id,
+        &flow_rate,
+        &initial_balance,
+        &provider,
+        &payer,
+        &0u32,
+        &soroban_sdk::BytesN::from_array(&env, &[0u8; 32]),
+    );
 
     // Close stream amicably before depletion
-    env.mock_auths(&[(&provider, &Symbol::new(&env, "close_stream_amicably"))]);
+    env.mock_all_auths();
     let refunded_amount = client.close_stream_amicably(&stream_id);
 
     assert_eq!(
@@ -220,18 +280,26 @@ fn test_additional_buffer_deposit() {
     let flow_rate = 1000;
     let initial_balance = 1000;
     let additional_buffer = 5000;
+    let meter_id = setup_stream_meter(&env, &client, &provider, flow_rate);
 
     // Create stream
-    env.mock_auths(&[
-        (&provider, &Symbol::new(&env, "create_continuous_stream")),
-        (&payer, &Symbol::new(&env, "create_continuous_stream")),
-    ]);
-    client.create_continuous_stream(&stream_id, &flow_rate, &initial_balance, &provider, &payer);
+    env.mock_all_auths();
+
+    client.create_continuous_stream(
+        &stream_id,
+        &meter_id,
+        &flow_rate,
+        &initial_balance,
+        &provider,
+        &payer,
+        &0u32,
+        &soroban_sdk::BytesN::from_array(&env, &[0u8; 32]),
+    );
 
     let initial_buffer = client.get_buffer_balance(&stream_id).unwrap();
 
     // Add additional buffer
-    env.mock_auths(&[(&payer, &Symbol::new(&env, "add_continuous_buffer"))]);
+    env.mock_all_auths();
     client.add_continuous_buffer(&stream_id, &additional_buffer);
 
     let updated_buffer = client.get_buffer_balance(&stream_id).unwrap();
@@ -250,25 +318,33 @@ fn test_buffer_security_against_malicious_draining() {
     let stream_id = 1;
     let flow_rate = 1000;
     let initial_balance = 5000;
+    let meter_id = setup_stream_meter(&env, &client, &provider, flow_rate);
 
     // Create stream
-    env.mock_auths(&[
-        (&provider, &Symbol::new(&env, "create_continuous_stream")),
-        (&payer, &Symbol::new(&env, "create_continuous_stream")),
-    ]);
-    client.create_continuous_stream(&stream_id, &flow_rate, &initial_balance, &provider, &payer);
+    env.mock_all_auths();
+
+    client.create_continuous_stream(
+        &stream_id,
+        &meter_id,
+        &flow_rate,
+        &initial_balance,
+        &provider,
+        &payer,
+        &0u32,
+        &soroban_sdk::BytesN::from_array(&env, &[0u8; 32]),
+    );
 
     let initial_buffer = client.get_buffer_balance(&stream_id).unwrap();
 
     // Test 1: Unauthorized withdrawal should fail
-    env.mock_auths(&[(&attacker, &Symbol::new(&env, "withdraw_continuous"))]);
-    let result = std::panic::catch_unwind(|| {
+    env.mock_auths(&[]);
+    let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
         client.withdraw_continuous(&stream_id, &1000);
-    });
+    }));
     assert!(result.is_err(), "Unauthorized withdrawal should fail");
 
     // Test 2: Even authorized withdrawal should only affect main balance, not buffer
-    env.mock_auths(&[(&provider, &Symbol::new(&env, "withdraw_continuous"))]);
+    env.mock_all_auths();
     let withdrawn = client.withdraw_continuous(&stream_id, &2000);
     assert_eq!(withdrawn, 2000);
 
@@ -279,10 +355,10 @@ fn test_buffer_security_against_malicious_draining() {
     );
 
     // Test 3: Unauthorized buffer addition should fail
-    env.mock_auths(&[(&attacker, &Symbol::new(&env, "add_continuous_buffer"))]);
-    let result = std::panic::catch_unwind(|| {
+    env.mock_auths(&[]);
+    let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
         client.add_continuous_buffer(&stream_id, &1000);
-    });
+    }));
     assert!(result.is_err(), "Unauthorized buffer addition should fail");
 }
 
@@ -297,13 +373,20 @@ fn test_buffer_math_precision() {
     let stream_id = 1;
     let flow_rate = 1; // Minimal flow rate for precision testing
     let initial_balance = 0;
+    let meter_id = setup_stream_meter(&env, &client, &provider, flow_rate);
 
     // Create stream with minimal flow rate
-    env.mock_auths(&[
-        (&provider, &Symbol::new(&env, "create_continuous_stream")),
-        (&payer, &Symbol::new(&env, "create_continuous_stream")),
-    ]);
-    client.create_continuous_stream(&stream_id, &flow_rate, &initial_balance, &provider, &payer);
+    env.mock_all_auths();
+    client.create_continuous_stream(
+        &stream_id,
+        &meter_id,
+        &flow_rate,
+        &initial_balance,
+        &provider,
+        &payer,
+        &0u32,
+        &soroban_sdk::BytesN::from_array(&env, &[0u8; 32]),
+    );
 
     let expected_buffer = BUFFER_DURATION_SECONDS as i128;
     let actual_buffer = client.get_buffer_balance(&stream_id).unwrap();
@@ -326,19 +409,23 @@ fn test_stream_creation_without_buffer_fails() {
     let stream_id = 1;
     let flow_rate = 1000;
     let initial_balance = 5000;
+    let meter_id = setup_stream_meter(&env, &client, &provider, flow_rate);
 
     // Attempt to create stream without proper authorization for buffer transfer
-    env.mock_auths(&[(&provider, &Symbol::new(&env, "create_continuous_stream"))]);
+    env.mock_auths(&[]);
 
-    let result = std::panic::catch_unwind(|| {
+    let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
         client.create_continuous_stream(
             &stream_id,
+            &meter_id,
             &flow_rate,
             &initial_balance,
             &provider,
             &payer,
+            &0u32,
+            &soroban_sdk::BytesN::from_array(&env, &[0u8; 32]),
         );
-    });
+    }));
     assert!(
         result.is_err(),
         "Stream creation should fail without payer authorization for buffer"
@@ -359,13 +446,21 @@ fn test_buffer_refund_only_on_amicable_closure() {
     let stream_id = 1;
     let flow_rate = 1000;
     let initial_balance = 1000; // Small balance to trigger buffer depletion
+    let meter_id = setup_stream_meter(&env, &client, &provider, flow_rate);
 
     // Create stream
-    env.mock_auths(&[
-        (&provider, &Symbol::new(&env, "create_continuous_stream")),
-        (&payer, &Symbol::new(&env, "create_continuous_stream")),
-    ]);
-    client.create_continuous_stream(&stream_id, &flow_rate, &initial_balance, &provider, &payer);
+    env.mock_all_auths();
+
+    client.create_continuous_stream(
+        &stream_id,
+        &meter_id,
+        &flow_rate,
+        &initial_balance,
+        &provider,
+        &payer,
+        &0u32,
+        &soroban_sdk::BytesN::from_array(&env, &[0u8; 32]),
+    );
 
     // Let stream deplete naturally
     let total_depletion_time =
@@ -376,9 +471,9 @@ fn test_buffer_refund_only_on_amicable_closure() {
     client.get_continuous_balance(&stream_id); // Trigger depletion
 
     // Attempt refund on depleted stream should fail
-    env.mock_auths(&[(&provider, &Symbol::new(&env, "close_stream_amicably"))]);
-    let result = std::panic::catch_unwind(|| {
+    env.mock_all_auths();
+    let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
         client.close_stream_amicably(&stream_id);
-    });
+    }));
     assert!(result.is_err(), "Refund should fail on depleted stream");
 }

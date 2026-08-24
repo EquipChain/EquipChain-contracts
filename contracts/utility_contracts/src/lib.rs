@@ -1354,7 +1354,7 @@ fn validate_user_bytes(bytes: &Bytes, max_size: u32) -> Result<(), ContractError
         return Err(ContractError::InvalidTokenAmount); // Reuse error for size validation
     }
 
-    if bytes.len() == 0 {
+    if bytes.is_empty() {
         return Err(ContractError::InvalidTokenAmount); // Reuse error for empty validation
     }
 
@@ -1419,11 +1419,9 @@ fn require_approved_token(env: &Env, token: &Address) {
     // Skip whitelist enforcement in test mode
     #[cfg(not(test))]
     {
-        let approved: Option<Vec<Address>> = env.storage()
-            .instance()
-            .get(&DataKey::ApprovedTokens);
+        let approved: Option<Vec<Address>> = env.storage().instance().get(&DataKey::ApprovedTokens);
         if let Some(tokens) = approved {
-            if tokens.len() > 0 && !tokens.contains(token) {
+            if !tokens.is_empty() && !tokens.contains(token) {
                 panic_with_error!(env, ContractError::UnapprovedToken);
             }
         }
@@ -2192,9 +2190,6 @@ fn can_finalize_upgrade(env: &Env) -> bool {
 #[contract]
 pub struct UtilityContract;
 
-// Re-export the generated client type so tests can use `use crate::*` or explicit imports
-pub use utility_contract::Client as UtilityContractClient;
-
 // Issue #118: ZK Privacy Helper Functions
 
 /// ZK proof verification using native Soroban crypto functions
@@ -2452,6 +2447,8 @@ fn update_continuous_flow(
                 .instance()
                 .set(&DataKey::ContinuousFlow(flow.stream_id), &flow.clone());
 
+            TempStorageManager::clear_flow_accumulation(env, flow.stream_id);
+
             return Ok(total_deduction);
         }
 
@@ -2493,6 +2490,8 @@ fn update_continuous_flow(
     {
         flow.status = StreamStatus::Active;
     }
+
+    TempStorageManager::clear_flow_accumulation(env, flow.stream_id);
 
     Ok(total_deduction)
 }
@@ -3056,13 +3055,16 @@ impl UtilityContract {
     /// Only callable by the contract admin.
     pub fn approve_token(env: Env, token: Address, decimals: u32) {
         require_admin_auth(&env);
-        let mut approved: Vec<Address> = env.storage()
+        let mut approved: Vec<Address> = env
+            .storage()
             .instance()
             .get(&DataKey::ApprovedTokens)
             .unwrap_or(Vec::new(&env));
         if !approved.contains(&token) {
             approved.push_back(token.clone());
-            env.storage().instance().set(&DataKey::ApprovedTokens, &approved);
+            env.storage()
+                .instance()
+                .set(&DataKey::ApprovedTokens, &approved);
         }
         let info = TokenInfo {
             token: token.clone(),
@@ -3071,20 +3073,25 @@ impl UtilityContract {
             approved_at: env.ledger().timestamp(),
             approved_by: get_admin_or_panic(&env),
         };
-        env.storage().instance().set(&DataKey::TokenInfo(token), &info);
+        env.storage()
+            .instance()
+            .set(&DataKey::TokenInfo(token), &info);
     }
 
     /// Revoke a token from the protocol whitelist.
     /// Only callable by the contract admin.
     pub fn revoke_token(env: Env, token: Address) {
         require_admin_auth(&env);
-        let mut approved: Vec<Address> = env.storage()
+        let mut approved: Vec<Address> = env
+            .storage()
             .instance()
             .get(&DataKey::ApprovedTokens)
             .unwrap_or(Vec::new(&env));
         if let Some(pos) = approved.first_index_of(&token) {
             approved.remove(pos);
-            env.storage().instance().set(&DataKey::ApprovedTokens, &approved);
+            env.storage()
+                .instance()
+                .set(&DataKey::ApprovedTokens, &approved);
             env.storage().instance().remove(&DataKey::TokenInfo(token));
         }
     }
@@ -3099,9 +3106,7 @@ impl UtilityContract {
 
     /// Get token info for a specific token.
     pub fn get_token_info(env: Env, token: Address) -> Option<TokenInfo> {
-        env.storage()
-            .instance()
-            .get(&DataKey::TokenInfo(token))
+        env.storage().instance().get(&DataKey::TokenInfo(token))
     }
 
     pub fn set_admin(env: Env, admin_address: Address) {
@@ -4854,7 +4859,8 @@ impl UtilityContract {
         let mut cost = signed_data.units_consumed.saturating_mul(discounted_rate);
 
         // Apply SLA Penalty if active
-        if let Some(config) = &meter.sla_config {
+        {
+            let config = &meter.sla_config;
             if meter.sla_state.is_penalty_active
                 || meter.sla_state.accumulated_downtime >= config.threshold_seconds
             {
@@ -5017,11 +5023,12 @@ impl UtilityContract {
 
         // Apply SLA Penalty if active
         if meter.sla_config_set {
+            let config = &meter.sla_config;
             if meter.sla_state.is_penalty_active
-                || meter.sla_state.accumulated_downtime >= meter.sla_config.threshold_seconds
+                || meter.sla_state.accumulated_downtime >= config.threshold_seconds
             {
                 amount = amount
-                    .saturating_mul(meter.sla_config.penalty_multiplier_bps)
+                    .saturating_mul(config.penalty_multiplier_bps)
                     .saturating_div(10000);
             }
         }
@@ -7142,7 +7149,7 @@ impl UtilityContract {
 
         // Find and verify the approver is an authorized finance wallet
         let mut approver: Option<Address> = None;
-        if config.finance_wallets.len() > 0 {
+        if !config.finance_wallets.is_empty() {
             let wallet = config.finance_wallets.get(0).unwrap();
             wallet.require_auth();
             approver = Some(wallet);
@@ -7309,7 +7316,7 @@ impl UtilityContract {
         }
 
         let mut revoker: Option<Address> = None;
-        if config.finance_wallets.len() > 0 {
+        if !config.finance_wallets.is_empty() {
             let wallet = config.finance_wallets.get(0).unwrap();
             wallet.require_auth();
             revoker = Some(wallet);
@@ -8764,7 +8771,7 @@ fn negate_g1(env: &Env, point: &Bytes) -> Bytes {
     let mut result = point.clone();
     if result.len() >= 64 {
         let y_byte = result.get(63);
-        result.set(63, y_byte ^ 0x01);
+        result.set(63, y_byte.unwrap_or(0) ^ 0x01);
     }
     result
 }
