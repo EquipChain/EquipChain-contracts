@@ -57,7 +57,7 @@
               "function_name": "create_continuous_stream",
               "args": [
                 {
-                  "u64": "1"
+                  "u64": "101"
                 },
                 {
                   "u64": "1"
@@ -66,7 +66,7 @@
                   "i128": "1000"
                 },
                 {
-                  "i128": "1000"
+                  "i128": "1000000"
                 },
                 {
                   "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAFCT4"
@@ -95,7 +95,7 @@
               "function_name": "create_continuous_stream",
               "args": [
                 {
-                  "u64": "1"
+                  "u64": "101"
                 },
                 {
                   "u64": "1"
@@ -104,7 +104,7 @@
                   "i128": "1000"
                 },
                 {
-                  "i128": "1000"
+                  "i128": "1000000"
                 },
                 {
                   "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAFCT4"
@@ -125,13 +125,32 @@
         }
       ]
     ],
+    [
+      [
+        "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAFCT4",
+        {
+          "function": {
+            "contract_fn": {
+              "contract_address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM",
+              "function_name": "pause_stream",
+              "args": [
+                {
+                  "u64": "101"
+                }
+              ]
+            }
+          },
+          "sub_invocations": []
+        }
+      ]
+    ],
     [],
     []
   ],
   "ledger": {
     "protocol_version": 23,
     "sequence_number": 0,
-    "timestamp": 86501,
+    "timestamp": 100,
     "network_id": "0000000000000000000000000000000000000000000000000000000000000000",
     "base_reserve": 0,
     "min_persistent_entry_ttl": 4096,
@@ -222,7 +241,7 @@
                               "symbol": "ContinuousFlow"
                             },
                             {
-                              "u64": "1"
+                              "u64": "101"
                             }
                           ]
                         },
@@ -233,7 +252,7 @@
                                 "symbol": "accumulated_balance"
                               },
                               "val": {
-                                "i128": "0"
+                                "i128": "900000"
                               }
                             },
                             {
@@ -241,7 +260,7 @@
                                 "symbol": "buffer_balance"
                               },
                               "val": {
-                                "i128": "0"
+                                "i128": "86400000"
                               }
                             },
                             {
@@ -297,7 +316,7 @@
                                 "symbol": "last_flow_timestamp"
                               },
                               "val": {
-                                "u64": "86501"
+                                "u64": "100"
                               }
                             },
                             {
@@ -305,7 +324,7 @@
                                 "symbol": "paused_at"
                               },
                               "val": {
-                                "u64": "0"
+                                "u64": "100"
                               }
                             },
                             {
@@ -337,7 +356,7 @@
                                 "symbol": "status"
                               },
                               "val": {
-                                "u32": 2
+                                "u32": 1
                               }
                             },
                             {
@@ -345,7 +364,7 @@
                                 "symbol": "stream_id"
                               },
                               "val": {
-                                "u64": "1"
+                                "u64": "101"
                               }
                             }
                           ]
@@ -878,6 +897,39 @@
             "contract": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAFCT4",
             "key": {
               "ledger_key_nonce": {
+                "nonce": "4837995959683129791"
+              }
+            },
+            "durability": "temporary"
+          }
+        },
+        [
+          {
+            "last_modified_ledger_seq": 0,
+            "data": {
+              "contract_data": {
+                "ext": "v0",
+                "contract": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAFCT4",
+                "key": {
+                  "ledger_key_nonce": {
+                    "nonce": "4837995959683129791"
+                  }
+                },
+                "durability": "temporary",
+                "val": "void"
+              }
+            },
+            "ext": "v0"
+          },
+          6311999
+        ]
+      ],
+      [
+        {
+          "contract_data": {
+            "contract": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAFCT4",
+            "key": {
+              "ledger_key_nonce": {
                 "nonce": "5541220902715666415"
               }
             },
@@ -994,86 +1046,5 @@
       ]
     ]
   },
-  "events": [
-    {
-      "event": {
-        "ext": "v0",
-        "contract_id": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM",
-        "type_": "contract",
-        "body": {
-          "v0": {
-            "topics": [
-              {
-                "symbol": "FeeFlush"
-              }
-            ],
-            "data": {
-              "u32": 0
-            }
-          }
-        }
-      },
-      "failed_call": true
-    },
-    {
-      "event": {
-        "ext": "v0",
-        "contract_id": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM",
-        "type_": "contract",
-        "body": {
-          "v0": {
-            "topics": [
-              {
-                "symbol": "DustFlush"
-              }
-            ],
-            "data": {
-              "u32": 0
-            }
-          }
-        }
-      },
-      "failed_call": true
-    },
-    {
-      "event": {
-        "ext": "v0",
-        "contract_id": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM",
-        "type_": "contract",
-        "body": {
-          "v0": {
-            "topics": [
-              {
-                "symbol": "WinFlush"
-              }
-            ],
-            "data": {
-              "u32": 0
-            }
-          }
-        }
-      },
-      "failed_call": true
-    },
-    {
-      "event": {
-        "ext": "v0",
-        "contract_id": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM",
-        "type_": "contract",
-        "body": {
-          "v0": {
-            "topics": [
-              {
-                "symbol": "TempFlush"
-              }
-            ],
-            "data": {
-              "u32": 0
-            }
-          }
-        }
-      },
-      "failed_call": true
-    }
-  ]
+  "events": []
 }
