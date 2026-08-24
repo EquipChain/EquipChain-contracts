@@ -4,6 +4,7 @@
     dead_code,
     unused_variables,
     unused_assignments,
+    unused_macros,
     clippy::too_many_arguments,
     clippy::manual_range_contains,
     clippy::manual_saturating_arithmetic,
