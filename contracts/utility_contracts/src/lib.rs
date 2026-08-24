@@ -234,6 +234,8 @@ mod pause_resume_fuzz_tests;
 #[cfg(test)]
 mod pause_resume_tests;
 #[cfg(test)]
+mod postpaid_debt_auth_tests;
+#[cfg(test)]
 mod streaming_invariant_tests;
 #[cfg(test)]
 mod stroop_fuzz_tests;
