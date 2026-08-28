@@ -2678,8 +2678,8 @@ fn update_flow_rate(env: &Env, stream_id: u64, new_flow_rate: i128) -> Result<()
 
     let mut flow = get_continuous_flow_or_panic(env, stream_id);
 
-    // Require authentication for flow rate changes
-    env.current_contract_address().require_auth();
+    // Only the stream provider may change or pause the flow rate.
+    flow.provider.require_auth();
 
     let old_flow_rate = flow.flow_rate_per_second;
     let old_status = flow.status;
