@@ -7609,6 +7609,10 @@ impl UtilityContract {
 
     /// Withdraw from a continuous flow stream
     pub fn withdraw_continuous(env: Env, stream_id: u64, withdrawal_amount: i128) -> i128 {
+        // Only the stream's provider may withdraw the accumulated balance.
+        let flow = get_continuous_flow_or_panic(&env, stream_id);
+        flow.provider.require_auth();
+
         let withdrawn = withdraw_from_flow(&env, stream_id, withdrawal_amount).unwrap();
 
         env.events()
