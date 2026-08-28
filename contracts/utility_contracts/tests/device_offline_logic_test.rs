@@ -1,12 +1,14 @@
 // Standalone test for Device-Offline Grace Period Logic
 // This test validates the math and state transitions for the new offline features.
 
+#[allow(dead_code)]
 #[derive(Clone, Debug, PartialEq)]
 enum BillingType {
     PrePaid,
     PostPaid,
 }
 
+#[allow(dead_code)]
 #[derive(Clone, Debug)]
 struct UsageData {
     total_watt_hours: i128,
@@ -14,6 +16,7 @@ struct UsageData {
     first_reading_timestamp: u64,
 }
 
+#[allow(dead_code)]
 #[derive(Clone, Debug)]
 struct Meter {
     balance: i128,
@@ -57,6 +60,7 @@ fn get_effective_rate(meter: &Meter, _now: u64) -> i128 {
 
 fn settle_claim_logic(meter: &mut Meter, now: u64) -> i128 {
     let elapsed = now.saturating_sub(meter.last_update);
+    #[allow(unused_assignments)]
     let mut amount = 0;
 
     // Device-Offline Grace Period Logic
@@ -174,7 +178,7 @@ fn test_offline_grace_period_and_reconciliation() {
 
     // 3. Device reconnects at T=1600 and reports usage for the whole period (1100 to 1600).
     // Let's say actual usage was 1200 WH.
-    let cost = deduct_units_logic(&mut meter, 1600, 1200);
+    let _cost = deduct_units_logic(&mut meter, 1600, 1200);
     // Reconciliation: balance += 1333, then balance -= 1200 * 1.
     // Balance was 7667. 7667 + 1333 = 9000. 9000 - 1200 = 7800.
     assert_eq!(meter.balance, 7800);
