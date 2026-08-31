@@ -24,4 +24,9 @@ pub struct RateChangeProposal {
     pub new_rate: u128,
     pub proposed_at: u64,
     pub expires_at: u64,
-}
+}    /// Withdraw accumulated balance from a continuous stream
+    pub fn withdraw_continuous(&self, stream_id: u64, amount: i128) -> Result<(), StreamError> {
+        let flow = self.get_flow(stream_id)?;
+        flow.provider.require_auth();
+        self.withdraw_from_flow(flow, amount)
+    }
