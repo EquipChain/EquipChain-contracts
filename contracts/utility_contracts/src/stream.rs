@@ -24,4 +24,9 @@ pub struct RateChangeProposal {
     pub new_rate: u128,
     pub proposed_at: u64,
     pub expires_at: u64,
-}
+}    ) -> Result<(), StreamError> {
+        let flow = self.get_flow(stream_id)?;
+
+        flow.provider.require_auth();
+        self.withdraw_from_flow(stream_id, withdrawal_amount)
+    }
