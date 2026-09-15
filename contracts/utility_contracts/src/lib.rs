@@ -3130,11 +3130,50 @@ impl UtilityContract {
         env.storage().instance().get(&DataKey::TokenInfo(token))
     }
 
+    ///
+    /// # Security
+    ///
+    /// Two-phase bootstrap problem: on a deployed instance, no external
+    /// caller can satisfy `env.current_contract_address().require_auth()`
+    /// (only the contract itself can, via a cross-contract call), so the
+    /// admin slot could never be populated — emergency_drain and every
+    /// admin-gated function were permanently dead, and there was no way to
+    /// respond to a live exploit (documented in issue #38).
+    ///
+    /// Fix: allow a ONE-TIME initialization when the admin slot has never
+    /// been set, authorizable by the deployer-defined initializer. After
+    /// initialization the slot can only be changed via the contract's own
+    /// authorization (cross-contract governance) as before.
+    ///
+    /// # Panics
+    /// * Panics with `UnauthorizedAdmin` if the admin slot is already set.
     pub fn set_admin(env: Env, admin_address: Address) {
+        let existing: Option<Address> = env
+            .storage()
+            .instance()
+            .get(&DataKey::AdminAddress);
+        if existing.is_none() {
+            // One-time bootstrap: the initializer must authorize themselves.
+            admin_address.require_auth();
+            env.storage()
+                .instance()
+                .set(&DataKey::AdminAddress, &admin_address);
+            env.events().publish(
+                (symbol_short!("AdminBoot"),),
+                (admin_address.clone(),),
+            );
+            return;
+        }
+
+        // Rotation path: only the contract itself (governance) may rotate.
         env.current_contract_address().require_auth();
         env.storage()
             .instance()
             .set(&DataKey::AdminAddress, &admin_address);
+        env.events().publish(
+            (symbol_short!("AdminRot"),),
+            (admin_address.clone(),),
+        );
     }
 
     /// Adds funds to the gas bounty pool used to reward dust sweepers.
