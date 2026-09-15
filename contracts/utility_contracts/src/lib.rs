@@ -3567,9 +3567,19 @@ impl UtilityContract {
     ///      and comprehensive audit trails. Only authorized administrators can
     ///      execute this function.
     ///
+    /// # Security
+    ///
+    /// Issue #277 root-cause fix: the previous implementation built the token
+    /// client over the CONTRACT'S OWN ADDRESS — treating the utility contract
+    /// as if it were a token contract. Every invocation would have failed on
+    /// a non-token address, so the drain was dead code and the reserve/cooldown
+    /// checks unreachable. The function now takes the token to recover and
+    /// operates on the contract's real balance of that token.
+    ///
     /// @param env The Soroban execution environment
+    /// @param token The token contract whose stranded balance is being recovered
     /// @param recipient The address to receive the drained funds
-    /// @param amount The amount of native tokens to drain (in stroops)
+    /// @param amount The amount of `token` to drain
     /// @param reason Human-readable reason for the emergency drain
     ///
     /// @notice Emits EmergencyDrainExecuted event
@@ -3577,37 +3587,23 @@ impl UtilityContract {
     /// @notice Reverts if cooldown period has not elapsed
     /// @notice Reverts if amount is below minimum threshold
     /// @notice Reverts if insufficient contract balance
-    ///
-    /// # Security Considerations
-    /// - 24-hour cooldown prevents abuse and allows for oversight
-    /// - Minimum amount threshold prevents spam drains
-    /// - Comprehensive audit trail for all drain operations
-    /// - Recipient validation prevents funds from being sent to invalid addresses
-    /// - Balance checks ensure contract can maintain operational reserves
-    /// - Consider implementing multi-sig requirement for additional security
+    /// @notice Reverts while the circuit breaker is engaged
     ///
     /// # Panics
-    /// * Panics if caller is not authorized admin (`ContractError::EmergencyDrainNotAuthorized`)
+    /// * Panics if caller is not authorized admin (`ContractError::UnauthorizedAdmin`)
     /// * Panics if cooldown period not elapsed (`ContractError::EmergencyDrainCooldownActive`)
     /// * Panics if amount below minimum (`ContractError::InvalidTokenAmount`)
     /// * Panics if insufficient balance (`ContractError::EmergencyDrainInsufficientBalance`)
-    /// * Panics if recipient address is invalid (`ContractError::InvalidAddress`)
-    ///
-    /// # Examples
-    /// ```rust
-    /// use soroban_sdk::Address;
-    /// let recipient = Address::from_string(&env, "GB...");
-    /// let amount = 10_000_000; // 0.001 XLM
-    /// let reason = String::from_str(&env, "Critical security incident recovery");
-    /// UtilityContract::emergency_drain(env, recipient, amount, reason);
-    /// ```
-    pub fn emergency_drain(env: Env, recipient: Address, amount: i128, reason: String) {
+    pub fn emergency_drain(
+        env: Env,
+        token: Address,
+        recipient: Address,
+        amount: i128,
+        reason: String,
+    ) {
         // Authorization check - only admin can execute emergency drain
         require_admin_auth(&env);
         require_contract_active(&env);
-
-        // Validate recipient address
-        // Note: Address::is_zero() is not available in Soroban SDK
 
         // Validate amount
         if amount < EMERGENCY_DRAIN_MIN_AMOUNT {
@@ -3627,9 +3623,9 @@ impl UtilityContract {
             }
         }
 
-        // Check contract native XLM balance
-        let contract_balance = token::Client::new(&env, &env.current_contract_address())
-            .balance(&env.current_contract_address());
+        // Check the contract's balance of the requested token.
+        let token_client = token::Client::new(&env, &token);
+        let contract_balance = token_client.balance(&env.current_contract_address());
 
         if contract_balance < amount {
             panic_with_error!(&env, ContractError::EmergencyDrainInsufficientBalance);
@@ -3641,12 +3637,11 @@ impl UtilityContract {
             panic_with_error!(&env, ContractError::EmergencyDrainInsufficientBalance);
         }
 
-        // Execute the drain - transfer native XLM
-        // In Soroban, native XLM transfers use the token interface
-        // For simplicity, we use the contract's address as a self-transfer marker
-        // and rely on the token::Client for the actual transfer
-        let token_client = token::Client::new(&env, &env.current_contract_address());
+        // Execute the drain. Issue #1: hold the reentrancy lock across the
+        // outbound transfer so the token contract cannot re-enter mid-drain.
+        reentrancy_enter(&env);
         token_client.transfer(&env.current_contract_address(), &recipient, &amount);
+        reentrancy_exit(&env);
 
         // Update last execution timestamp
         env.storage()
