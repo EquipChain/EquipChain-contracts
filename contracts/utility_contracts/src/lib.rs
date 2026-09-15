@@ -2123,16 +2123,30 @@ fn apply_provider_withdrawal_limit(
     env: &Env,
     provider: &Address,
     amount: i128,
-) -> ProviderWithdrawalWindow {
+) -> Result<ProviderWithdrawalWindow, ContractError> {
     let now = env.ledger().timestamp();
     let mut window = get_provider_window_or_default(env, provider, now);
     reset_provider_window_if_needed(&mut window, now);
 
     if amount <= 0 {
-        return window;
+        return Ok(window);
     }
-    // Simple limit check for now
-    window
+
+    // Daily velocity cap: a provider may withdraw at most 10% of their
+    // total pool per 24h window. This bounds the blast radius of a
+    // compromised provider key and stops rapid pool draining.
+    let pool = get_provider_total_pool_impl(env, provider);
+    let daily_cap = pool.saturating_mul(DAILY_WITHDRAWAL_PERCENT) / 100;
+    let projected = window.daily_withdrawn.saturating_add(amount);
+    if daily_cap > 0 && projected > daily_cap {
+        return Err(ContractError::WithdrawalLimitExceeded);
+    }
+
+    window.daily_withdrawn = projected;
+    env.storage()
+        .instance()
+        .set(&DataKey::ProviderWindow(provider.clone()), &window);
+    Ok(window)
 }
 
 fn update_provider_total_pool(env: &Env, provider: &Address, old_val: i128, new_val: i128) {
@@ -5144,8 +5158,9 @@ impl UtilityContract {
                 .saturating_div(10000);
         }
 
-        // Apply provider withdrawal limits
-        let mut window = apply_provider_withdrawal_limit(&env, &meter.provider, cost);
+        // Apply provider withdrawal limits (daily velocity cap)
+        let mut window = apply_provider_withdrawal_limit(&env, &meter.provider, cost)
+            .unwrap_or_else(|e| panic_with_error!(&env, e));
 
         // Task #3: Allocate to maintenance fund (0.01% = 1 basis point)
         allocate_to_maintenance_fund(&env, signed_data.meter_id, cost);
@@ -5680,11 +5695,18 @@ impl UtilityContract {
             };
 
         let client = token::Client::new(&env, &meter.token);
+
+        // Enforce the provider daily withdrawal window (10% of pool / 24h).
+        apply_provider_withdrawal_limit(&env, &meter.provider, amount_usd_cents)
+            .unwrap_or_else(|e| panic_with_error!(&env, e));
+
+        reentrancy_enter(&env);
         client.transfer(
             &env.current_contract_address(),
             &meter.provider,
             &withdrawal_amount,
         );
+        reentrancy_exit(&env);
 
         // Update meter balance/debt
         match meter.billing_type {
