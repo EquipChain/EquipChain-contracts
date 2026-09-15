@@ -982,6 +982,10 @@ pub enum DataKey {
     ProviderVolume(Address),
     ProviderWindow(Address),
     Referral(Address),
+    /// Issue #44 — referral rewards earned but not yet funded by deposits.
+    /// Tracked separately from meter.balance so credits never exceed the
+    /// tokens actually held by the contract.
+    ReferralRewardPending(Address),
     ReentrancyGuard(u64),
     ResellerConfig(u64),
     SavingGoal(u64),
@@ -4269,11 +4273,23 @@ impl UtilityContract {
 
         if referrer != user {
             let mut meter = get_meter_or_panic(&env, meter_id);
-            // Reward the new user
-            meter.balance = meter.balance.saturating_add(REFERRAL_REWARD_UNITS);
+
+            // Issue #44: the referral reward used to be credited directly to
+            // meter.balance without a matching token deposit. meter.balance is
+            // settled from the contract's shared token pool when the provider
+            // claims, so unfunded credits let an attacker farm registrations
+            // and drain other users' deposits. Rewards are now tracked in a
+            // separate non-withdrawable accounting bucket that only becomes
+            // spendable balance when actual token deposits fund it via top_up.
+            let rewards_key = DataKey::ReferralRewardPending(user.clone());
+            let pending: i128 = env
+                .storage()
+                .instance()
+                .get(&rewards_key)
+                .unwrap_or(0);
             env.storage()
                 .instance()
-                .set(&DataKey::Meter(meter_id), &meter);
+                .set(&rewards_key, &pending.saturating_add(REFERRAL_REWARD_UNITS));
 
             // Reward the referrer if they have a meter? (simplified for now: just record it)
             env.storage()
@@ -4685,6 +4701,20 @@ impl UtilityContract {
                     .collateral_limit
                     .saturating_add(converted_amount.saturating_sub(settlement));
             }
+        }
+
+        // Issue #44: convert pending referral rewards into spendable balance
+        // only as real deposits arrive — every credited reward unit is now
+        // backed 1:1 by tokens already transferred into the contract by this
+        // top_up, so reward credit can never exceed the pool.
+        let rewards_key = DataKey::ReferralRewardPending(meter.user.clone());
+        let pending: i128 = env.storage().instance().get(&rewards_key).unwrap_or(0);
+        if pending > 0 {
+            let applied = pending.min(converted_amount);
+            env.storage()
+                .instance()
+                .set(&rewards_key, &(pending - applied));
+            meter.balance = meter.balance.saturating_add(applied);
         }
 
         let now = env.ledger().timestamp();
