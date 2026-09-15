@@ -2669,7 +2669,16 @@ fn resume_stream(
     Ok(())
 }
 
-/// Update flow rate with authentication and event emission
+/// Update flow rate with validation and event emission.
+///
+/// # Security invariant
+///
+/// This is an internal helper — it does NOT perform authorization itself.
+/// Every public entry point that reaches this function MUST enforce
+/// `flow.provider.require_auth()` exactly once. Enforcing auth here as well
+/// would require two authorization frames for the same address and makes
+/// the entry points revert with `Error(Auth, ExistingValue)` (a regression
+/// introduced by the initial issue #51 patch and fixed here).
 fn update_flow_rate(env: &Env, stream_id: u64, new_flow_rate: i128) -> Result<(), ContractError> {
     // Issue #273: Validate flow rate boundaries (only for non-zero rates)
     if new_flow_rate > 0 {
@@ -2677,9 +2686,6 @@ fn update_flow_rate(env: &Env, stream_id: u64, new_flow_rate: i128) -> Result<()
     }
 
     let mut flow = get_continuous_flow_or_panic(env, stream_id);
-
-    // Only the stream provider may change or pause the flow rate.
-    flow.provider.require_auth();
 
     let old_flow_rate = flow.flow_rate_per_second;
     let old_status = flow.status;
@@ -5503,7 +5509,17 @@ impl UtilityContract {
     // Continuous Flow Engine Public Interface
 
     /// Create a new continuous flow stream
-    /// Update the flow rate of an existing continuous stream
+    /// Update the flow rate of an existing continuous stream.
+    ///
+    /// # Security
+    ///
+    /// Requires authorization from the stream provider (enforced exactly once,
+    /// here — the internal `update_flow_rate` helper does not re-check).
+    ///
+    /// # Panics
+    /// * Panics if `new_flow_rate` is negative.
+    /// * Panics if the caller is not the stream provider.
+    /// * Panics if the stream does not exist.
     pub fn update_continuous_flow_rate(env: Env, stream_id: u64, new_flow_rate: i128) {
         if new_flow_rate < 0 {
             panic_with_error!(&env, ContractError::InvalidTokenAmount);
@@ -5569,7 +5585,20 @@ impl UtilityContract {
         update_flow_rate(&env, stream_id, 0).unwrap();
     }
 
-    /// Resume a continuous flow stream with specified rate
+    /// Resume a continuous flow stream with specified rate.
+    ///
+    /// # Security
+    ///
+    /// Requires authorization from the stream provider. The historical
+    /// implementation relied on `update_flow_rate`'s self-authenticating
+    /// contract check, which passes for ANY direct entry-point caller and
+    /// let anyone set arbitrary flow rates on victim streams, accelerating
+    /// balance depletion (issue #51).
+    ///
+    /// # Panics
+    /// * Panics if `flow_rate_per_second` is not positive.
+    /// * Panics if the caller is not the stream provider.
+    /// * Panics if the stream does not exist.
     pub fn resume_continuous_flow(env: Env, stream_id: u64, flow_rate_per_second: i128) {
         if flow_rate_per_second <= 0 {
             panic_with_error!(&env, ContractError::InvalidTokenAmount);
