@@ -7619,8 +7619,21 @@ impl UtilityContract {
         refunded_amount
     }
 
-    /// Withdraw from a continuous flow stream
+    /// Withdraw from a continuous flow stream.
+    ///
+    /// # Security
+    ///
+    /// Requires authorization from the stream provider. Without this gate any
+    /// caller could drain another provider's accumulated stream balance
+    /// (reported as HIGH severity in issue #49).
+    ///
+    /// # Panics
+    /// * Panics if the caller is not the stream provider.
+    /// * Panics if the stream does not exist or the amount is invalid.
     pub fn withdraw_continuous(env: Env, stream_id: u64, withdrawal_amount: i128) -> i128 {
+        let flow = get_continuous_flow_or_panic(&env, stream_id);
+        flow.provider.require_auth();
+
         let withdrawn = withdraw_from_flow(&env, stream_id, withdrawal_amount).unwrap();
 
         env.events()
