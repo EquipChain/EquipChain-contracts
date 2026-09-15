@@ -1247,6 +1247,10 @@ const THROTTLING_THRESHOLD_PERCENT: i128 = 20;
 const HEARTBEAT_THRESHOLD_SECONDS: u64 = 3600;
 const DEFAULT_TAX_RATE_BPS: i128 = 50;
 const MAINTENANCE_FUND_PERCENT_BPS: i128 = 100;
+/// Upper bound for the settlement tax rate: 50% in basis points.
+/// A cap is a defence-in-depth measure — even a compromised admin key must
+/// not be able to divert 100% of all settlements (issue #38 impact bound).
+const MAX_TAX_RATE_BPS: i128 = 5_000;
 const AUTO_EXTEND_LEDGER_THRESHOLD: u32 = 100;
 const LEDGER_LIFETIME_EXTENSION: u32 = 10_000;
 const UPGRADE_VETO_PERIOD_SECONDS: u64 = 7 * DAY_IN_SECONDS;
@@ -6179,8 +6183,19 @@ impl UtilityContract {
     }
 
     // Task #2: Tax Compliance - Set government vault address
+    ///
+    /// # Security
+    ///
+    /// Admin-only. The government vault receives every settlement tax leg
+    /// across all meters and tokens, so writing it must never be gated by a
+    /// signature from the *proposed* address itself — that check is satisfied
+    /// by any attacker naming their own address (critical finding in
+    /// issue #38). Access control must come from the protocol admin.
+    ///
+    /// # Panics
+    /// * Panics if the caller is not the authorized admin.
     pub fn set_government_vault(env: Env, vault_address: Address) {
-        vault_address.require_auth();
+        require_admin_auth(&env);
 
         env.storage()
             .instance()
@@ -6191,9 +6206,23 @@ impl UtilityContract {
     }
 
     // Task #2: Tax Compliance - Set tax rate (in basis points)
+    ///
+    /// # Security
+    ///
+    /// Admin-only. The tax rate determines what share of every settlement is
+    /// diverted to the government vault; an unauthenticated setter combined
+    /// with a vault takeover redirects all provider payouts (issue #38).
+    /// The rate is capped at MAX_TAX_RATE_BPS (50%) — the previous cap of
+    /// 10,000 bps allowed a compromised admin to confiscate 100% of
+    /// settlements, which no legitimate tax regime requires.
+    ///
+    /// # Panics
+    /// * Panics if the caller is not the authorized admin.
+    /// * Panics if `tax_rate_bps` is negative or above MAX_TAX_RATE_BPS.
     pub fn set_tax_rate(env: Env, tax_rate_bps: i128) {
-        // Should be admin-only in production
-        if tax_rate_bps < 0 || tax_rate_bps > 10_000 {
+        require_admin_auth(&env);
+
+        if tax_rate_bps < 0 || tax_rate_bps > MAX_TAX_RATE_BPS {
             panic_with_error!(&env, ContractError::InvalidUsageValue);
         }
 
