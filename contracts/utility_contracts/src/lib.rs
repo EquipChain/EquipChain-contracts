@@ -7837,6 +7837,19 @@ impl UtilityContract {
             panic_with_error!(&env, ContractError::InvalidTokenAmount);
         }
 
+        // Validate that the meter exists, is active, and is actually operated
+        // by the signing provider. Without this binding check a provider
+        // could anchor streams to any meter id — including one operated by a
+        // different provider — to inherit its flow-rate cap or impersonate
+        // its billing identity.
+        let meter = get_meter_or_panic(&env, meter_id);
+        if meter.provider != provider {
+            panic_with_error!(&env, ContractError::UnauthorizedProvider);
+        }
+        if !meter.is_active {
+            panic_with_error!(&env, ContractError::MeterNotFound);
+        }
+
         crate::enterprise::fleet_assert_room_for_new_stream(&env, &provider, flow_rate_per_second);
 
         let current_timestamp = env.ledger().timestamp();
@@ -7857,8 +7870,7 @@ impl UtilityContract {
         )
         .unwrap_or_else(|_| panic_with_error!(&env, ContractError::InternalError));
 
-        // Issue #273: Additional validation for meter max flow rate
-        let meter = get_meter_or_panic(&env, meter_id);
+        // Issue #273: cap the per-second rate by the meter's hourly limit
         if flow_rate_per_second > meter.max_flow_rate_per_hour / 3600 {
             panic_with_error!(&env, ContractError::FlowRateTooHigh);
         }
