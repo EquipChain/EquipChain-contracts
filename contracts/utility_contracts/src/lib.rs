@@ -986,6 +986,12 @@ pub enum DataKey {
     /// Tracked separately from meter.balance so credits never exceed the
     /// tokens actually held by the contract.
     ReferralRewardPending(Address),
+    /// Issue #24 — global circuit breaker: Some(true) = paused,
+    /// Some(false) = running, None = never touched (running).
+    ProtocolPaused,
+    /// Issue #24 — wall-clock timestamp at which an active pause
+    /// automatically expires (prevents permanent lockout).
+    ProtocolPauseExpiry,
     ReentrancyGuard(u64),
     ResellerConfig(u64),
     SavingGoal(u64),
@@ -1185,6 +1191,8 @@ pub enum ContractError {
     TokenBalanceMismatch = 118,
     // Issue #39 — Accrue post-paid debt access control
     UnauthorizedProvider = 119,
+    // Issue #24 — circuit breaker
+    ProtocolPaused = 120,
 }
 
 #[contracttype]
@@ -1844,6 +1852,92 @@ fn get_admin_or_panic(env: &Env) -> Address {
 fn require_admin_auth(env: &Env) {
     let admin = get_admin_or_panic(env);
     admin.require_auth();
+}
+
+// ===========================================================================
+// Issue #24 — Circuit breaker / global pause
+// ===========================================================================
+
+/// Default pause duration: 24 hours. A pause always auto-expires so a lost
+/// or malicious emergency key cannot permanently brick the protocol.
+const PROTOCOL_PAUSE_DURATION_SECS: u64 = 24 * 3600;
+
+/// Revert if the global circuit breaker is active and has not expired.
+/// Called by state-changing public entry points. View functions are not
+/// gated so users can always inspect state.
+fn require_contract_active(env: &Env) {
+    let paused: bool = env
+        .storage()
+        .instance()
+        .get(&DataKey::ProtocolPaused)
+        .unwrap_or(false);
+    if !paused {
+        return;
+    }
+    if let Some(expiry) = env
+        .storage()
+        .instance()
+        .get::<DataKey, u64>(&DataKey::ProtocolPauseExpiry)
+    {
+        if env.ledger().timestamp() >= expiry {
+            // Auto-expire: clear the flag lazily and allow the call.
+            env.storage().instance().remove(&DataKey::ProtocolPaused);
+            env.storage()
+                .instance()
+                .remove(&DataKey::ProtocolPauseExpiry);
+            return;
+        }
+    }
+    panic_with_error!(env, ContractError::ProtocolPaused);
+}
+
+/// Returns true when the protocol is paused (and the pause has not expired).
+fn is_protocol_paused(env: &Env) -> bool {
+    let paused: bool = env
+        .storage()
+        .instance()
+        .get(&DataKey::ProtocolPaused)
+        .unwrap_or(false);
+    if !paused {
+        return false;
+    }
+    match env
+        .storage()
+        .instance()
+        .get::<DataKey, u64>(&DataKey::ProtocolPauseExpiry)
+    {
+        Some(expiry) => env.ledger().timestamp() < expiry,
+        None => true,
+    }
+}
+
+// ===========================================================================
+// Issue #1 — Reentrancy guard for token-moving entry points
+// ===========================================================================
+
+/// Slot used by the generic reentrancy lock (single lock, contract-wide).
+const REENTRANCY_LOCK_SLOT: u64 = u64::MAX;
+
+/// Enter the contract-wide reentrancy lock. Panics if already held — i.e. if
+/// a token or external contract called back into a state-changing entry
+/// point while a transfer/external call is still in flight.
+fn reentrancy_enter(env: &Env) {
+    let key = DataKey::ReentrancyGuard(REENTRANCY_LOCK_SLOT);
+    if env
+        .storage()
+        .instance()
+        .get::<_, bool>(&key)
+        .unwrap_or(false)
+    {
+        panic_with_error!(env, ContractError::ReentrancyDetected);
+    }
+    env.storage().instance().set(&key, &true);
+}
+
+/// Release the contract-wide reentrancy lock taken by `reentrancy_enter`.
+fn reentrancy_exit(env: &Env) {
+    let key = DataKey::ReentrancyGuard(REENTRANCY_LOCK_SLOT);
+    env.storage().instance().remove(&key);
 }
 
 /// Get or create dust aggregation for a specific token
@@ -3176,6 +3270,102 @@ impl UtilityContract {
         );
     }
 
+    // =======================================================================
+    // Issue #24 — Circuit breaker: emergency stop / graceful resume
+    // =======================================================================
+
+    /// Halt all state-changing protocol operations (circuit breaker).
+    ///
+    /// Callable by the admin OR the compliance officer. The pause lasts
+    /// `PROTOCOL_PAUSE_DURATION_SECS` (24h) unless lifted earlier; it can
+    /// always be re-armed. View functions keep working so users can inspect
+    /// balances during an incident.
+    ///
+    /// # Panics
+    /// * Panics if the caller is neither admin nor compliance officer.
+    pub fn emergency_pause(env: Env, caller: Address, reason: String) {
+        caller.require_auth();
+
+        let is_admin = env
+            .storage()
+            .instance()
+            .get::<DataKey, Address>(&DataKey::AdminAddress)
+            .map(|a| a == caller)
+            .unwrap_or(false);
+        let is_compliance = env
+            .storage()
+            .instance()
+            .get::<DataKey, Address>(&DataKey::ComplianceOfficer)
+            .map(|a| a == caller)
+            .unwrap_or(false);
+        if !is_admin && !is_compliance {
+            panic_with_error!(&env, ContractError::UnauthorizedAdmin);
+        }
+
+        let now = env.ledger().timestamp();
+        env.storage()
+            .instance()
+            .set(&DataKey::ProtocolPaused, &true);
+        env.storage().instance().set(
+            &DataKey::ProtocolPauseExpiry,
+            &(now.saturating_add(PROTOCOL_PAUSE_DURATION_SECS)),
+        );
+
+        env.events().publish(
+            (symbol_short!("EmgPause"),),
+            (caller, reason, now.saturating_add(PROTOCOL_PAUSE_DURATION_SECS)),
+        );
+    }
+
+    /// Lift an active pause before its expiry. Admin or compliance officer.
+    ///
+    /// # Panics
+    /// * Panics if the caller is neither admin nor compliance officer.
+    pub fn resume_after_pause(env: Env, caller: Address) {
+        caller.require_auth();
+
+        let is_admin = env
+            .storage()
+            .instance()
+            .get::<DataKey, Address>(&DataKey::AdminAddress)
+            .map(|a| a == caller)
+            .unwrap_or(false);
+        let is_compliance = env
+            .storage()
+            .instance()
+            .get::<DataKey, Address>(&DataKey::ComplianceOfficer)
+            .map(|a| a == caller)
+            .unwrap_or(false);
+        if !is_admin && !is_compliance {
+            panic_with_error!(&env, ContractError::UnauthorizedAdmin);
+        }
+
+        env.storage().instance().remove(&DataKey::ProtocolPaused);
+        env.storage()
+            .instance()
+            .remove(&DataKey::ProtocolPauseExpiry);
+
+        env.events()
+            .publish((symbol_short!("EmgResume"),), (caller,));
+    }
+
+    /// Returns true while the circuit breaker is engaged.
+    pub fn is_protocol_paused(env: Env) -> bool {
+        is_protocol_paused(&env)
+    }
+
+    /// Returns the wall-clock timestamp when an active pause auto-expires,
+    /// or 0 when not paused.
+    pub fn get_pause_expiry(env: Env) -> u64 {
+        if !is_protocol_paused(&env) {
+            return 0;
+        }
+        env.storage()
+            .instance()
+            .get(&DataKey::ProtocolPauseExpiry)
+            .unwrap_or(0)
+    }
+
     /// Adds funds to the gas bounty pool used to reward dust sweepers.
     ///
     /// # Arguments
@@ -3414,6 +3604,7 @@ impl UtilityContract {
     pub fn emergency_drain(env: Env, recipient: Address, amount: i128, reason: String) {
         // Authorization check - only admin can execute emergency drain
         require_admin_auth(&env);
+        require_contract_active(&env);
 
         // Validate recipient address
         // Note: Address::is_zero() is not available in Soroban SDK
@@ -4668,6 +4859,7 @@ impl UtilityContract {
     }
 
     pub fn top_up(env: Env, meter_id: u64, amount: i128, contributor: Address) {
+        require_contract_active(&env);
         let mut meter = get_meter_or_panic(&env, meter_id);
 
         // Authorization: either the primary user OR an authorized contributor
@@ -4695,9 +4887,12 @@ impl UtilityContract {
 
         let was_active = meter.is_active;
         let old_meter_value = provider_meter_value(&meter);
-        // Transfer tokens from contributor to contract
+        // Transfer tokens from contributor to contract.
+        // Issue #1: hold the reentrancy lock across the inbound transfer.
+        reentrancy_enter(&env);
         let token_client = token::Client::new(&env, &meter.token);
         token_client.transfer(&contributor, &env.current_contract_address(), &amount);
+        reentrancy_exit(&env);
 
         // Track individual contribution
         let contribution_key = DataKey::Contributor(meter_id, contributor.clone());
@@ -5086,6 +5281,7 @@ impl UtilityContract {
     }
 
     pub fn claim(env: Env, meter_id: u64) {
+        require_contract_active(&env);
         let mut meter = get_meter_or_panic(&env, meter_id);
         meter.provider.require_auth();
 
@@ -5152,6 +5348,10 @@ impl UtilityContract {
         };
 
         if claimable > 0 {
+            // Issue #1: hold the reentrancy lock across all outbound token
+            // transfers (tax, protocol fee, provider payout) so a malicious
+            // token contract cannot re-enter settlement mid-flow.
+            reentrancy_enter(&env);
             let client = token::Client::new(&env, &meter.token);
             let mut payout = claimable;
 
@@ -5215,6 +5415,8 @@ impl UtilityContract {
             if payout > 0 {
                 client.transfer(&env.current_contract_address(), &meter.provider, &payout);
             }
+            reentrancy_exit(&env);
+
             meter.balance -= claimable;
             meter.claimed_this_hour += claimable;
 
@@ -5455,6 +5657,7 @@ impl UtilityContract {
     }
 
     pub fn withdraw_earnings(env: Env, meter_id: u64, amount_usd_cents: i128) {
+        require_contract_active(&env);
         let mut meter = get_meter_or_panic(&env, meter_id);
         meter.provider.require_auth();
 
@@ -6322,6 +6525,7 @@ impl UtilityContract {
     /// * Panics if the meter does not exist.
     /// * Panics if the maintenance fund cannot cover the estimated cost.
     pub fn manual_extend_ttl(env: Env, meter_id: u64) {
+        require_contract_active(&env);
         let meter = get_meter_or_panic(&env, meter_id);
         meter.provider.require_auth();
 
@@ -7630,6 +7834,7 @@ impl UtilityContract {
         priority_tier: u32,
         device_mac_pubkey: BytesN<32>,
     ) {
+        require_contract_active(&env);
         provider.require_auth(); // Provider must authorize stream creation
         payer.require_auth(); // Payer must authorize buffer deposit
 
@@ -7773,6 +7978,7 @@ impl UtilityContract {
     /// * Panics if the caller is not the stream provider.
     /// * Panics if the stream does not exist or the amount is invalid.
     pub fn withdraw_continuous(env: Env, stream_id: u64, withdrawal_amount: i128) -> i128 {
+        require_contract_active(&env);
         let flow = get_continuous_flow_or_panic(&env, stream_id);
         flow.provider.require_auth();
 
