@@ -6182,7 +6182,22 @@ impl UtilityContract {
     }
 
     // Task #3: Self-Maintenance - Manually extend TTL (emergency function)
+    ///
+    /// # Security
+    ///
+    /// Requires authorization from the meter provider. The function deducts
+    /// 1 XLM from the per-meter maintenance fund; without an auth gate any
+    /// caller could repeatedly drain maintenance funds until meter data
+    /// expires from ledger storage (issue #50).
+    ///
+    /// # Panics
+    /// * Panics if the caller is not the meter provider.
+    /// * Panics if the meter does not exist.
+    /// * Panics if the maintenance fund cannot cover the estimated cost.
     pub fn manual_extend_ttl(env: Env, meter_id: u64) {
+        let meter = get_meter_or_panic(&env, meter_id);
+        meter.provider.require_auth();
+
         let maintenance_balance = get_maintenance_fund_balance(&env, meter_id);
 
         // Estimate cost (simplified)
