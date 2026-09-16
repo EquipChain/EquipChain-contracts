@@ -5600,7 +5600,9 @@ impl UtilityContract {
 
             let seconds_until_depletion = meter.balance / meter.rate_per_unit;
             let current_time = env.ledger().timestamp();
-            Some(current_time + seconds_until_depletion as u64)
+            // Saturate instead of panicking: balance / tiny rate can exceed
+            // the u64 timestamp range far into the future.
+            Some(current_time.saturating_add(seconds_until_depletion as u64))
         } else {
             None
         }
@@ -9295,6 +9297,81 @@ fn negate_g1(env: &Env, point: &Bytes) -> Bytes {
 
 #[cfg(all(test, feature = "full-tests"))]
 mod zk_tests;
+
+#[cfg(test)]
+mod depletion_overflow_tests {
+    use super::*;
+    use soroban_sdk::testutils::{Address as _, Ledger as _};
+    use soroban_sdk::token::StellarAssetClient;
+
+    #[test]
+    fn depletion_estimate_saturates_instead_of_panicking() {
+        let env = Env::default();
+        env.mock_all_auths();
+
+        let token_id = env
+            .register_stellar_asset_contract_v2(Address::generate(&env))
+            .address();
+        let contract_id = env.register(crate::UtilityContract, ());
+        let client = crate::UtilityContractClient::new(&env, &contract_id);
+        let token_admin = StellarAssetClient::new(&env, &token_id);
+
+        let provider = Address::generate(&env);
+        let user = Address::generate(&env);
+        token_admin.mint(&user, &(u64::MAX as i128));
+        env.ledger().with_mut(|li| li.timestamp = 1_767_225_600);
+
+        // Minimum legal rate (1) with a large balance => seconds_until_depletion
+        // is far beyond the u64 range when added to the current timestamp.
+        let meter_id = client.register_meter(
+            &user,
+            &provider,
+            &MIN_FLOW_RATE_PER_SECOND,
+            &token_id,
+            &BytesN::from_array(&env, &[1u8; 32]),
+            &0u32,
+        );
+        client.top_up(&meter_id, &(u64::MAX as i128), &user);
+
+        // Before the fix this panicked on timestamp overflow.
+        let depletion = client.calculate_expected_depletion(&meter_id);
+        assert!(depletion.is_some());
+        // Saturated to u64::MAX.
+        assert_eq!(depletion.unwrap(), u64::MAX);
+    }
+
+    #[test]
+    fn normal_depletion_estimate_still_accurate() {
+        let env = Env::default();
+        env.mock_all_auths();
+
+        let token_id = env
+            .register_stellar_asset_contract_v2(Address::generate(&env))
+            .address();
+        let contract_id = env.register(crate::UtilityContract, ());
+        let client = crate::UtilityContractClient::new(&env, &contract_id);
+        let token_admin = StellarAssetClient::new(&env, &token_id);
+
+        let provider = Address::generate(&env);
+        let user = Address::generate(&env);
+        token_admin.mint(&user, &1_000_000_000i128);
+        env.ledger().with_mut(|li| li.timestamp = 1_767_225_600);
+
+        let meter_id = client.register_meter(
+            &user,
+            &provider,
+            &1_000i128,
+            &token_id,
+            &BytesN::from_array(&env, &[1u8; 32]),
+            &0u32,
+        );
+        client.top_up(&meter_id, &50_000i128, &user);
+
+        let now = env.ledger().timestamp();
+        let depletion = client.calculate_expected_depletion(&meter_id).unwrap();
+        assert_eq!(depletion, now + 50); // 50_000 / 1_000 = 50s
+    }
+}
 
 #[cfg(test)]
 mod claim_underflow_tests {
