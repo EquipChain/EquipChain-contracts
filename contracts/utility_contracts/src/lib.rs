@@ -4909,6 +4909,14 @@ impl UtilityContract {
         require_contract_active(&env);
         let mut meter = get_meter_or_panic(&env, meter_id);
 
+        // Reject non-positive deposits up front: the token transfer would
+        // otherwise panic with an opaque host error, and zero-value deposits
+        // would still emit events and consume ledger writes while moving no
+        // value.
+        if amount <= 0 {
+            panic_with_error!(&env, ContractError::InvalidTokenAmount);
+        }
+
         // Authorization: either the primary user OR an authorized contributor
         let is_authorized = if contributor == meter.user {
             contributor.require_auth();
@@ -9262,6 +9270,84 @@ fn negate_g1(env: &Env, point: &Bytes) -> Bytes {
 
 #[cfg(all(test, feature = "full-tests"))]
 mod zk_tests;
+
+#[cfg(test)]
+mod top_up_validation_tests {
+    use super::*;
+    use soroban_sdk::testutils::{Address as _, Ledger as _};
+    use soroban_sdk::token::StellarAssetClient;
+
+    fn setup() -> (
+        Env,
+        crate::UtilityContractClient<'static>,
+        StellarAssetClient<'static>,
+        Address,
+        Address,
+        Address,
+    ) {
+        let env = Env::default();
+        env.mock_all_auths();
+
+        let token_id = env
+            .register_stellar_asset_contract_v2(Address::generate(&env))
+            .address();
+        let contract_id = env.register(crate::UtilityContract, ());
+        let client = crate::UtilityContractClient::new(&env, &contract_id);
+        let token_admin = StellarAssetClient::new(&env, &token_id);
+
+        let provider = Address::generate(&env);
+        let user = Address::generate(&env);
+        token_admin.mint(&user, &10_000_000_000i128);
+        env.ledger().with_mut(|li| li.timestamp = 1_767_225_600);
+
+        (
+            env,
+            client,
+            token_admin,
+            token_id,
+            provider,
+            user,
+        )
+    }
+
+    #[test]
+    fn rejects_zero_and_negative_top_ups() {
+        let (env, client, _token_admin, token_id, provider, user) = setup();
+
+        let meter_id = client.register_meter(
+            &user,
+            &provider,
+            &1_000i128,
+            &token_id,
+            &BytesN::from_array(&env, &[1u8; 32]),
+            &0u32,
+        );
+
+        for bad_amount in [0i128, -1i128, -5_000i128] {
+            let r = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+                client.top_up(&meter_id, &bad_amount, &user);
+            }));
+            assert!(r.is_err(), "top_up of {bad_amount} must be rejected");
+        }
+    }
+
+    #[test]
+    fn positive_top_up_still_credits_balance() {
+        let (env, client, _token_admin, token_id, provider, user) = setup();
+
+        let meter_id = client.register_meter(
+            &user,
+            &provider,
+            &1_000i128,
+            &token_id,
+            &BytesN::from_array(&env, &[1u8; 32]),
+            &0u32,
+        );
+
+        client.top_up(&meter_id, &50_000i128, &user);
+        assert_eq!(client.get_meter(&meter_id).unwrap().balance, 50_000i128);
+    }
+}
 
 #[cfg(test)]
 mod rate_validation_tests {
