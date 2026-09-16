@@ -3038,11 +3038,13 @@ impl UtilityContract {
         let meter = get_meter_or_panic(&env, meter_id);
         meter.provider.require_auth();
         // A reseller set to the zero address would silently divert the
-        // reseller fee share to an unrecoverable sink.
+        // reseller fee share to an unrecoverable sink. A negative fee would
+        // flip the payout split into an underflow when subtracted from the
+        // gross payout.
         if is_zero_address(&env, &reseller) {
             panic_with_error!(&env, ContractError::InvalidAddress);
         }
-        if fee_bps > MAX_RESELLER_FEE_BPS {
+        if fee_bps < 0 || fee_bps > MAX_RESELLER_FEE_BPS {
             panic_with_error!(&env, ContractError::InvalidResellerFee);
         }
 
@@ -9373,6 +9375,49 @@ fn negate_g1(env: &Env, point: &Bytes) -> Bytes {
 
 #[cfg(all(test, feature = "full-tests"))]
 mod zk_tests;
+
+#[cfg(test)]
+mod reseller_fee_validation_tests {
+    use super::*;
+    use soroban_sdk::testutils::{Address as _, Ledger as _};
+    use soroban_sdk::token::StellarAssetClient;
+
+    #[test]
+    fn negative_reseller_fee_rejected() {
+        let env = Env::default();
+        env.mock_all_auths();
+
+        let token_id = env
+            .register_stellar_asset_contract_v2(Address::generate(&env))
+            .address();
+        let contract_id = env.register(crate::UtilityContract, ());
+        let client = crate::UtilityContractClient::new(&env, &contract_id);
+        let token_admin = StellarAssetClient::new(&env, &token_id);
+
+        let provider = Address::generate(&env);
+        let user = Address::generate(&env);
+        let reseller = Address::generate(&env);
+        token_admin.mint(&user, &1_000_000_000i128);
+        env.ledger().with_mut(|li| li.timestamp = 1_767_225_600);
+
+        let meter_id = client.register_meter(
+            &user,
+            &provider,
+            &1_000i128,
+            &token_id,
+            &BytesN::from_array(&env, &[1u8; 32]),
+            &0u32,
+        );
+
+        let r = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            client.assign_reseller(&meter_id, &reseller, &-50i128);
+        }));
+        assert!(r.is_err(), "negative reseller fee must be rejected");
+
+        // Zero remains valid (configures reseller with no fee).
+        client.assign_reseller(&meter_id, &reseller, &0i128);
+    }
+}
 
 #[cfg(test)]
 mod maintenance_config_view_tests {
