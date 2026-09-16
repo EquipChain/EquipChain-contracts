@@ -1195,6 +1195,8 @@ pub enum ContractError {
     ProtocolPaused = 120,
     // Per-meter pause guard: settlement attempted on a user-paused meter.
     MeterPaused = 121,
+    // Admin transfer executed before the veto timelock elapsed.
+    AdminTransferTimelockActive = 122,
 }
 
 #[contracttype]
@@ -6886,11 +6888,13 @@ impl UtilityContract {
     /// Initialize admin transfer with 48-hour timelock
     /// During the window, active users can veto (requires 10% to succeed)
     pub fn initiate_admin_transfer(env: Env, proposed_admin: Address) {
-        let current_admin: Address = env
-            .storage()
-            .instance()
-            .get(&DataKey::CurrentAdmin)
-            .expect("No admin set");
+        // Read the REAL admin slot. This flow previously read DataKey::
+        // CurrentAdmin, a shadow slot that (a) is never initialized on
+        // deployments bootstrapped via set_admin, making the whole transfer
+        // flow dead, and (b) was settable by anyone via set_initial_admin,
+        // letting an attacker rotate a slot that controlled the compliance
+        // officer and provider-verification roles.
+        let current_admin = get_admin_or_panic(&env);
 
         current_admin.require_auth();
 
@@ -6984,6 +6988,14 @@ impl UtilityContract {
 
         let now = env.ledger().timestamp();
 
+        // Enforce the veto/timelock window: execution must not happen before
+        // the deadline. Only the *late* side was checked before, so the 48h
+        // community-veto window could be skipped entirely by executing the
+        // transfer immediately after proposal.
+        if now < proposal.execution_deadline {
+            panic_with_error!(&env, ContractError::AdminTransferTimelockActive);
+        }
+
         // Check if execution window expired
         if now > proposal.execution_deadline + DAY_IN_SECONDS {
             panic_with_error!(&env, ContractError::AdminExecutionWindowExpired);
@@ -7002,10 +7014,12 @@ impl UtilityContract {
             panic_with_error!(&env, ContractError::VetoThresholdNotReached);
         }
 
-        // Execute transfer
+        // Execute transfer: rotate the REAL admin slot (AdminAddress) so
+        // the ~40 require_admin_auth-gated entry points actually follow the
+        // new admin. Writing the shadow CurrentAdmin slot rotated nothing.
         env.storage()
             .instance()
-            .set(&DataKey::CurrentAdmin, &proposal.proposed_admin);
+            .set(&DataKey::AdminAddress, &proposal.proposed_admin);
         env.storage()
             .instance()
             .remove(&DataKey::AdminTransferProposal);
@@ -7019,19 +7033,19 @@ impl UtilityContract {
         );
     }
 
-    /// Set current admin (initialization only)
-    pub fn set_initial_admin(env: Env, admin: Address) {
-        // Only allow if no admin is set
-        let existing: Option<Address> = env.storage().instance().get(&DataKey::CurrentAdmin);
-        if existing.is_some() {
-            panic_with_error!(&env, ContractError::AdminTransferActive);
-        }
+    // NOTE: set_initial_admin was removed. It let ANY caller self-authorize
+    // into the shadow CurrentAdmin slot and from there appoint the
+    // compliance officer (the emergency-pause co-signer) and grant provider
+    // verifications. One-time admin bootstrap is handled exclusively by
+    // set_admin's guarded bootstrap branch.
 
-        admin.require_auth();
-        env.storage().instance().set(&DataKey::CurrentAdmin, &admin);
-
-        env.events()
-            .publish((soroban_sdk::symbol_short!("SetAdmn"),), admin);
+    /// Returns the current admin address.
+    ///
+    /// Admin rotation was previously unobservable: the transfer flow wrote
+    /// one slot while every admin function read another, and there was no
+    /// way to inspect which address held real authority.
+    pub fn get_admin(env: Env) -> Address {
+        get_admin_or_panic(&env)
     }
 
     /// Register as active user (for governance tracking)
@@ -7198,14 +7212,10 @@ impl UtilityContract {
 
     /// Set compliance officer address
     pub fn set_compliance_officer(env: Env, officer: Address) {
-        // Should be called by current admin
-        let admin: Address = env
-            .storage()
-            .instance()
-            .get(&DataKey::CurrentAdmin)
-            .expect("No admin set");
-
-        admin.require_auth();
+        // Gate on the real admin slot; previously read the shadow
+        // CurrentAdmin slot (dead on set_admin deployments, hijackable via
+        // set_initial_admin).
+        require_admin_auth(&env);
 
         env.storage()
             .instance()
@@ -7272,14 +7282,8 @@ impl UtilityContract {
 
     /// Grant verification to provider (admin or community vote)
     pub fn grant_provider_verification(env: Env, provider: Address, method: VerificationMethod) {
-        // Admin can grant verification
-        let admin: Address = env
-            .storage()
-            .instance()
-            .get(&DataKey::CurrentAdmin)
-            .expect("No admin set");
-
-        admin.require_auth();
+        // Gate on the real admin slot (see set_compliance_officer note).
+        require_admin_auth(&env);
 
         let mut verified_provider: VerifiedProvider = env
             .storage()
@@ -8872,22 +8876,12 @@ impl UtilityContract {
     }
 
     pub fn set_dao_governor(env: Env, dao: Address) {
-        let super_a = env
-            .storage()
-            .instance()
-            .get::<DataKey, Address>(&DataKey::CurrentAdmin)
-            .unwrap_or_else(|| panic_with_error!(&env, ContractError::UnauthorizedAdmin));
-        super_a.require_auth();
+        require_admin_auth(&env);
         env.storage().instance().set(&DataKey::DaoGovernor, &dao);
     }
 
     pub fn set_grid_administrator(env: Env, grid_admin: Address) {
-        let super_a = env
-            .storage()
-            .instance()
-            .get::<DataKey, Address>(&DataKey::CurrentAdmin)
-            .unwrap_or_else(|| panic_with_error!(&env, ContractError::UnauthorizedAdmin));
-        super_a.require_auth();
+        require_admin_auth(&env);
         env.storage()
             .instance()
             .set(&DataKey::GridAdministrator, &grid_admin);
@@ -9470,6 +9464,132 @@ fn negate_g1(env: &Env, point: &Bytes) -> Bytes {
 
 #[cfg(all(test, feature = "full-tests"))]
 mod zk_tests;
+
+#[cfg(test)]
+mod admin_unification_tests {
+    use super::*;
+    use soroban_sdk::testutils::{Address as _, Ledger as _};
+    use soroban_sdk::token::StellarAssetClient;
+
+    fn setup() -> (
+        Env,
+        crate::UtilityContractClient<'static>,
+        Address, // admin
+        Address, // attacker
+    ) {
+        let env = Env::default();
+        env.mock_all_auths();
+
+        let token_id = env
+            .register_stellar_asset_contract_v2(Address::generate(&env))
+            .address();
+        let contract_id = env.register(crate::UtilityContract, ());
+        let client = crate::UtilityContractClient::new(&env, &contract_id);
+        let token_admin = StellarAssetClient::new(&env, &token_id);
+
+        let admin = Address::generate(&env);
+        token_admin.mint(&admin, &1_000_000i128);
+        env.ledger().with_mut(|li| li.timestamp = 1_767_225_600);
+
+        client.set_admin(&admin);
+
+        let attacker = Address::generate(&env);
+
+        (env, client, admin, attacker)
+    }
+
+    #[test]
+    fn get_admin_reports_bootstrapped_admin() {
+        let (_env, client, admin, _attacker) = setup();
+        assert_eq!(client.get_admin(), admin);
+    }
+
+    #[test]
+    fn shadow_admin_slot_cannot_be_seized_anymore() {
+        let (_env, client, _admin, attacker) = setup();
+
+        // The old set_initial_admin allowed any caller to claim the shadow
+        // admin slot and appoint the compliance officer. Both entry points
+        // are gone / re-gated: with attacker auth only, the role setter must
+        // fail.
+        _env.set_auths(&[]);
+        let r = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            client.set_compliance_officer(&attacker);
+        }));
+        assert!(
+            r.is_err(),
+            "compliance officer appointment must require the real admin"
+        );
+    }
+
+    #[test]
+    fn transfer_initiation_requires_real_admin() {
+        let (env, client, _admin, _attacker) = setup();
+
+        let successor = Address::generate(&env);
+
+        // Initiate with empty auths must fail (real admin required). Uses
+        // try_ so the failed invocation is observed as a Result rather than
+        // leaving a caught panic in the host.
+        env.set_auths(&[]);
+        let r = client.try_initiate_admin_transfer(&successor);
+        assert!(r.is_err(), "transfer initiation requires real admin");
+    }
+
+    #[test]
+    fn admin_transfer_rotates_the_real_slot() {
+        let (env, client, _admin, _attacker) = setup();
+
+        let successor = Address::generate(&env);
+
+        // Admin initiates the 48h-timelocked transfer.
+        client.initiate_admin_transfer(&successor);
+
+        // Execution before the timelock elapses must fail.
+        env.ledger().with_mut(|li| {
+            li.timestamp += ADMIN_TRANSFER_TIMELOCK - 60;
+        });
+        let r = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            client.execute_admin_transfer();
+        }));
+        assert!(r.is_err(), "execution before timelock must fail");
+
+        // After the timelock (within the 24h execution window) it succeeds.
+        env.ledger().with_mut(|li| {
+            li.timestamp += 120;
+        });
+        client.execute_admin_transfer();
+
+        // The REAL slot rotated: the successor now holds admin authority
+        // over all require_admin_auth entry points.
+        assert_eq!(client.get_admin(), successor);
+
+        // New admin proves authority.
+        client.set_compliance_officer(&successor);
+    }
+
+    #[test]
+    fn old_admin_cannot_appoint_roles_after_rotation() {
+        let (env, client, _admin, attacker) = setup();
+
+        let successor = Address::generate(&env);
+        client.initiate_admin_transfer(&successor);
+
+        env.ledger().with_mut(|li| {
+            li.timestamp += ADMIN_TRANSFER_TIMELOCK + 60;
+        });
+        client.execute_admin_transfer();
+        assert_eq!(client.get_admin(), successor);
+
+        // Non-admin (never held authority) cannot appoint roles.
+        env.set_auths(&[]);
+        let r = client.try_set_compliance_officer(&attacker);
+        assert!(
+            r.is_err(),
+            "role appointment must require the real admin"
+        );
+    }
+}
 
 #[cfg(test)]
 mod claim_event_tests {

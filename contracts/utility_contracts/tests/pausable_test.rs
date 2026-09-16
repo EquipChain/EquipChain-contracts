@@ -97,9 +97,8 @@ fn compliance_officer_can_pause() {
     f.client.set_admin(&f.admin);
 
     let officer = soroban_sdk::Address::generate(&f.env);
-    // set_compliance_officer reads DataKey::CurrentAdmin, which must be
-    // initialized first via the dedicated initialization entry point.
-    f.client.set_initial_admin(&officer);
+    // set_compliance_officer now gates on the real admin slot bootstrapped
+    // by set_admin (the shadow CurrentAdmin slot was removed).
     f.client.set_compliance_officer(&officer);
 
     f.client
