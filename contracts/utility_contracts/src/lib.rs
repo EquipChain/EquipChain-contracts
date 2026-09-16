@@ -6729,12 +6729,30 @@ impl UtilityContract {
     pub fn set_government_vault(env: Env, vault_address: Address) {
         require_admin_auth(&env);
 
+        // The government vault receives the tax skim from every settlement;
+        // a zero-address target would confiscate those funds permanently.
+        if is_zero_address(&env, &vault_address) {
+            panic_with_error!(&env, ContractError::InvalidAddress);
+        }
+
         env.storage()
             .instance()
             .set(&DataKey::GovernmentVault, &vault_address);
 
         env.events()
             .publish((soroban_sdk::symbol_short!("GovVault"),), vault_address);
+    }
+
+    /// Returns the configured government tax vault, if any.
+    ///
+    /// The vault receives a share of every settlement, yet its address was
+    /// not observable on-chain.
+    ///
+    /// # Returns
+    /// * `Option<Address>` - `None` when not configured (tax accumulates in
+    ///   the contract).
+    pub fn get_government_vault(env: Env) -> Option<Address> {
+        get_government_vault_or_default(&env)
     }
 
     // Task #2: Tax Compliance - Set tax rate (in basis points)
@@ -9695,6 +9713,45 @@ mod admin_unification_tests {
             r.is_err(),
             "role appointment must require the real admin"
         );
+    }
+}
+
+#[cfg(test)]
+mod gov_vault_tests {
+    use super::*;
+    use soroban_sdk::testutils::{Address as _, Ledger as _};
+    use soroban_sdk::token::StellarAssetClient;
+
+    #[test]
+    fn gov_vault_set_get_and_zero_rejected() {
+        let env = Env::default();
+        env.mock_all_auths();
+
+        let token_id = env
+            .register_stellar_asset_contract_v2(Address::generate(&env))
+            .address();
+        let contract_id = env.register(crate::UtilityContract, ());
+        let client = crate::UtilityContractClient::new(&env, &contract_id);
+        let token_admin = StellarAssetClient::new(&env, &token_id);
+
+        let admin = Address::generate(&env);
+        token_admin.mint(&admin, &1_000_000i128);
+        env.ledger().with_mut(|li| li.timestamp = 1_767_225_600);
+
+        client.set_admin(&admin);
+
+        assert!(client.get_government_vault().is_none());
+
+        let zero =
+            Address::from_str(&env, "GAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWHF");
+        let r = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            client.set_government_vault(&zero);
+        }));
+        assert!(r.is_err(), "zero-address gov vault must be rejected");
+
+        let vault = Address::generate(&env);
+        client.set_government_vault(&vault);
+        assert_eq!(client.get_government_vault().unwrap(), vault);
     }
 }
 
