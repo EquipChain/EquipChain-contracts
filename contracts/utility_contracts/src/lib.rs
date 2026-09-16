@@ -5761,6 +5761,7 @@ impl UtilityContract {
     }
 
     pub fn emergency_shutdown(env: Env, meter_id: u64) {
+        require_contract_active(&env);
         let mut meter = get_meter_or_panic(&env, meter_id);
         meter.provider.require_auth();
 
@@ -6548,6 +6549,8 @@ impl UtilityContract {
     }
 
     pub fn refund_disputed_funds(env: Env, meter_id: u64) {
+        // Fund-returning entry point: must respect the circuit breaker.
+        require_contract_active(&env);
         let mut meter = get_meter_or_panic(&env, meter_id);
         meter.user.require_auth();
 
@@ -7070,6 +7073,9 @@ impl UtilityContract {
 
     /// Initiate legal freeze on a meter (compliance officer only)
     pub fn legal_freeze(env: Env, meter_id: u64, reason: String) {
+        // Sweeps user funds to the legal vault: must respect the circuit
+        // breaker like every other fund-moving entry point.
+        require_contract_active(&env);
         let compliance_officer: Address = env
             .storage()
             .instance()
@@ -7150,6 +7156,8 @@ impl UtilityContract {
 
     /// Release legal freeze (requires compliance council multi-sig)
     pub fn release_legal_freeze(env: Env, meter_id: u64, council_signatures: Vec<Address>) {
+        // Returns frozen funds to the user: must respect the circuit breaker.
+        require_contract_active(&env);
         // Verify council approval (simplified: check at least 2 signatures)
         if council_signatures.len() < 2 {
             panic_with_error!(&env, ContractError::ComplianceCouncilApprovalRequired);
@@ -9602,6 +9610,106 @@ mod admin_unification_tests {
         assert!(
             r.is_err(),
             "role appointment must require the real admin"
+        );
+    }
+}
+
+#[cfg(test)]
+mod circuit_breaker_coverage_tests {
+    use super::*;
+    use soroban_sdk::testutils::{Address as _, Ledger as _};
+    use soroban_sdk::token::StellarAssetClient;
+
+    fn setup() -> (
+        Env,
+        crate::UtilityContractClient<'static>,
+        Address, // admin
+        Address, // provider
+        Address, // user
+        u64,     // meter_id
+    ) {
+        let env = Env::default();
+        env.mock_all_auths();
+
+        let token_id = env
+            .register_stellar_asset_contract_v2(Address::generate(&env))
+            .address();
+        let contract_id = env.register(crate::UtilityContract, ());
+        let client = crate::UtilityContractClient::new(&env, &contract_id);
+        let token_admin = StellarAssetClient::new(&env, &token_id);
+
+        let admin = Address::generate(&env);
+        let provider = Address::generate(&env);
+        let user = Address::generate(&env);
+        token_admin.mint(&user, &1_000_000_000i128);
+        token_admin.mint(&contract_id, &10_000_000_000i128);
+        env.ledger().with_mut(|li| li.timestamp = 1_767_225_600);
+
+        client.set_admin(&admin);
+        client.set_compliance_officer(&admin);
+        client.set_legal_vault(&admin);
+
+        let meter_id = client.register_meter(
+            &user,
+            &provider,
+            &1_000i128,
+            &token_id,
+            &BytesN::from_array(&env, &[1u8; 32]),
+            &0u32,
+        );
+        client.top_up(&meter_id, &50_000i128, &user);
+
+        (env, client, admin, provider, user, meter_id)
+    }
+
+    #[test]
+    fn legal_freeze_blocked_while_protocol_paused() {
+        let (env, client, admin, _provider, _user, meter_id) = setup();
+
+        client.emergency_pause(&admin, &String::from_str(&env, "test"));
+
+        let r = client.try_legal_freeze(
+            &meter_id,
+            &String::from_str(&env, "reason"),
+        );
+        assert!(
+            r.is_err(),
+            "legal freeze sweeps funds and must respect the pause"
+        );
+    }
+
+    #[test]
+    fn refund_disputed_funds_blocked_while_protocol_paused() {
+        let (env, client, admin, _provider, user, meter_id) = setup();
+
+        // Create a dispute so the refund path is reachable.
+        client.challenge_service(&meter_id);
+
+        client.emergency_pause(&admin, &String::from_str(&env, "test"));
+
+        // Refund authorization lives on the meter user; supply their auth.
+        // The pause gate fires before any auth-sensitive logic anyway.
+        let r = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            client.refund_disputed_funds(&meter_id);
+        }));
+        assert!(
+            r.is_err(),
+            "refund moves funds and must respect the pause"
+        );
+
+        let _ = user;
+    }
+
+    #[test]
+    fn emergency_shutdown_blocked_while_protocol_paused() {
+        let (env, client, admin, _provider, _user, meter_id) = setup();
+
+        client.emergency_pause(&admin, &String::from_str(&env, "test"));
+
+        let r = client.try_emergency_shutdown(&meter_id);
+        assert!(
+            r.is_err(),
+            "meter shutdown must respect the protocol-wide pause"
         );
     }
 }
