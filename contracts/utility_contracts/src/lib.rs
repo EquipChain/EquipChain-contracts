@@ -7225,9 +7225,24 @@ impl UtilityContract {
             .publish((soroban_sdk::symbol_short!("CmpOfcr"),), officer);
     }
 
-    /// Set legal vault address
+    /// Set legal vault address (custodian of legally frozen funds).
+    ///
+    /// # Security
+    ///
+    /// Admin-only. The vault self-authorized previously: any address (or
+    /// attacker-deployed contract) could appoint itself as custodian, and the
+    /// next compliance freeze would sweep the frozen user funds into it.
+    /// Zero address is rejected — funds sent there are unrecoverable.
+    ///
+    /// # Panics
+    /// * Panics if the caller is not the authorized admin.
+    /// * Panics if `vault` is the canonical zero address.
     pub fn set_legal_vault(env: Env, vault: Address) {
-        vault.require_auth();
+        require_admin_auth(&env);
+
+        if is_zero_address(&env, &vault) {
+            panic_with_error!(&env, ContractError::InvalidAddress);
+        }
 
         env.storage().instance().set(&DataKey::LegalVault, &vault);
 
@@ -9588,6 +9603,68 @@ mod admin_unification_tests {
             r.is_err(),
             "role appointment must require the real admin"
         );
+    }
+}
+
+#[cfg(test)]
+mod legal_vault_tests {
+    use super::*;
+    use soroban_sdk::testutils::{Address as _, Ledger as _};
+    use soroban_sdk::token::StellarAssetClient;
+
+    #[test]
+    fn legal_vault_cannot_self_appoint() {
+        let env = Env::default();
+        env.mock_all_auths();
+
+        let token_id = env
+            .register_stellar_asset_contract_v2(Address::generate(&env))
+            .address();
+        let contract_id = env.register(crate::UtilityContract, ());
+        let client = crate::UtilityContractClient::new(&env, &contract_id);
+        let token_admin = StellarAssetClient::new(&env, &token_id);
+
+        let admin = Address::generate(&env);
+        let attacker = Address::generate(&env);
+        token_admin.mint(&admin, &1_000_000i128);
+        env.ledger().with_mut(|li| li.timestamp = 1_767_225_600);
+
+        client.set_admin(&admin);
+
+        // Non-admin vault self-appointment must fail.
+        env.set_auths(&[]);
+        let r = client.try_set_legal_vault(&attacker);
+        assert!(
+            r.is_err(),
+            "legal vault custodian must not be self-appointable"
+        );
+
+        // Admin can set it.
+        env.mock_all_auths();
+        client.set_legal_vault(&admin);
+    }
+
+    #[test]
+    fn legal_vault_zero_address_rejected() {
+        let env = Env::default();
+        env.mock_all_auths();
+
+        let token_id = env
+            .register_stellar_asset_contract_v2(Address::generate(&env))
+            .address();
+        let contract_id = env.register(crate::UtilityContract, ());
+        let client = crate::UtilityContractClient::new(&env, &contract_id);
+
+        let admin = Address::generate(&env);
+        env.ledger().with_mut(|li| li.timestamp = 1_767_225_600);
+        client.set_admin(&admin);
+
+        let zero =
+            Address::from_str(&env, "GAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWHF");
+        let r = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            client.set_legal_vault(&zero);
+        }));
+        assert!(r.is_err(), "zero-address legal vault must be rejected");
     }
 }
 
