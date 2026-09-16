@@ -1193,6 +1193,8 @@ pub enum ContractError {
     UnauthorizedProvider = 119,
     // Issue #24 — circuit breaker
     ProtocolPaused = 120,
+    // Per-meter pause guard: settlement attempted on a user-paused meter.
+    MeterPaused = 121,
 }
 
 #[contracttype]
@@ -6319,6 +6321,13 @@ impl UtilityContract {
             panic_with_error!(&env, ContractError::InDispute);
         }
 
+        // Paused meters must not settle: settlement is what debits the payer
+        // and credits the provider, exactly the value movement a user pause
+        // is meant to stop. claim() enforces the same check.
+        if meter.is_paused {
+            panic_with_error!(&env, ContractError::MeterPaused);
+        }
+
         let now = env.ledger().timestamp();
         let elapsed = now.checked_sub(meter.last_update).unwrap_or(0);
 
@@ -9401,6 +9410,61 @@ fn negate_g1(env: &Env, point: &Bytes) -> Bytes {
 
 #[cfg(all(test, feature = "full-tests"))]
 mod zk_tests;
+
+#[cfg(test)]
+mod claim_paused_meter_tests {
+    use super::*;
+    use soroban_sdk::testutils::{Address as _, Ledger as _};
+    use soroban_sdk::token::StellarAssetClient;
+
+    #[test]
+    fn claim_with_alerts_rejects_paused_meter() {
+        let env = Env::default();
+        env.mock_all_auths();
+
+        let token_id = env
+            .register_stellar_asset_contract_v2(Address::generate(&env))
+            .address();
+        let contract_id = env.register(crate::UtilityContract, ());
+        let client = crate::UtilityContractClient::new(&env, &contract_id);
+        let token_admin = StellarAssetClient::new(&env, &token_id);
+
+        let provider = Address::generate(&env);
+        let user = Address::generate(&env);
+        token_admin.mint(&user, &1_000_000_000i128);
+        token_admin.mint(&contract_id, &10_000_000_000i128);
+        env.ledger().with_mut(|li| li.timestamp = 1_767_225_600);
+
+        let meter_id = client.register_meter(
+            &user,
+            &provider,
+            &1_000i128,
+            &token_id,
+            &BytesN::from_array(&env, &[1u8; 32]),
+            &0u32,
+        );
+        client.top_up(&meter_id, &50_000i128, &user);
+
+        // User pauses their own meter.
+        client.set_meter_pause(&meter_id, &true);
+
+        let r = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            client.claim_with_alerts(&meter_id);
+        }));
+        assert!(r.is_err(), "paused meter must not settle via claim_with_alerts");
+
+        // Balance untouched.
+        assert_eq!(client.get_meter(&meter_id).unwrap().balance, 50_000);
+
+        // Resume: settlement works again.
+        client.set_meter_pause(&meter_id, &false);
+        env.ledger().with_mut(|li| {
+            li.timestamp += 10; // 10s * 1000 = 10_000
+        });
+        client.claim_with_alerts(&meter_id);
+        assert_eq!(client.get_meter(&meter_id).unwrap().balance, 40_000);
+    }
+}
 
 #[cfg(test)]
 mod meter_liveness_view_tests {
