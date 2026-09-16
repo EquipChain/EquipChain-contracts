@@ -3151,12 +3151,33 @@ impl UtilityContract {
     pub fn set_oracle(env: Env, oracle_address: Address) {
         require_admin_auth(&env);
 
+        // The oracle feeds every USD<->token conversion in deposits,
+        // withdrawals and freezes; pointing it at the zero address would
+        // brick those paths with an unrecoverable call target.
+        if is_zero_address(&env, &oracle_address) {
+            panic_with_error!(&env, ContractError::InvalidAddress);
+        }
+
         env.storage()
             .instance()
             .set(&DataKey::Oracle, &oracle_address);
 
         env.events()
             .publish((symbol_short!("OracleSet"),), (oracle_address,));
+    }
+
+    /// Returns the configured oracle address, if any.
+    ///
+    /// The oracle determines every price conversion but its address was not
+    /// previously observable; integrators verifying which price source the
+    /// contract trusts had no on-chain way to do so.
+    ///
+    /// # Returns
+    /// * `Option<Address>` - `None` when no oracle is configured.
+    pub fn get_oracle(env: Env) -> Option<Address> {
+        env.storage()
+            .instance()
+            .get::<_, Address>(&DataKey::Oracle)
     }
 
     /// Sets the maintenance wallet address and protocol fee configuration.
@@ -9674,6 +9695,48 @@ mod admin_unification_tests {
             r.is_err(),
             "role appointment must require the real admin"
         );
+    }
+}
+
+#[cfg(test)]
+mod oracle_config_tests {
+    use super::*;
+    use soroban_sdk::testutils::{Address as _, Ledger as _};
+    use soroban_sdk::token::StellarAssetClient;
+
+    #[test]
+    fn oracle_set_get_and_zero_rejected() {
+        let env = Env::default();
+        env.mock_all_auths();
+
+        let token_id = env
+            .register_stellar_asset_contract_v2(Address::generate(&env))
+            .address();
+        let contract_id = env.register(crate::UtilityContract, ());
+        let client = crate::UtilityContractClient::new(&env, &contract_id);
+        let token_admin = StellarAssetClient::new(&env, &token_id);
+
+        let admin = Address::generate(&env);
+        token_admin.mint(&admin, &1_000_000i128);
+        env.ledger().with_mut(|li| li.timestamp = 1_767_225_600);
+
+        client.set_admin(&admin);
+
+        // Unset: None.
+        assert!(client.get_oracle().is_none());
+
+        // Zero address rejected.
+        let zero =
+            Address::from_str(&env, "GAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWHF");
+        let r = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            client.set_oracle(&zero);
+        }));
+        assert!(r.is_err(), "zero-address oracle must be rejected");
+
+        // Set and read back.
+        let oracle = Address::generate(&env);
+        client.set_oracle(&oracle);
+        assert_eq!(client.get_oracle().unwrap(), oracle);
     }
 }
 
