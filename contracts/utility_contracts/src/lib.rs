@@ -6604,6 +6604,34 @@ impl UtilityContract {
         get_maintenance_fund_balance(&env, meter_id)
     }
 
+    /// Returns the currently configured settlement tax rate in basis points.
+    ///
+    /// The rate was always enforced in claim settlements but had no public
+    /// getter, so payers and providers could not observe the configuration
+    /// or preview their net payout without replaying contract internals.
+    ///
+    /// # Returns
+    /// * `i128` - Tax rate in basis points (default `DEFAULT_TAX_RATE_BPS`).
+    pub fn get_tax_rate(env: Env) -> i128 {
+        get_tax_rate_or_default(&env)
+    }
+
+    /// Previews the tax split for a hypothetical settlement amount.
+    ///
+    /// Enables frontends and providers to display gross vs. net proceeds
+    /// before claiming, using the exact same arithmetic as the settlement
+    /// path (truncating division, tax taken off the gross).
+    ///
+    /// # Arguments
+    /// * `gross_amount` - The pre-tax settlement amount.
+    ///
+    /// # Returns
+    /// * `(i128, i128)` - `(tax_amount, after_tax_amount)`.
+    pub fn preview_tax_split(env: Env, gross_amount: i128) -> (i128, i128) {
+        let tax_rate_bps = get_tax_rate_or_default(&env);
+        calculate_tax_split(gross_amount, tax_rate_bps)
+    }
+
     // Task #3: Self-Maintenance - Manually extend TTL (emergency function)
     ///
     /// # Security
@@ -9323,6 +9351,73 @@ fn negate_g1(env: &Env, point: &Bytes) -> Bytes {
 
 #[cfg(all(test, feature = "full-tests"))]
 mod zk_tests;
+
+#[cfg(test)]
+mod tax_rate_view_tests {
+    use super::*;
+    use soroban_sdk::testutils::{Address as _, Ledger as _};
+    use soroban_sdk::token::StellarAssetClient;
+
+    fn setup_with_admin() -> (
+        Env,
+        crate::UtilityContractClient<'static>,
+        Address,
+        Address,
+        Address,
+        Address,
+    ) {
+        let env = Env::default();
+        env.mock_all_auths();
+
+        let token_id = env
+            .register_stellar_asset_contract_v2(Address::generate(&env))
+            .address();
+        let contract_id = env.register(crate::UtilityContract, ());
+        let client = crate::UtilityContractClient::new(&env, &contract_id);
+        let token_admin = StellarAssetClient::new(&env, &token_id);
+
+        let admin = Address::generate(&env);
+        let provider = Address::generate(&env);
+        let user = Address::generate(&env);
+        token_admin.mint(&user, &1_000_000_000i128);
+        env.ledger().with_mut(|li| li.timestamp = 1_767_225_600);
+
+        client.set_admin(&admin);
+
+        (env, client, token_id, admin, provider, user)
+    }
+
+    #[test]
+    fn tax_rate_defaults_and_reflects_admin_changes() {
+        let (_env, client, token_id, admin, provider, user) = setup_with_admin();
+
+        // Default rate before any admin action.
+        assert_eq!(client.get_tax_rate(), DEFAULT_TAX_RATE_BPS);
+
+        // Admin sets a custom rate; the getter reflects it.
+        client.set_tax_rate(&250i128);
+        assert_eq!(client.get_tax_rate(), 250);
+
+        let _ = (token_id, provider, user);
+    }
+
+    #[test]
+    fn preview_matches_settlement_arithmetic() {
+        let (_env, client, _token_id, _admin, _provider, _user) = setup_with_admin();
+
+        client.set_tax_rate(&500i128); // 5%
+
+        // Same arithmetic as calculate_tax_split in the claim path.
+        let (tax, net) = client.preview_tax_split(&10_000i128);
+        assert_eq!(tax, 500);
+        assert_eq!(net, 9_500);
+
+        // Truncation: 3 * 500 / 10000 = 0 (floor, never rounds against users).
+        let (tax2, net2) = client.preview_tax_split(&3i128);
+        assert_eq!(tax2, 0);
+        assert_eq!(net2, 3);
+    }
+}
 
 #[cfg(test)]
 mod tiered_pricing_validation_tests {
