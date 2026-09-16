@@ -5435,6 +5435,10 @@ impl UtilityContract {
             }
         };
 
+        // Net amount actually forwarded to the provider after tax and
+        // protocol fee; published in the Claim event so settlement observers
+        // can reconcile gross vs. net without replaying fee arithmetic.
+        let mut net_to_provider: i128 = 0;
         if claimable > 0 {
             // Issue #1: hold the reentrancy lock across all outbound token
             // transfers (tax, protocol fee, provider payout) so a malicious
@@ -5503,6 +5507,7 @@ impl UtilityContract {
             if payout > 0 {
                 client.transfer(&env.current_contract_address(), &meter.provider, &payout);
             }
+            net_to_provider = payout;
             reentrancy_exit(&env);
 
             meter.balance -= claimable;
@@ -5534,8 +5539,13 @@ impl UtilityContract {
             .instance()
             .set(&DataKey::Meter(meter_id), &meter);
 
-        env.events()
-            .publish((symbol_short!("Claim"), meter_id), claimable);
+        // Claim event carries (provider, gross, net): gross is what was
+        // debited from the meter, net is what actually reached the provider
+        // after tax and protocol fee deductions.
+        env.events().publish(
+            (symbol_short!("Claim"), meter_id),
+            (meter.provider.clone(), claimable, net_to_provider),
+        );
     }
 
     pub fn update_usage(env: Env, meter_id: u64, watt_hours_consumed: i128) {
@@ -9440,6 +9450,77 @@ fn negate_g1(env: &Env, point: &Bytes) -> Bytes {
 
 #[cfg(all(test, feature = "full-tests"))]
 mod zk_tests;
+
+#[cfg(test)]
+mod claim_event_tests {
+    use super::*;
+    use soroban_sdk::testutils::{Address as _, Events as _, Ledger as _};
+    use soroban_sdk::IntoVal;
+    use soroban_sdk::token::StellarAssetClient;
+
+    #[test]
+    fn claim_publishes_provider_gross_and_net() {
+        let env = Env::default();
+        env.mock_all_auths();
+
+        let token_id = env
+            .register_stellar_asset_contract_v2(Address::generate(&env))
+            .address();
+        let contract_id = env.register(crate::UtilityContract, ());
+        let client = crate::UtilityContractClient::new(&env, &contract_id);
+        let token_admin = StellarAssetClient::new(&env, &token_id);
+
+        let provider = Address::generate(&env);
+        let user = Address::generate(&env);
+        token_admin.mint(&user, &1_000_000_000i128);
+        token_admin.mint(&contract_id, &10_000_000_000i128);
+        env.ledger().with_mut(|li| li.timestamp = 1_767_225_600);
+
+        let meter_id = client.register_meter(
+            &user,
+            &provider,
+            &1_000i128,
+            &token_id,
+            &BytesN::from_array(&env, &[1u8; 32]),
+            &0u32,
+        );
+        client.top_up(&meter_id, &50_000i128, &user);
+
+        env.ledger().with_mut(|li| {
+            li.timestamp += 10; // 10_000 gross
+        });
+        client.claim(&meter_id);
+
+        // Observe immediately after the claim: env.events().all() drains the
+        // buffer, and any intermediate contract call would consume it.
+        let events = env.events().all();
+
+        // Verify the settlement completed.
+        assert_eq!(client.get_meter(&meter_id).unwrap().balance, 40_000);
+        let mut found_claim = false;
+        for e in events.iter() {
+            let (_contract, topics, data) = e;
+            if topics.len() >= 1 {
+                let sym: Symbol = topics.get(0).unwrap().into_val(&env);
+                if sym == symbol_short!("Claim") {
+                    found_claim = true;
+                    // Data is (provider, gross, net).
+                    let decoded: (Address, i128, i128) = data.into_val(&env);
+                    assert_eq!(decoded.0, provider);
+                    assert_eq!(decoded.1, 10_000); // gross debited
+                    // Default 50 bps tax is withheld (no gov vault configured,
+                    // so it stays in the contract); protocol fee unset (0).
+                    assert_eq!(decoded.2, 9_950);
+                }
+            }
+        }
+        assert!(
+            found_claim,
+            "Claim event with new shape must be emitted ({} total events)",
+            events.len()
+        );
+    }
+}
 
 #[cfg(test)]
 mod active_meters_count_tests {
