@@ -6235,6 +6235,10 @@ impl UtilityContract {
 
     // Enhanced claim function with webhook integration
     pub fn claim_with_alerts(env: Env, meter_id: u64) {
+        // Circuit-breaker parity with claim(): without this gate the
+        // alerts variant could still settle funds while the protocol is
+        // globally paused, undermining the pause invariant.
+        require_contract_active(&env);
         let mut meter = get_meter_or_panic(&env, meter_id);
         meter.provider.require_auth();
 
@@ -9297,6 +9301,70 @@ fn negate_g1(env: &Env, point: &Bytes) -> Bytes {
 
 #[cfg(all(test, feature = "full-tests"))]
 mod zk_tests;
+
+#[cfg(test)]
+mod claim_with_alerts_pause_tests {
+    use super::*;
+    use soroban_sdk::testutils::{Address as _, Ledger as _};
+    use soroban_sdk::token::StellarAssetClient;
+
+    #[test]
+    fn claim_with_alerts_blocked_while_protocol_paused() {
+        let env = Env::default();
+        env.mock_all_auths();
+
+        let token_id = env
+            .register_stellar_asset_contract_v2(Address::generate(&env))
+            .address();
+        let contract_id = env.register(crate::UtilityContract, ());
+        let client = crate::UtilityContractClient::new(&env, &contract_id);
+        let token_admin = StellarAssetClient::new(&env, &token_id);
+
+        let admin = Address::generate(&env);
+        let provider = Address::generate(&env);
+        let user = Address::generate(&env);
+        token_admin.mint(&user, &1_000_000_000i128);
+        token_admin.mint(&contract_id, &10_000_000_000i128);
+        env.ledger().with_mut(|li| li.timestamp = 1_767_225_600);
+
+        client.set_admin(&admin);
+        let meter_id = client.register_meter(
+            &user,
+            &provider,
+            &1_000i128,
+            &token_id,
+            &BytesN::from_array(&env, &[1u8; 32]),
+            &0u32,
+        );
+        client.top_up(&meter_id, &50_000i128, &user);
+
+        // Global pause via the compliance/admin path.
+        client.emergency_pause(&admin, &String::from_str(&env, "test"));
+        assert!(client.is_protocol_paused());
+
+        // claim() is blocked; claim_with_alerts must be equally blocked.
+        let r1 = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            client.claim(&meter_id);
+        }));
+        assert!(r1.is_err(), "claim must be blocked while paused");
+
+        let r2 = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            client.claim_with_alerts(&meter_id);
+        }));
+        assert!(r2.is_err(), "claim_with_alerts must be blocked while paused");
+
+        // Resume and confirm settlement works again.
+        client.resume_after_pause(&admin);
+        env.ledger().with_mut(|li| {
+            li.timestamp += 10; // accrue 10s * 1000 = 10_000
+        });
+        client.claim_with_alerts(&meter_id);
+        assert_eq!(
+            client.get_meter(&meter_id).unwrap().balance,
+            50_000 - 10_000
+        );
+    }
+}
 
 #[cfg(test)]
 mod depletion_overflow_tests {
