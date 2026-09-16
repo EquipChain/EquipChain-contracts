@@ -5818,6 +5818,13 @@ impl UtilityContract {
         env.storage()
             .instance()
             .set(&DataKey::Meter(meter_id), &meter);
+
+        // Fleet-critical state change: monitors and the payer must be able to
+        // observe shutdowns (previously silent, only visible via storage).
+        env.events().publish(
+            (symbol_short!("EmgShut"), meter_id),
+            (meter.provider.clone(), meter.balance),
+        );
     }
 
     pub fn set_max_flow_rate(env: Env, meter_id: u64, max_rate_per_hour: i128) {
