@@ -4511,7 +4511,7 @@ impl UtilityContract {
         );
 
         if referrer != user {
-            let mut meter = get_meter_or_panic(&env, meter_id);
+            let meter = get_meter_or_panic(&env, meter_id);
 
             // Issue #44: the referral reward used to be credited directly to
             // meter.balance without a matching token deposit. meter.balance is
