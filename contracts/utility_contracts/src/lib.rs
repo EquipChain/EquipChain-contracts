@@ -3192,6 +3192,28 @@ impl UtilityContract {
             .publish((symbol_short!("MaintCfg"),), (wallet, fee_bps));
     }
 
+    /// Returns the protocol fee configuration: `(maintenance_wallet, fee_bps)`.
+    ///
+    /// The fee is deducted from every provider settlement, yet neither the
+    /// recipient nor the rate was previously observable on-chain. Returns
+    /// `(zero-address, 0)` when unset.
+    ///
+    /// # Returns
+    /// * `(Address, i128)` - Tuple of (wallet, fee in basis points).
+    pub fn get_maintenance_config(env: Env) -> (Address, i128) {
+        let wallet = env
+            .storage()
+            .instance()
+            .get::<_, Address>(&DataKey::MaintenanceWallet)
+            .unwrap_or_else(|| Address::from_str(&env, ZERO_ADDRESS_STRKEY));
+        let fee_bps = env
+            .storage()
+            .instance()
+            .get::<_, i128>(&DataKey::ProtocolFeeBps)
+            .unwrap_or(0);
+        (wallet, fee_bps)
+    }
+
     /// Sets the admin address for the contract, used for dust sweeper authorization.
     ///
     /// # Arguments
@@ -9351,6 +9373,48 @@ fn negate_g1(env: &Env, point: &Bytes) -> Bytes {
 
 #[cfg(all(test, feature = "full-tests"))]
 mod zk_tests;
+
+#[cfg(test)]
+mod maintenance_config_view_tests {
+    use super::*;
+    use soroban_sdk::testutils::{Address as _, Ledger as _};
+    use soroban_sdk::token::StellarAssetClient;
+
+    #[test]
+    fn maintenance_config_unset_then_set_round_trip() {
+        let env = Env::default();
+        env.mock_all_auths();
+
+        let token_id = env
+            .register_stellar_asset_contract_v2(Address::generate(&env))
+            .address();
+        let contract_id = env.register(crate::UtilityContract, ());
+        let client = crate::UtilityContractClient::new(&env, &contract_id);
+        let token_admin = StellarAssetClient::new(&env, &token_id);
+
+        let admin = Address::generate(&env);
+        let wallet = Address::generate(&env);
+        token_admin.mint(&admin, &1_000_000i128);
+        env.ledger().with_mut(|li| li.timestamp = 1_767_225_600);
+
+        client.set_admin(&admin);
+
+        // Unset: zero address and 0 bps.
+        let (w0, f0) = client.get_maintenance_config();
+        assert_eq!(
+            w0,
+            Address::from_str(&env, ZERO_ADDRESS_STRKEY),
+            "unset wallet surfaces as zero address"
+        );
+        assert_eq!(f0, 0);
+
+        // Set and read back.
+        client.set_maintenance_config(&wallet, &150i128);
+        let (w1, f1) = client.get_maintenance_config();
+        assert_eq!(w1, wallet);
+        assert_eq!(f1, 150);
+    }
+}
 
 #[cfg(test)]
 mod tax_rate_view_tests {
