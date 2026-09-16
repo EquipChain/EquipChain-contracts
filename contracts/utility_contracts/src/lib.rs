@@ -5736,17 +5736,26 @@ impl UtilityContract {
             panic_with_error!(&env, ContractError::InvalidTokenAmount);
         }
 
-        // Convert USD cents to XLM if needed
+        let client = token::Client::new(&env, &meter.token);
+
+        // Convert once, before the velocity check, so the cap is enforced in
+        // the same units as the actual token payout and the transfer cannot
+        // be skipped by an oracle returning a zero conversion.
         let withdrawal_amount =
             match convert_usd_to_xlm_if_needed(&env, amount_usd_cents, &meter.token) {
                 Ok(amount) => amount,
                 Err(_) => panic_with_error!(&env, ContractError::PriceConversionFailed),
             };
 
-        let client = token::Client::new(&env, &meter.token);
+        // A settlement must move value: a zero/negative conversion would
+        // previously debit the meter bookkeeping while paying out nothing,
+        // silently burning the provider's (or payer's) recorded earnings.
+        if withdrawal_amount <= 0 {
+            panic_with_error!(&env, ContractError::InvalidTokenAmount);
+        }
 
         // Enforce the provider daily withdrawal window (10% of pool / 24h).
-        apply_provider_withdrawal_limit(&env, &meter.provider, amount_usd_cents)
+        apply_provider_withdrawal_limit(&env, &meter.provider, withdrawal_amount)
             .unwrap_or_else(|e| panic_with_error!(&env, e));
 
         reentrancy_enter(&env);
@@ -5763,7 +5772,11 @@ impl UtilityContract {
                 meter.balance = meter.balance.saturating_sub(amount_usd_cents);
             }
             BillingType::PostPaid => {
-                meter.debt = meter.debt.saturating_sub(amount_usd_cents);
+                // debt is money the USER still owes for consumed utility; it
+                // must never be erased while simultaneously paying real
+                // tokens out to the provider — that combination minted value
+                // out of the shared pool on every postpaid withdrawal.
+                panic_with_error!(&env, ContractError::InternalError);
             }
         }
 
@@ -9301,6 +9314,117 @@ fn negate_g1(env: &Env, point: &Bytes) -> Bytes {
 
 #[cfg(all(test, feature = "full-tests"))]
 mod zk_tests;
+
+#[cfg(test)]
+mod withdraw_earnings_tests {
+    use super::*;
+    use soroban_sdk::testutils::{Address as _, Ledger as _};
+    use soroban_sdk::token::StellarAssetClient;
+
+    fn setup() -> (
+        Env,
+        crate::UtilityContractClient<'static>,
+        soroban_sdk::token::Client<'static>,
+        Address,
+        Address,
+        u64,
+        Address,
+    ) {
+        let env = Env::default();
+        env.mock_all_auths();
+
+        let token_id = env
+            .register_stellar_asset_contract_v2(Address::generate(&env))
+            .address();
+        let contract_id = env.register(crate::UtilityContract, ());
+        let client = crate::UtilityContractClient::new(&env, &contract_id);
+        let token_admin = StellarAssetClient::new(&env, &token_id);
+        let token = soroban_sdk::token::Client::new(&env, &token_id);
+
+        let provider = Address::generate(&env);
+        let user = Address::generate(&env);
+        token_admin.mint(&user, &100_000_000_000i128);
+        token_admin.mint(&contract_id, &100_000_000_000i128);
+        env.ledger().with_mut(|li| li.timestamp = 1_767_225_600);
+
+        let meter_id = client.register_meter(
+            &user,
+            &provider,
+            &1_000i128,
+            &token_id,
+            &BytesN::from_array(&env, &[1u8; 32]),
+            &0u32,
+        );
+
+        (
+            env,
+            client,
+            token,
+            provider,
+            user,
+            meter_id,
+            contract_id,
+        )
+    }
+
+    #[test]
+    fn prepaid_withdrawal_moves_tokens_and_debits_balance() {
+        let (env, client, token, provider, user, meter_id, contract_id) = setup();
+
+        client.top_up(&meter_id, &100_000i128, &user);
+
+        let contract_before = token.balance(&contract_id);
+        let provider_before = token.balance(&provider);
+
+        // Stay under the daily velocity cap (10% of provider pool).
+        client.withdraw_earnings(&meter_id, &5_000i128);
+
+        assert_eq!(token.balance(&provider), provider_before + 5_000);
+        assert_eq!(token.balance(&contract_id), contract_before - 5_000);
+        assert_eq!(client.get_meter(&meter_id).unwrap().balance, 95_000);
+    }
+
+    #[test]
+    fn postpaid_withdrawal_cannot_erase_user_debt_while_paying_out() {
+        let (env, client, _token, provider, user, meter_id, contract_id) = setup();
+
+        // Prepaid meter with a positive balance cannot reach the postpaid
+        // branch through public state transitions without an oracle; the
+        // branch is only reachable via direct storage manipulation, which is
+        // exactly how the original flaw was exploitable. Simulate that state.
+        client.top_up(&meter_id, &50_000i128, &user);
+        let mut meter = client.get_meter(&meter_id).unwrap();
+        meter.billing_type = BillingType::PostPaid;
+        meter.debt = 30_000i128;
+        env.as_contract(&contract_id, || {
+            env.storage()
+                .instance()
+                .set(&DataKey::Meter(meter_id), &meter);
+        });
+
+        // available_earnings for PostPaid = meter.debt = 30_000, so this
+        // passes the availability check and previously erased the debt while
+        // paying real tokens to the provider.
+        let r = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            client.withdraw_earnings(&meter_id, &30_000i128);
+        }));
+        assert!(r.is_err(), "postpaid debt-erase payout must be rejected");
+
+        // Debt must be untouched.
+        assert_eq!(client.get_meter(&meter_id).unwrap().debt, 30_000);
+    }
+
+    #[test]
+    fn overdraw_beyond_available_earnings_rejected() {
+        let (_env, client, _token, _provider, user, meter_id, _contract_id) = setup();
+        client.top_up(&meter_id, &10_000i128, &user);
+
+        let r = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            client.withdraw_earnings(&meter_id, &10_001i128);
+        }));
+        assert!(r.is_err(), "overdraw must be rejected");
+    }
+}
 
 #[cfg(test)]
 mod claim_with_alerts_pause_tests {
