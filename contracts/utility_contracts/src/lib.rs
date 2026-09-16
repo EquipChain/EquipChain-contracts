@@ -7268,9 +7268,16 @@ impl UtilityContract {
 
     // ==================== TASK #3: VERIFIED PROVIDER REGISTRY ====================
 
-    /// Request provider verification
-    pub fn request_provider_verification(env: Env, provider_name: String) {
-        let provider = env.current_contract_address();
+    /// Request provider verification on behalf of `provider`.
+    ///
+    /// # Security
+    ///
+    /// Previously this created the request for `env.current_contract_address()`
+    /// — the utility contract itself — regardless of who called it, making the
+    /// request flow useless (the admin would verify the contract, not a
+    /// provider) and allowing anyone to spam request records. The requesting
+    /// provider is now an explicit parameter that must authorize the call.
+    pub fn request_provider_verification(env: Env, provider: Address, provider_name: String) {
         provider.require_auth();
 
         // Check if already verified
@@ -7325,6 +7332,40 @@ impl UtilityContract {
 
         env.events()
             .publish((soroban_sdk::symbol_short!("VrfGrnt"),), provider);
+    }
+
+    /// Revoke a provider's verified status.
+    ///
+    /// # Security
+    ///
+    /// Admin-only. Verification previously had no revocation path: a provider
+    /// whose credentials were compromised, or who failed post-verification
+    /// review, stayed verified forever, permanently inheriting any
+    /// verification-gated privileges.
+    ///
+    /// # Panics
+    /// * Panics if the caller is not the authorized admin.
+    /// * Panics if the provider has no verification record
+    ///   (`ContractError::NotFound`).
+    pub fn revoke_provider_verification(env: Env, provider: Address) {
+        require_admin_auth(&env);
+
+        let mut verified_provider: VerifiedProvider = env
+            .storage()
+            .instance()
+            .get(&DataKey::VerifiedProvider(provider.clone()))
+            .unwrap_or_else(|| panic_with_error!(&env, ContractError::NotFound));
+
+        verified_provider.is_verified = false;
+        verified_provider.verified_at = env.ledger().timestamp();
+
+        env.storage().instance().set(
+            &DataKey::VerifiedProvider(provider.clone()),
+            &verified_provider,
+        );
+
+        env.events()
+            .publish((soroban_sdk::symbol_short!("VrfRvk"),), provider);
     }
 
     /// Check if provider is verified
@@ -9611,6 +9652,91 @@ mod admin_unification_tests {
             r.is_err(),
             "role appointment must require the real admin"
         );
+    }
+}
+
+#[cfg(test)]
+mod provider_verification_tests {
+    use super::*;
+    use soroban_sdk::testutils::{Address as _, Ledger as _};
+    use soroban_sdk::token::StellarAssetClient;
+
+    fn setup() -> (
+        Env,
+        crate::UtilityContractClient<'static>,
+        Address,
+        Address,
+    ) {
+        let env = Env::default();
+        env.mock_all_auths();
+
+        let token_id = env
+            .register_stellar_asset_contract_v2(Address::generate(&env))
+            .address();
+        let contract_id = env.register(crate::UtilityContract, ());
+        let client = crate::UtilityContractClient::new(&env, &contract_id);
+        let token_admin = StellarAssetClient::new(&env, &token_id);
+
+        let admin = Address::generate(&env);
+        token_admin.mint(&admin, &1_000_000i128);
+        env.ledger().with_mut(|li| li.timestamp = 1_767_225_600);
+
+        client.set_admin(&admin);
+
+        let provider = Address::generate(&env);
+
+        (env, client, admin, provider)
+    }
+
+    #[test]
+    fn request_grant_revoke_lifecycle() {
+        let (env, client, _admin, provider) = setup();
+
+        // Request creates a pending (unverified) record for the REQUESTING
+        // provider, not for the contract itself.
+        client.request_provider_verification(
+            &provider,
+            &String::from_str(&env, "Acme Utilities"),
+        );
+        assert!(!client.is_provider_verified(&provider));
+
+        // Admin grants.
+        client.grant_provider_verification(
+            &provider,
+            &VerificationMethod::IdentityVerified,
+        );
+        assert!(client.is_provider_verified(&provider));
+
+        // Admin revokes — previously impossible.
+        client.revoke_provider_verification(&provider);
+        assert!(
+            !client.is_provider_verified(&provider),
+            "revocation must clear verified status"
+        );
+    }
+
+    #[test]
+    fn revoke_requires_admin_and_existing_record() {
+        let (env, client, _admin, provider) = setup();
+
+        // No record -> NotFound.
+        let r1 = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            client.revoke_provider_verification(&provider);
+        }));
+        assert!(r1.is_err(), "revoking unknown provider must fail");
+
+        // Non-admin cannot revoke.
+        client.request_provider_verification(
+            &provider,
+            &String::from_str(&env, "Acme Utilities"),
+        );
+        client.grant_provider_verification(
+            &provider,
+            &VerificationMethod::IdentityVerified,
+        );
+        env.set_auths(&[]);
+        let r2 = client.try_revoke_provider_verification(&provider);
+        assert!(r2.is_err(), "revocation must be admin-gated");
     }
 }
 
