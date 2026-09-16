@@ -5730,6 +5730,13 @@ impl UtilityContract {
         let mut meter = get_meter_or_panic(&env, meter_id);
         meter.user.require_auth();
 
+        // Idempotent no-op guard: re-pausing a paused meter previously still
+        // wrote storage, refreshed activity timestamps and re-emitted the
+        // event, polluting the activity feed.
+        if meter.is_paused == paused {
+            return;
+        }
+
         meter.is_paused = paused;
         let now = env.ledger().timestamp();
         let was_active = meter.is_active;
@@ -5740,8 +5747,11 @@ impl UtilityContract {
             .instance()
             .set(&DataKey::Meter(meter_id), &meter);
 
-        env.events()
-            .publish((symbol_short!("Paused"), meter_id), paused);
+        // Event now carries the acting user for auditability.
+        env.events().publish(
+            (symbol_short!("Paused"), meter_id),
+            (meter.user.clone(), paused),
+        );
     }
 
     pub fn set_tiered_pricing(env: Env, meter_id: u64, threshold: i128, rate: i128) {
