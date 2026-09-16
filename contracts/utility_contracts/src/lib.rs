@@ -4853,6 +4853,11 @@ impl UtilityContract {
             .get::<_, u32>(&DataKey::ActiveMetersCount)
             .unwrap_or(0);
         active_count += 1;
+        // The counter was incremented in memory but never persisted, so it
+        // always read back as zero; write it back on every registration.
+        env.storage()
+            .instance()
+            .set(&DataKey::ActiveMetersCount, &active_count);
 
         let now = env.ledger().timestamp();
         let peak_rate = off_peak_rate.saturating_mul(PEAK_RATE_MULTIPLIER) / RATE_PRECISION;
@@ -5597,6 +5602,21 @@ impl UtilityContract {
             .unwrap_or(0)
     }
 
+    /// Returns the number of currently active meters.
+    ///
+    /// The active counter was already maintained on registration, shutdown
+    /// and closure, but had no public getter, so fleet size — a key health
+    /// metric for providers and the reputation module — was unobservable.
+    ///
+    /// # Returns
+    /// * `u32` - Count of meters whose `is_active` flag is set.
+    pub fn get_active_meters_count(env: Env) -> u32 {
+        env.storage()
+            .instance()
+            .get::<DataKey, u32>(&DataKey::ActiveMetersCount)
+            .unwrap_or(0)
+    }
+
     pub fn get_provider_window(env: Env, provider: Address) -> Option<ProviderWithdrawalWindow> {
         env.storage()
             .instance()
@@ -5715,6 +5735,16 @@ impl UtilityContract {
 
         // Emergency shutdown always disables the meter regardless of balance
         meter.is_active = false;
+
+        // Keep the active-fleet counter in sync with shutdowns.
+        let active_count = env
+            .storage()
+            .instance()
+            .get::<DataKey, u32>(&DataKey::ActiveMetersCount)
+            .unwrap_or(0);
+        env.storage()
+            .instance()
+            .set(&DataKey::ActiveMetersCount, &active_count.saturating_sub(1));
 
         env.storage()
             .instance()
@@ -9410,6 +9440,57 @@ fn negate_g1(env: &Env, point: &Bytes) -> Bytes {
 
 #[cfg(all(test, feature = "full-tests"))]
 mod zk_tests;
+
+#[cfg(test)]
+mod active_meters_count_tests {
+    use super::*;
+    use soroban_sdk::testutils::{Address as _, Ledger as _};
+    use soroban_sdk::token::StellarAssetClient;
+
+    #[test]
+    fn active_count_tracks_registration_and_shutdown() {
+        let env = Env::default();
+        env.mock_all_auths();
+
+        let token_id = env
+            .register_stellar_asset_contract_v2(Address::generate(&env))
+            .address();
+        let contract_id = env.register(crate::UtilityContract, ());
+        let client = crate::UtilityContractClient::new(&env, &contract_id);
+        let token_admin = StellarAssetClient::new(&env, &token_id);
+
+        let provider = Address::generate(&env);
+        let user = Address::generate(&env);
+        token_admin.mint(&user, &1_000_000_000i128);
+        env.ledger().with_mut(|li| li.timestamp = 1_767_225_600);
+
+        assert_eq!(client.get_active_meters_count(), 0);
+
+        let m1 = client.register_meter(
+            &user,
+            &provider,
+            &1_000i128,
+            &token_id,
+            &BytesN::from_array(&env, &[1u8; 32]),
+            &0u32,
+        );
+        let m2 = client.register_meter(
+            &user,
+            &provider,
+            &1_000i128,
+            &token_id,
+            &BytesN::from_array(&env, &[2u8; 32]),
+            &0u32,
+        );
+        assert_eq!(client.get_active_meters_count(), 2);
+
+        // Shutdown decrements.
+        client.emergency_shutdown(&m1);
+        assert_eq!(client.get_active_meters_count(), 1);
+
+        let _ = m2;
+    }
+}
 
 #[cfg(test)]
 mod claim_paused_meter_tests {
