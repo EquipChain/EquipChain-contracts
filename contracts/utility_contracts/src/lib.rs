@@ -2009,6 +2009,28 @@ fn refresh_activity(meter: &mut Meter, _now: u64) {
     meter.is_active = total_value > 0 && !meter.is_paused && !meter.is_disputed && !meter.is_closed;
 }
 
+/// Adjust the active-meter counter after an `is_active` transition so the
+/// metric stays exactly in sync with the fleet state (it previously only
+/// counted registrations and never decremented).
+fn sync_active_count(env: &Env, was_active: bool, is_active: bool) {
+    if was_active == is_active {
+        return;
+    }
+    let count = env
+        .storage()
+        .instance()
+        .get::<DataKey, u32>(&DataKey::ActiveMetersCount)
+        .unwrap_or(0);
+    let updated = if is_active {
+        count.saturating_add(1)
+    } else {
+        count.saturating_sub(1)
+    };
+    env.storage()
+        .instance()
+        .set(&DataKey::ActiveMetersCount, &updated);
+}
+
 fn get_tax_rate_or_default(env: &Env) -> i128 {
     env.storage()
         .instance()
@@ -4847,18 +4869,6 @@ impl UtilityContract {
             .unwrap_or(0);
         count += 1;
 
-        let mut active_count = env
-            .storage()
-            .instance()
-            .get::<_, u32>(&DataKey::ActiveMetersCount)
-            .unwrap_or(0);
-        active_count += 1;
-        // The counter was incremented in memory but never persisted, so it
-        // always read back as zero; write it back on every registration.
-        env.storage()
-            .instance()
-            .set(&DataKey::ActiveMetersCount, &active_count);
-
         let now = env.ledger().timestamp();
         let peak_rate = off_peak_rate.saturating_mul(PEAK_RATE_MULTIPLIER) / RATE_PRECISION;
 
@@ -4927,6 +4937,8 @@ impl UtilityContract {
             is_updating: false,
             update_start_timestamp: 0,
         };
+
+        sync_active_count(&env, false, meter.is_active);
 
         env.storage().instance().set(&DataKey::Meter(count), &meter);
         env.storage().instance().set(&DataKey::Count, &count);
@@ -5035,7 +5047,10 @@ impl UtilityContract {
         }
 
         let now = env.ledger().timestamp();
+        let was_active = meter.is_active;
         refresh_activity(&mut meter, now);
+        sync_active_count(&env, was_active, meter.is_active);
+        sync_active_count(&env, was_active, meter.is_active);
 
         if !was_active && meter.is_active {
             meter.last_update = now;
@@ -5526,7 +5541,9 @@ impl UtilityContract {
         meter.last_claim_time = now;
 
         // Update activity status with grace period logic
+        let was_active = meter.is_active;
         refresh_activity(&mut meter, now);
+        sync_active_count(&env, was_active, meter.is_active);
 
         // Task #3: Auto-extend TTL if needed (every 500,000 ledgers)
         auto_extend_ttl_if_needed(&env, meter_id);
@@ -5670,7 +5687,9 @@ impl UtilityContract {
 
         meter.is_paused = paused;
         let now = env.ledger().timestamp();
+        let was_active = meter.is_active;
         refresh_activity(&mut meter, now);
+        sync_active_count(&env, was_active, meter.is_active);
 
         env.storage()
             .instance()
@@ -5743,18 +5762,12 @@ impl UtilityContract {
         let mut meter = get_meter_or_panic(&env, meter_id);
         meter.provider.require_auth();
 
-        // Emergency shutdown always disables the meter regardless of balance
+        // Emergency shutdown always disables the meter regardless of balance.
+        // Sync is transition-guarded: re-shutting-down an inactive meter no
+        // longer corrupts the counter.
+        let was_active = meter.is_active;
         meter.is_active = false;
-
-        // Keep the active-fleet counter in sync with shutdowns.
-        let active_count = env
-            .storage()
-            .instance()
-            .get::<DataKey, u32>(&DataKey::ActiveMetersCount)
-            .unwrap_or(0);
-        env.storage()
-            .instance()
-            .set(&DataKey::ActiveMetersCount, &active_count.saturating_sub(1));
+        sync_active_count(&env, was_active, meter.is_active);
 
         env.storage()
             .instance()
@@ -5858,6 +5871,7 @@ impl UtilityContract {
         let now = env.ledger().timestamp();
         let was_active = meter.is_active;
         refresh_activity(&mut meter, now);
+        sync_active_count(&env, was_active, meter.is_active);
 
         if !was_active && meter.is_active {
             meter.last_update = now;
@@ -6474,7 +6488,9 @@ impl UtilityContract {
         meter.challenge_timestamp = env.ledger().timestamp();
 
         let now = env.ledger().timestamp();
+        let was_active = meter.is_active;
         refresh_activity(&mut meter, now);
+        sync_active_count(&env, was_active, meter.is_active);
 
         env.storage()
             .instance()
@@ -6517,7 +6533,9 @@ impl UtilityContract {
         }
 
         let now = env.ledger().timestamp();
+        let was_active = meter.is_active;
         refresh_activity(&mut meter, now);
+        sync_active_count(&env, was_active, meter.is_active);
 
         env.storage()
             .instance()
@@ -6560,10 +6578,12 @@ impl UtilityContract {
             );
         }
 
+        let was_active = meter.is_active;
         meter.balance = 0;
         meter.debt = 0;
         meter.is_active = false;
         meter.is_disputed = false;
+        sync_active_count(&env, was_active, meter.is_active);
 
         env.storage()
             .instance()
@@ -9570,6 +9590,85 @@ mod active_meters_count_tests {
         assert_eq!(client.get_active_meters_count(), 1);
 
         let _ = m2;
+    }
+
+    #[test]
+    fn active_count_is_transition_guarded_against_double_decrement() {
+        let env = Env::default();
+        env.mock_all_auths();
+
+        let token_id = env
+            .register_stellar_asset_contract_v2(Address::generate(&env))
+            .address();
+        let contract_id = env.register(crate::UtilityContract, ());
+        let client = crate::UtilityContractClient::new(&env, &contract_id);
+        let token_admin = StellarAssetClient::new(&env, &token_id);
+
+        let provider = Address::generate(&env);
+        let user = Address::generate(&env);
+        token_admin.mint(&user, &1_000_000_000i128);
+        env.ledger().with_mut(|li| li.timestamp = 1_767_225_600);
+
+        let m1 = client.register_meter(
+            &user,
+            &provider,
+            &1_000i128,
+            &token_id,
+            &BytesN::from_array(&env, &[1u8; 32]),
+            &0u32,
+        );
+        assert_eq!(client.get_active_meters_count(), 1);
+
+        client.emergency_shutdown(&m1);
+        assert_eq!(client.get_active_meters_count(), 0);
+
+        // Re-shutting-down an already inactive meter must NOT decrement again
+        // (the pre-fix unconditional decrement drove the counter negative and
+        // corrupted it permanently).
+        client.emergency_shutdown(&m1);
+        client.emergency_shutdown(&m1);
+        assert_eq!(
+            client.get_active_meters_count(),
+            0,
+            "double shutdown must not corrupt the counter"
+        );
+    }
+
+    #[test]
+    fn active_count_tracks_pause_and_reactivation() {
+        let env = Env::default();
+        env.mock_all_auths();
+
+        let token_id = env
+            .register_stellar_asset_contract_v2(Address::generate(&env))
+            .address();
+        let contract_id = env.register(crate::UtilityContract, ());
+        let client = crate::UtilityContractClient::new(&env, &contract_id);
+        let token_admin = StellarAssetClient::new(&env, &token_id);
+
+        let provider = Address::generate(&env);
+        let user = Address::generate(&env);
+        token_admin.mint(&user, &1_000_000_000i128);
+        env.ledger().with_mut(|li| li.timestamp = 1_767_225_600);
+
+        let m1 = client.register_meter(
+            &user,
+            &provider,
+            &1_000i128,
+            &token_id,
+            &BytesN::from_array(&env, &[1u8; 32]),
+            &0u32,
+        );
+        client.top_up(&m1, &10_000i128, &user);
+        assert_eq!(client.get_active_meters_count(), 1);
+
+        // User pause deactivates a funded meter.
+        client.set_meter_pause(&m1, &true);
+        assert_eq!(client.get_active_meters_count(), 0);
+
+        // Unpause reactivates.
+        client.set_meter_pause(&m1, &false);
+        assert_eq!(client.get_active_meters_count(), 1);
     }
 }
 
