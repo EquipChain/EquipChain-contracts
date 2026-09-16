@@ -6466,9 +6466,14 @@ impl UtilityContract {
             amount
         };
 
-        // Apply max flow rate cap
+        // Apply max flow rate cap. Saturating: the provider can lower the
+        // hourly cap below the amount already claimed this hour, which would
+        // make the plain subtraction underflow to i128::MIN and zero out the
+        // claim.
         let final_claimable = if claimable > 0 {
-            let remaining_hourly_capacity = meter.max_flow_rate_per_hour - meter.claimed_this_hour;
+            let remaining_hourly_capacity = meter
+                .max_flow_rate_per_hour
+                .saturating_sub(meter.claimed_this_hour);
             if claimable > remaining_hourly_capacity {
                 remaining_hourly_capacity
             } else {
@@ -6498,9 +6503,13 @@ impl UtilityContract {
         }
 
         meter.last_update = now;
+        let was_active = meter.is_active;
         if meter.balance <= 0 {
             meter.is_active = false;
         }
+        // A drained meter leaves the active fleet: sync the counter (this
+        // path previously wrote is_active without touching the count).
+        sync_active_count(&env, was_active, meter.is_active);
 
         env.storage()
             .instance()
@@ -9729,6 +9738,107 @@ mod admin_unification_tests {
         assert!(
             r.is_err(),
             "role appointment must require the real admin"
+        );
+    }
+}
+
+#[cfg(test)]
+mod claim_alerts_hardening_tests {
+    use super::*;
+    use soroban_sdk::testutils::{Address as _, Ledger as _};
+    use soroban_sdk::token::StellarAssetClient;
+
+    fn setup() -> (
+        Env,
+        crate::UtilityContractClient<'static>,
+        Address,
+        Address,
+        u64,
+    ) {
+        let env = Env::default();
+        env.mock_all_auths();
+
+        let token_id = env
+            .register_stellar_asset_contract_v2(Address::generate(&env))
+            .address();
+        let contract_id = env.register(crate::UtilityContract, ());
+        let client = crate::UtilityContractClient::new(&env, &contract_id);
+        let token_admin = StellarAssetClient::new(&env, &token_id);
+
+        let provider = Address::generate(&env);
+        let user = Address::generate(&env);
+        token_admin.mint(&user, &1_000_000_000i128);
+        token_admin.mint(&contract_id, &10_000_000_000i128);
+        env.ledger().with_mut(|li| li.timestamp = 1_767_225_600);
+
+        let meter_id = client.register_meter(
+            &user,
+            &provider,
+            &1_000i128,
+            &token_id,
+            &BytesN::from_array(&env, &[1u8; 32]),
+            &0u32,
+        );
+        client.top_up(&meter_id, &100_000i128, &user);
+
+        (env, client, provider, user, meter_id)
+    }
+
+    #[test]
+    fn lowered_hourly_cap_does_not_zero_out_claims() {
+        let (env, client, provider, _user, meter_id) = setup();
+
+        // Claim part of the hour at the default cap (3_600_000).
+        env.ledger().with_mut(|li| {
+            li.timestamp += 10; // 10_000
+        });
+        client.claim_with_alerts(&meter_id);
+        assert_eq!(
+            client.get_meter(&meter_id).unwrap().claimed_this_hour,
+            10_000
+        );
+
+        // Provider lowers the hourly cap below the amount already claimed.
+        client.set_max_flow_rate(&meter_id, &5_000i128);
+
+        // Second claim in the same hour: remaining capacity computes to a
+        // negative number; must saturate to 0, not underflow.
+        client.claim_with_alerts(&meter_id);
+
+        let meter = client.get_meter(&meter_id).unwrap();
+        assert_eq!(
+            meter.claimed_this_hour, 10_000,
+            "no additional claim possible when cap < already claimed"
+        );
+        assert_eq!(meter.balance, 90_000);
+    }
+
+    #[test]
+    fn drained_meter_leaves_active_fleet_count() {
+        let (env, client, _provider, _user, meter_id) = setup();
+
+        assert_eq!(client.get_active_meters_count(), 1);
+
+        // Drain via repeated claims: each hour claims the full cap.
+        for _ in 0..40 {
+            env.ledger().with_mut(|li| {
+                li.timestamp += 3600;
+            });
+            client.claim_with_alerts(&meter_id);
+            if client.get_meter(&meter_id).unwrap().balance <= 0 {
+                break;
+            }
+        }
+
+        assert_eq!(
+            client.get_meter(&meter_id).unwrap().balance,
+            0,
+            "meter must be drained"
+        );
+        assert_eq!(
+            client.get_active_meters_count(),
+            0,
+            "drained meter must leave the active count"
         );
     }
 }
