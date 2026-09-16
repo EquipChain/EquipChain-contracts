@@ -1274,6 +1274,19 @@ const EMERGENCY_DRAIN_MIN_AMOUNT: i128 = 1_000_000; // Minimum 0.0001 XLM for dr
 const MAX_PROTOCOL_FEE_BPS: i128 = 1000; // Maximum 10% protocol fee
 const MAX_RESELLER_FEE_BPS: i128 = 500; // Maximum 5% reseller fee
 
+/// Canonical zero account address (all-zero Ed25519 key). No one holds this
+/// key, so any role, payout, vault or referral target set to it is
+/// unrecoverable. Admin and user-configurable setters reject it.
+const ZERO_ADDRESS_STRKEY: &str = "GAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWHF";
+
+/// Returns true when `addr` is the canonical all-zero account address.
+/// Such an address has no owner, so funds or roles assigned to it are
+/// permanently lost — callers must reject it up front.
+fn is_zero_address(env: &Env, addr: &Address) -> bool {
+    let zero = Address::from_str(env, ZERO_ADDRESS_STRKEY);
+    addr == &zero
+}
+
 // Emergency drain tracking data structure
 #[contracttype]
 #[derive(Clone)]
@@ -3027,6 +3040,11 @@ impl UtilityContract {
     pub fn assign_reseller(env: Env, meter_id: u64, reseller: Address, fee_bps: i128) {
         let meter = get_meter_or_panic(&env, meter_id);
         meter.provider.require_auth();
+        // A reseller set to the zero address would silently divert the
+        // reseller fee share to an unrecoverable sink.
+        if is_zero_address(&env, &reseller) {
+            panic_with_error!(&env, ContractError::InvalidAddress);
+        }
         if fee_bps > MAX_RESELLER_FEE_BPS {
             panic_with_error!(&env, ContractError::InvalidResellerFee);
         }
@@ -3151,6 +3169,12 @@ impl UtilityContract {
     /// ```
     pub fn set_maintenance_config(env: Env, wallet: Address, fee_bps: i128) {
         require_admin_auth(&env);
+
+        // Funds sent to the canonical zero address are unrecoverable, so the
+        // protocol fee destination must never be it.
+        if is_zero_address(&env, &wallet) {
+            panic_with_error!(&env, ContractError::InvalidAddress);
+        }
 
         if fee_bps < 0 {
             panic_with_error!(&env, ContractError::InvalidFeeAmount);
@@ -4510,7 +4534,9 @@ impl UtilityContract {
             priority_index,
         );
 
-        if referrer != user {
+        // Skip self-referrals and referrals pointing at the canonical zero
+        // address (reward credits to it would be permanently unspendable).
+        if referrer != user && !is_zero_address(&env, &referrer) {
             let meter = get_meter_or_panic(&env, meter_id);
 
             // Issue #44: the referral reward used to be credited directly to
@@ -9224,3 +9250,111 @@ fn negate_g1(env: &Env, point: &Bytes) -> Bytes {
 
 #[cfg(all(test, feature = "full-tests"))]
 mod zk_tests;
+
+#[cfg(test)]
+mod zero_address_tests {
+    use super::*;
+    use soroban_sdk::testutils::{Address as _, Ledger as _};
+
+    fn test_env() -> (
+        Env,
+        crate::UtilityContractClient<'static>,
+        Address,
+        Address,
+        Address,
+        Address,
+    ) {
+        let env = Env::default();
+        env.mock_all_auths();
+
+        let token_id = env
+            .register_stellar_asset_contract_v2(Address::generate(&env))
+            .address();
+        let contract_id = env.register(crate::UtilityContract, ());
+        let client = crate::UtilityContractClient::new(&env, &contract_id);
+        let token_admin = soroban_sdk::token::StellarAssetClient::new(&env, &token_id);
+
+        let admin = Address::generate(&env);
+        let provider = Address::generate(&env);
+        let user = Address::generate(&env);
+        token_admin.mint(&user, &1_000_000_000i128);
+        env.ledger().with_mut(|li| li.timestamp = 1_767_225_600);
+
+        // Bootstrap admin once (one-time admin slot initialization).
+        client.set_admin(&admin);
+
+        (env, client, token_id, admin, provider, user)
+    }
+
+    #[test]
+    fn zero_address_rejected_everywhere() {
+        let (env, client, token_id, _admin, provider, user) = test_env();
+
+        // Zero-address strkey per STP-0001 for account addresses.
+        let zero =
+            Address::from_str(&env, "GAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWHF");
+
+        // set_maintenance_config: zero wallet must panic.
+        let r = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            client.set_maintenance_config(&zero, &0i128);
+        }));
+        assert!(r.is_err(), "zero maintenance wallet must be rejected");
+
+        // assign_reseller: zero reseller must panic.
+        let meter_id = client.register_meter(
+            &user,
+            &provider,
+            &1_000i128,
+            &token_id,
+            &BytesN::from_array(&env, &[1u8; 32]),
+            &0u32,
+        );
+        let r = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            client.assign_reseller(&meter_id, &zero, &100i128);
+        }));
+        assert!(r.is_err(), "zero reseller must be rejected");
+
+        // register_with_referral: zero referrer must be silently ignored
+        // (no referral recorded, no pending reward minted).
+        let m2 = client.register_with_referral(
+            &user,
+            &provider,
+            &1_000i128,
+            &token_id,
+            &BytesN::from_array(&env, &[2u8; 32]),
+            &zero,
+            &0u32,
+        );
+        assert_eq!(m2, meter_id + 1);
+    }
+
+    #[test]
+    fn valid_nonzero_recipients_are_accepted() {
+        let (env, client, token_id, admin, provider, user) = test_env();
+
+        // Non-zero addresses must still be accepted.
+        client.set_maintenance_config(&provider, &100i128);
+        let meter_id = client.register_meter(
+            &user,
+            &provider,
+            &1_000i128,
+            &token_id,
+            &BytesN::from_array(&env, &[3u8; 32]),
+            &0u32,
+        );
+        client.assign_reseller(&meter_id, &admin, &100i128);
+
+        // Referral to a legitimate other account still registers.
+        let other = Address::generate(&env);
+        let m2 = client.register_with_referral(
+            &user,
+            &provider,
+            &1_000i128,
+            &token_id,
+            &BytesN::from_array(&env, &[4u8; 32]),
+            &other,
+            &0u32,
+        );
+        assert_eq!(m2, meter_id + 1);
+    }
+}
