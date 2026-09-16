@@ -5852,6 +5852,32 @@ impl UtilityContract {
         }
     }
 
+    /// Combined liveness snapshot for a meter.
+    ///
+    /// Reproduces the exact heartbeat/grace-period logic the settlement path
+    /// uses so off-chain monitors can predict how the next claim will treat
+    /// the device without duplicating thresholds client-side.
+    ///
+    /// # Returns
+    /// * `(bool, bool, u64)` - `(is_online, within_grace_period, seconds_since_heartbeat)`.
+    pub fn get_meter_liveness(env: Env, meter_id: u64) -> (bool, bool, u64) {
+        match env
+            .storage()
+            .instance()
+            .get::<DataKey, Meter>(&DataKey::Meter(meter_id))
+        {
+            Some(meter) => {
+                let now = env.ledger().timestamp();
+                let since_heartbeat = now.saturating_sub(meter.last_heartbeat);
+                let online = since_heartbeat <= HEARTBEAT_THRESHOLD_SECONDS;
+                let in_grace = !online
+                    && now.saturating_sub(meter.grace_period_start) <= GRACE_PERIOD_SECONDS;
+                (online, in_grace, since_heartbeat)
+            }
+            None => (false, false, u64::MAX),
+        }
+    }
+
     pub fn is_meter_offline(env: Env, meter_id: u64) -> bool {
         match env
             .storage()
@@ -9375,6 +9401,88 @@ fn negate_g1(env: &Env, point: &Bytes) -> Bytes {
 
 #[cfg(all(test, feature = "full-tests"))]
 mod zk_tests;
+
+#[cfg(test)]
+mod meter_liveness_view_tests {
+    use super::*;
+    use soroban_sdk::testutils::{Address as _, Ledger as _};
+    use soroban_sdk::token::StellarAssetClient;
+
+    fn setup_meter() -> (
+        Env,
+        crate::UtilityContractClient<'static>,
+        Address,
+        Address,
+        u64,
+    ) {
+        let env = Env::default();
+        env.mock_all_auths();
+
+        let token_id = env
+            .register_stellar_asset_contract_v2(Address::generate(&env))
+            .address();
+        let contract_id = env.register(crate::UtilityContract, ());
+        let client = crate::UtilityContractClient::new(&env, &contract_id);
+        let token_admin = StellarAssetClient::new(&env, &token_id);
+
+        let provider = Address::generate(&env);
+        let user = Address::generate(&env);
+        token_admin.mint(&user, &1_000_000_000i128);
+        env.ledger().with_mut(|li| li.timestamp = 1_767_225_600);
+
+        let meter_id = client.register_meter(
+            &user,
+            &provider,
+            &1_000i128,
+            &token_id,
+            &BytesN::from_array(&env, &[1u8; 32]),
+            &0u32,
+        );
+
+        (env, client, provider, user, meter_id)
+    }
+
+    #[test]
+    fn liveness_transitions_online_to_grace_to_offline() {
+        let (env, client, _provider, user, meter_id) = setup_meter();
+
+        // Freshly registered: online.
+        let (online, grace, since) = client.get_meter_liveness(&meter_id);
+        assert!(online);
+        assert!(!grace);
+        assert_eq!(since, 0);
+
+        // Past heartbeat threshold but within grace: heartbeat update first.
+        env.ledger().with_mut(|li| {
+            li.timestamp += HEARTBEAT_THRESHOLD_SECONDS + 60;
+        });
+        client.update_heartbeat(&meter_id);
+        let (online2, grace2, _) = client.get_meter_liveness(&meter_id);
+        assert!(online2);
+        assert!(!grace2);
+
+        // Past heartbeat threshold again, no update: offline, not yet in
+        // grace-marked state (grace_period_start is only set by settlement).
+        env.ledger().with_mut(|li| {
+            li.timestamp += HEARTBEAT_THRESHOLD_SECONDS + 120;
+        });
+        let (online3, _grace3, since3) = client.get_meter_liveness(&meter_id);
+        assert!(!online3);
+        assert!(since3 > HEARTBEAT_THRESHOLD_SECONDS);
+
+        let _ = user;
+    }
+
+    #[test]
+    fn liveness_for_unknown_meter_is_offline_sentinel() {
+        let (_env, client, _provider, _user, _meter_id) = setup_meter();
+
+        let (online, grace, since) = client.get_meter_liveness(&999_999);
+        assert!(!online);
+        assert!(!grace);
+        assert_eq!(since, u64::MAX);
+    }
+}
 
 #[cfg(test)]
 mod reseller_fee_validation_tests {
