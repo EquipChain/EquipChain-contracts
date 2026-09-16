@@ -5628,6 +5628,15 @@ impl UtilityContract {
         let mut meter = get_meter_or_panic(&env, meter_id);
         meter.provider.require_auth();
 
+        // A negative tier rate would make consumption *credit* the payer,
+        // and a negative threshold is meaningless for a usage volume tier.
+        if rate < 0 {
+            panic_with_error!(&env, ContractError::InvalidTokenAmount);
+        }
+        if threshold < 0 {
+            panic_with_error!(&env, ContractError::InvalidUsageValue);
+        }
+
         meter.tier_threshold = threshold;
         meter.tier_rate = rate;
 
@@ -9314,6 +9323,87 @@ fn negate_g1(env: &Env, point: &Bytes) -> Bytes {
 
 #[cfg(all(test, feature = "full-tests"))]
 mod zk_tests;
+
+#[cfg(test)]
+mod tiered_pricing_validation_tests {
+    use super::*;
+    use soroban_sdk::testutils::{Address as _, Ledger as _};
+    use soroban_sdk::token::StellarAssetClient;
+
+    #[test]
+    fn negative_tier_rate_and_threshold_rejected() {
+        let env = Env::default();
+        env.mock_all_auths();
+
+        let token_id = env
+            .register_stellar_asset_contract_v2(Address::generate(&env))
+            .address();
+        let contract_id = env.register(crate::UtilityContract, ());
+        let client = crate::UtilityContractClient::new(&env, &contract_id);
+        let token_admin = StellarAssetClient::new(&env, &token_id);
+
+        let provider = Address::generate(&env);
+        let user = Address::generate(&env);
+        token_admin.mint(&user, &1_000_000_000i128);
+        env.ledger().with_mut(|li| li.timestamp = 1_767_225_600);
+
+        let meter_id = client.register_meter(
+            &user,
+            &provider,
+            &1_000i128,
+            &token_id,
+            &BytesN::from_array(&env, &[1u8; 32]),
+            &0u32,
+        );
+
+        let r1 = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            client.set_tiered_pricing(&meter_id, &100_000i128, &-1i128);
+        }));
+        assert!(r1.is_err(), "negative tier rate must be rejected");
+
+        let r2 = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            client.set_tiered_pricing(&meter_id, &-100i128, &1_500i128);
+        }));
+        assert!(r2.is_err(), "negative threshold must be rejected");
+
+        // Values unchanged after the rejected calls.
+        let meter = client.get_meter(&meter_id).unwrap();
+        assert_eq!(meter.tier_threshold, 100_000);
+        assert_eq!(meter.tier_rate, 1_200); // 1_000 * 120 / 100
+    }
+
+    #[test]
+    fn valid_tier_configuration_accepted() {
+        let env = Env::default();
+        env.mock_all_auths();
+
+        let token_id = env
+            .register_stellar_asset_contract_v2(Address::generate(&env))
+            .address();
+        let contract_id = env.register(crate::UtilityContract, ());
+        let client = crate::UtilityContractClient::new(&env, &contract_id);
+        let token_admin = StellarAssetClient::new(&env, &token_id);
+
+        let provider = Address::generate(&env);
+        let user = Address::generate(&env);
+        token_admin.mint(&user, &1_000_000_000i128);
+        env.ledger().with_mut(|li| li.timestamp = 1_767_225_600);
+
+        let meter_id = client.register_meter(
+            &user,
+            &provider,
+            &1_000i128,
+            &token_id,
+            &BytesN::from_array(&env, &[1u8; 32]),
+            &0u32,
+        );
+
+        client.set_tiered_pricing(&meter_id, &200_000i128, &800i128);
+        let meter = client.get_meter(&meter_id).unwrap();
+        assert_eq!(meter.tier_threshold, 200_000);
+        assert_eq!(meter.tier_rate, 800);
+    }
+}
 
 #[cfg(test)]
 mod withdraw_earnings_tests {
