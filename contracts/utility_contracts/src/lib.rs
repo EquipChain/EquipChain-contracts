@@ -5521,6 +5521,28 @@ impl UtilityContract {
                     client.transfer(&env.current_contract_address(), &wallet, &fee);
                 }
             }
+
+            // Reseller split: the meter's configured reseller receives their
+            // fee share directly from the settlement. This split previously
+            // existed only in the (unused) settle_claim_for_meter helper, so
+            // providers who called assign_reseller never actually paid the
+            // reseller their contracted share.
+            let reseller_payout = get_reseller_cut(&env, meter_id, payout);
+            if reseller_payout > 0 {
+                if let Some(config) = get_reseller_config_impl(&env, meter_id) {
+                    client.transfer(
+                        &env.current_contract_address(),
+                        &config.reseller,
+                        &reseller_payout,
+                    );
+                    env.events().publish(
+                        (symbol_short!("RslrPay"), meter_id),
+                        (config.reseller.clone(), reseller_payout),
+                    );
+                }
+                payout -= reseller_payout;
+            }
+
             if payout > 0 {
                 client.transfer(&env.current_contract_address(), &meter.provider, &payout);
             }
@@ -9652,6 +9674,102 @@ mod admin_unification_tests {
             r.is_err(),
             "role appointment must require the real admin"
         );
+    }
+}
+
+#[cfg(test)]
+mod reseller_settlement_tests {
+    use super::*;
+    use soroban_sdk::testutils::{Address as _, Ledger as _};
+    use soroban_sdk::token::{Client as TokenClient, StellarAssetClient};
+
+    fn setup() -> (
+        Env,
+        crate::UtilityContractClient<'static>,
+        TokenClient<'static>,
+        Address,
+        Address,
+        Address,
+        Address,
+        u64,
+    ) {
+        let env = Env::default();
+        env.mock_all_auths();
+
+        let token_id = env
+            .register_stellar_asset_contract_v2(Address::generate(&env))
+            .address();
+        let contract_id = env.register(crate::UtilityContract, ());
+        let client = crate::UtilityContractClient::new(&env, &contract_id);
+        let token_admin = StellarAssetClient::new(&env, &token_id);
+        let token = TokenClient::new(&env, &token_id);
+
+        let admin = Address::generate(&env);
+        let provider = Address::generate(&env);
+        let reseller = Address::generate(&env);
+        let user = Address::generate(&env);
+        token_admin.mint(&user, &1_000_000_000i128);
+        token_admin.mint(&contract_id, &10_000_000_000i128);
+        env.ledger().with_mut(|li| li.timestamp = 1_767_225_600);
+
+        client.set_admin(&admin);
+
+        let meter_id = client.register_meter(
+            &user,
+            &provider,
+            &1_000i128,
+            &token_id,
+            &BytesN::from_array(&env, &[1u8; 32]),
+            &0u32,
+        );
+        client.top_up(&meter_id, &100_000i128, &user);
+
+        (
+            env, client, token, admin, provider, reseller, user, meter_id,
+        )
+    }
+
+    #[test]
+    fn reseller_receives_contracted_share_on_claim() {
+        let (env, client, token, _admin, provider, reseller, _user, meter_id) = setup();
+
+        // Configure a 5% reseller fee (within the 500 bps cap).
+        client.assign_reseller(&meter_id, &reseller, &500i128);
+
+        let reseller_before = token.balance(&reseller);
+        let provider_before = token.balance(&provider);
+
+        env.ledger().with_mut(|li| {
+            li.timestamp += 10; // gross 10_000
+        });
+        client.claim(&meter_id);
+
+        // Default 50 bps tax: after-tax = 9_950; no protocol fee configured.
+        // Reseller cut = 5% of 9_950 = 497 (floor); provider gets 9_453.
+        let reseller_paid = token.balance(&reseller) - reseller_before;
+        let provider_paid = token.balance(&provider) - provider_before;
+        assert_eq!(reseller_paid, 497, "reseller must receive the contracted share");
+        assert_eq!(provider_paid, 9_950 - 497);
+
+        let _ = env;
+    }
+
+    #[test]
+    fn no_reseller_configured_means_full_provider_payout() {
+        let (env, client, token, _admin, provider, reseller, _user, meter_id) = setup();
+
+        let reseller_before = token.balance(&reseller);
+        let provider_before = token.balance(&provider);
+
+        env.ledger().with_mut(|li| {
+            li.timestamp += 10; // gross 10_000
+        });
+        client.claim(&meter_id);
+
+        // Without a reseller config the whole after-tax amount goes to the
+        // provider (default 50 bps tax => 9_950).
+        assert_eq!(token.balance(&reseller), reseller_before);
+        assert_eq!(token.balance(&provider) - provider_before, 9_950);
     }
 }
 
