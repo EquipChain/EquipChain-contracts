@@ -4805,6 +4805,18 @@ impl UtilityContract {
         validate_ed25519_public_key(&env, &device_public_key)
             .unwrap_or_else(|_| panic_with_error!(&env, ContractError::InvalidSignature));
 
+        // Issue #273-style rate bounds: a zero or negative rate makes
+        // depletion math degenerate (balance / rate division) and lets a
+        // meter accrue claims that never converge, while an unbounded rate
+        // lets a misconfigured or hostile provider tariff drain a payer's
+        // balance in a single settlement. Clamp both directions.
+        if off_peak_rate < MIN_FLOW_RATE_PER_SECOND {
+            panic_with_error!(&env, ContractError::FlowRateTooLow);
+        }
+        if off_peak_rate > MAX_FLOW_RATE_PER_SECOND {
+            panic_with_error!(&env, ContractError::FlowRateTooHigh);
+        }
+
         let mut count = env
             .storage()
             .instance()
@@ -9250,6 +9262,101 @@ fn negate_g1(env: &Env, point: &Bytes) -> Bytes {
 
 #[cfg(all(test, feature = "full-tests"))]
 mod zk_tests;
+
+#[cfg(test)]
+mod rate_validation_tests {
+    use super::*;
+    use soroban_sdk::testutils::{Address as _, Ledger as _};
+
+    fn setup() -> (
+        Env,
+        crate::UtilityContractClient<'static>,
+        Address,
+        Address,
+        Address,
+    ) {
+        let env = Env::default();
+        env.mock_all_auths();
+
+        let token_id = env
+            .register_stellar_asset_contract_v2(Address::generate(&env))
+            .address();
+        let contract_id = env.register(crate::UtilityContract, ());
+        let client = crate::UtilityContractClient::new(&env, &contract_id);
+
+        let provider = Address::generate(&env);
+        let user = Address::generate(&env);
+        env.ledger().with_mut(|li| li.timestamp = 1_767_225_600);
+
+        (env, client, token_id, provider, user)
+    }
+
+    #[test]
+    fn rejects_zero_negative_and_overflow_rates() {
+        let (env, client, token_id, provider, user) = setup();
+
+        for bad_rate in [0i128, -1i128, -1_000_000i128] {
+            let r = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+                client.register_meter(
+                    &user,
+                    &provider,
+                    &bad_rate,
+                    &token_id,
+                    &BytesN::from_array(&env, &[9u8; 32]),
+                    &0u32,
+                );
+            }));
+            assert!(r.is_err(), "rate {bad_rate} must be rejected");
+        }
+
+        // Above the 10^18 stroops/second ceiling.
+        let r = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            client.register_meter(
+                &user,
+                &provider,
+                &(MAX_FLOW_RATE_PER_SECOND + 1),
+                &token_id,
+                &BytesN::from_array(&env, &[9u8; 32]),
+                &0u32,
+            );
+        }));
+        assert!(r.is_err(), "rate above ceiling must be rejected");
+    }
+
+    #[test]
+    fn accepts_boundary_rates_and_derives_safe_fields() {
+        let (env, client, token_id, provider, user) = setup();
+
+        // Minimum viable rate.
+        let low = client.register_meter(
+            &user,
+            &provider,
+            &MIN_FLOW_RATE_PER_SECOND,
+            &token_id,
+            &BytesN::from_array(&env, &[1u8; 32]),
+            &0u32,
+        );
+        let m_low = client.get_meter(&low).unwrap();
+        assert_eq!(m_low.off_peak_rate, MIN_FLOW_RATE_PER_SECOND);
+        // Peak derivation stays non-negative and finite.
+        assert!(m_low.peak_rate >= 0);
+
+        // Maximum allowed rate: derived fields must saturate, not overflow.
+        let high = client.register_meter(
+            &user,
+            &provider,
+            &MAX_FLOW_RATE_PER_SECOND,
+            &token_id,
+            &BytesN::from_array(&env, &[2u8; 32]),
+            &0u32,
+        );
+        let m_high = client.get_meter(&high).unwrap();
+        assert_eq!(m_high.off_peak_rate, MAX_FLOW_RATE_PER_SECOND);
+        assert!(m_high.peak_rate > 0);
+        assert!(m_high.max_flow_rate_per_hour > 0);
+        assert!(m_high.tier_rate > 0);
+    }
+}
 
 #[cfg(test)]
 mod zero_address_tests {
