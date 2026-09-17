@@ -5533,41 +5533,29 @@ impl UtilityContract {
         let current_hour = now / 3600;
         let last_claim_hour = meter.last_claim_time / 3600;
 
-        // Determine claimable amount
-        let claimable = if current_hour == last_claim_hour {
-            // Same hour, check if we exceed max flow rate
-            let max_allowed = meter.max_flow_rate_per_hour - meter.claimed_this_hour;
-            let actual_amount = if amount > max_allowed {
-                max_allowed
-            } else {
-                amount
-            };
-
-            // Ensure we don't exceed debt threshold
-            if actual_amount > meter.balance && meter.balance - actual_amount >= DEBT_THRESHOLD {
-                actual_amount
-            } else if actual_amount > meter.balance && meter.balance >= DEBT_THRESHOLD {
-                meter.balance - DEBT_THRESHOLD // Allow going down to threshold
-            } else if actual_amount > meter.balance {
-                0 // Balance already below the debt floor: nothing claimable
-            } else {
-                actual_amount
-            }
+        // Reset the hourly velocity counter on hour rollover.
+        let effective_claimed_this_hour = if current_hour == last_claim_hour {
+            meter.claimed_this_hour
         } else {
-            // New hour, reset claimed_this_hour
             meter.claimed_this_hour = 0;
-
-            // Ensure we don't exceed debt threshold
-            if amount > meter.balance && meter.balance - amount >= DEBT_THRESHOLD {
-                amount
-            } else if amount > meter.balance && meter.balance >= DEBT_THRESHOLD {
-                meter.balance - DEBT_THRESHOLD // Allow going down to threshold
-            } else if amount > meter.balance {
-                0 // Balance already below the debt floor: nothing claimable
-            } else {
-                amount
-            }
+            0
         };
+
+        // Claimable is hard-capped at (a) the remaining hourly velocity
+        // allowance and (b) the meter's current NON-NEGATIVE balance.
+        // The previous DEBT_THRESHOLD allowance let a settlement drive a
+        // prepaid balance negative, i.e. mint value from the shared pool:
+        // any registered but unfunded meter could pay its provider up to
+        // |DEBT_THRESHOLD| (10 XLM) per claim, repeatable across arbitrarily
+        // many fresh registrations. Legitimate postpaid obligations are
+        // accrued through the dedicated guarantor/debt paths, never by
+        // overdrawing prepaid balance here - claim_with_alerts already
+        // enforced exactly this clamp.
+        let hourly_headroom = meter
+            .max_flow_rate_per_hour
+            .saturating_sub(effective_claimed_this_hour)
+            .max(0);
+        let claimable = amount.min(hourly_headroom).min(meter.balance.max(0));
 
         // Net amount actually forwarded to the provider after tax and
         // protocol fee; published in the Claim event so settlement observers
@@ -10507,7 +10495,7 @@ mod pause_settlement_guard_tests {
     use soroban_sdk::testutils::{Address as _, Ledger as _};
     use soroban_sdk::token::StellarAssetClient;
 
-    fn setup() -> (Env, UtilityContractClient<'static>, Address, Address, u64) {
+    pub(crate) fn setup() -> (Env, UtilityContractClient<'static>, Address, Address, u64) {
         let env = Env::default();
         env.mock_all_auths();
         let token_id = env
@@ -10907,6 +10895,65 @@ mod transfer_guard_tests {
         assert!(r.is_err(), "zero-address transfer must be rejected");
         // Owner unchanged.
         assert_eq!(client.get_meter(&meter_id).unwrap().user, user);
+    }
+}
+
+#[cfg(test)]
+mod claim_solvent_clamp_tests {
+    use super::*;
+    use soroban_sdk::testutils::{Address as _, Ledger as _};
+    use soroban_sdk::token::StellarAssetClient;
+
+    /// Regression: claim() allowed prepaid settlement to drive the balance
+    /// negative down to DEBT_THRESHOLD, so a registered-but-unfunded meter
+    /// could mint up to |DEBT_THRESHOLD| (10 XLM) of pool value per claim.
+    #[test]
+    fn unfunded_meter_claims_nothing() {
+        let env = Env::default();
+        env.mock_all_auths();
+        let token_id = env
+            .register_stellar_asset_contract_v2(Address::generate(&env))
+            .address();
+        let contract_id = env.register(crate::UtilityContract, ());
+        let client = crate::UtilityContractClient::new(&env, &contract_id);
+        let user = Address::generate(&env);
+        let provider = Address::generate(&env);
+        StellarAssetClient::new(&env, &token_id).mint(&contract_id, &10_000_000i128);
+
+        let meter_id = client.register_meter_with_mode(
+            &user,
+            &provider,
+            &1_000,
+            &token_id,
+            &BillingType::PrePaid,
+            &BytesN::from_array(&env, &[3u8; 32]),
+            &0,
+        );
+
+        // 2 hours of "service" on a meter that has NEVER been funded.
+        env.ledger().with_mut(|li| li.timestamp += 2 * HOUR_IN_SECONDS);
+        client.claim(&meter_id);
+
+        let meter = client.get_meter(&meter_id).unwrap();
+        assert_eq!(
+            meter.balance, 0,
+            "unfunded meter must claim nothing (no negative-balance mint)"
+        );
+    }
+
+    #[test]
+    fn solvent_claim_is_capped_at_balance() {
+        let (env, client, user, provider, meter_id) = pause_settlement_guard_tests::setup();
+        // Balance is 1_000_000 at rate 1000/s: 2h of accrual (7.2M) exceeds
+        // it, the claim must pay out exactly the balance and stop at zero -
+        // not at balance + |DEBT_THRESHOLD|.
+        env.ledger().with_mut(|li| li.timestamp += 2 * HOUR_IN_SECONDS);
+        client.claim(&meter_id);
+
+        let meter = client.get_meter(&meter_id).unwrap();
+        assert_eq!(meter.balance, 0, "claim must stop at exactly zero");
+        assert!(meter.balance >= 0);
+        let _ = (user, provider);
     }
 }
 
@@ -12296,28 +12343,23 @@ mod claim_underflow_tests {
             &0u32,
         );
 
-        // Drive the meter balance below the debt floor (-10_000_000).
+        // Drive the meter to a near-zero balance, then accrue far more than
+        // it covers. The claim must pay out only the existing balance and
+        // clamp at exactly zero — settlement may never drive a prepaid
+        // balance negative (the old DEBT_THRESHOLD allowance minted pool
+        // value from unfunded or nearly-drained meters).
         client.top_up(&meter_id, &100i128, &user);
-        // Manually set the balance through public helpers: multiple small
-        // claims at high rate drain below the threshold.
-        // Directly simulate: use settle path via repeated claims is complex,
-        // so instead we craft the state through the exposed storage-free API:
-        // withdraw_earnings would panic identically, so exercise claim directly.
-        // We set up the condition by topping up only 100 and claiming at rate
-        // 1000/s for a long elapsed period — the claim must clamp to 0, not
-        // panic with a subtrahend overflow.
         env.ledger().with_mut(|li| {
             li.timestamp += 100_000; // far more than balance covers
         });
 
-        // Must not panic. The settle-down-to-floor path claims exactly the
-        // distance from the balance down to DEBT_THRESHOLD.
+        // Must not panic.
         client.claim(&meter_id);
 
         let meter = client.get_meter(&meter_id).unwrap();
-        // Balance settles at exactly the debt floor, never below it.
-        assert_eq!(meter.balance, DEBT_THRESHOLD);
-        assert_eq!(meter.balance, -10_000_000i128);
+        // Balance clamps at exactly zero, never below it.
+        assert_eq!(meter.balance, 0i128);
+        assert!(meter.balance >= 0);
     }
 
     #[test]
