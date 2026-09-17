@@ -6071,6 +6071,15 @@ impl UtilityContract {
         }
     }
 
+    /// Reports whether the meter's device is considered offline by the
+    /// settlement path.
+    ///
+    /// The threshold MUST be the settlement constant
+    /// (`HEARTBEAT_THRESHOLD_SECONDS`), not a locally chosen value: this view
+    /// exists so off-chain monitors can predict how the next claim will treat
+    /// the device. It previously hardcoded `HOUR_IN_SECONDS`, so any future
+    /// change to the settlement threshold would have silently desynced the
+    /// public view from actual billing behavior.
     pub fn is_meter_offline(env: Env, meter_id: u64) -> bool {
         match env
             .storage()
@@ -6081,7 +6090,7 @@ impl UtilityContract {
                 env.ledger()
                     .timestamp()
                     .saturating_sub(meter.last_heartbeat)
-                    > HOUR_IN_SECONDS
+                    > HEARTBEAT_THRESHOLD_SECONDS
             }
             None => true,
         }
@@ -10204,6 +10213,62 @@ mod heartbeat_recovery_tests {
         let after = client.get_meter(&meter_id).unwrap();
         assert!(after.last_heartbeat > before.last_heartbeat);
         assert!(!after.is_offline);
+    }
+}
+
+#[cfg(test)]
+mod offline_view_consistency_tests {
+    use super::*;
+    use soroban_sdk::testutils::{Address as _, Ledger as _};
+
+    /// The public liveness view must use the same threshold as the
+    /// settlement path (settle_claim_for_meter), otherwise monitors see an
+    /// offline device billed as online (or vice versa).
+    #[test]
+    fn view_matches_settlement_threshold() {
+        let env = Env::default();
+        env.mock_all_auths();
+        let contract_id = env.register(crate::UtilityContract, ());
+        let client = crate::UtilityContractClient::new(&env, &contract_id);
+        let meter_id = client.register_meter_with_mode(
+            &Address::generate(&env),
+            &Address::generate(&env),
+            &1_000,
+            &Address::generate(&env),
+            &BillingType::PrePaid,
+            &BytesN::from_array(&env, &[5u8; 32]),
+            &0,
+        );
+
+        // Just under the settlement threshold: settlement would treat the
+        // device as online, so the view must too.
+        env.ledger().with_mut(|li| {
+            li.timestamp += HEARTBEAT_THRESHOLD_SECONDS - 1;
+        });
+        assert!(
+            !client.is_meter_offline(&meter_id),
+            "within HEARTBEAT_THRESHOLD_SECONDS the meter is online"
+        );
+
+        // At the settlement threshold + 1s the device is offline for
+        // settlement; the view must agree exactly.
+        env.ledger().with_mut(|li| {
+            li.timestamp += 2;
+        });
+        assert!(
+            client.is_meter_offline(&meter_id),
+            "past HEARTBEAT_THRESHOLD_SECONDS the meter is offline"
+        );
+    }
+
+    #[test]
+    fn missing_meter_reports_offline() {
+        let env = Env::default();
+        env.mock_all_auths();
+        let contract_id = env.register(crate::UtilityContract, ());
+        let client = crate::UtilityContractClient::new(&env, &contract_id);
+        assert!(client.is_meter_offline(&42u64));
+        let _ = contract_id;
     }
 }
 
