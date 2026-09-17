@@ -1647,7 +1647,61 @@ fn calculate_historical_average(usage_data: &UsageData, now: u64) -> i128 {
 
 fn is_peak_hour(timestamp: u64) -> bool {
     let day_seconds = timestamp % DAY_IN_SECONDS;
-    day_seconds >= PEAK_HOUR_START && day_seconds <= PEAK_HOUR_END
+    // Half-open window [start, end): 18:00:00 <= t < 21:00:00. The old
+    // inclusive upper bound billed the first second AFTER the peak window
+    // (21:00:00 sharp) at peak rates.
+    day_seconds >= PEAK_HOUR_START && day_seconds < PEAK_HOUR_END
+}
+
+/// Time-weighted TOU cost for `elapsed` seconds ending at `end_ts`.
+///
+/// A settlement that straddles the 18:00 boundary was previously billed
+/// entirely at one rate depending on when the provider hit claim; a provider
+/// could time claims to bill off-peak consumption at peak rates. This splits
+/// elapsed time at every peak-window boundary it crosses and prices each
+/// segment with its own rate.
+fn tou_prorated_cost(
+    meter: &Meter,
+    start_ts: u64,
+    end_ts: u64,
+) -> i128 {
+    if end_ts <= start_ts {
+        return 0;
+    }
+    let elapsed = end_ts - start_ts;
+    if elapsed == 0 {
+        return 0;
+    }
+
+    // Determine the state (peak or not) at the start.
+    let mut cost: i128 = 0;
+    let mut cursor = start_ts;
+
+    while cursor < end_ts {
+        let day_seconds = cursor % DAY_IN_SECONDS;
+        let in_peak = day_seconds >= PEAK_HOUR_START && day_seconds < PEAK_HOUR_END;
+
+        // Distance to the next boundary (either start or end of a window).
+        let to_boundary: u64 = if in_peak {
+            PEAK_HOUR_END - day_seconds
+        } else if day_seconds < PEAK_HOUR_START {
+            PEAK_HOUR_START - day_seconds
+        } else {
+            // past peak end: next boundary is tomorrow's peak start
+            DAY_IN_SECONDS - day_seconds + PEAK_HOUR_START
+        };
+
+        let segment = to_boundary.min(end_ts - cursor);
+        let rate = if in_peak {
+            meter.peak_rate
+        } else {
+            meter.off_peak_rate
+        };
+        cost = cost.saturating_add((segment as i128).saturating_mul(rate));
+        cursor += segment;
+    }
+
+    cost
 }
 
 fn get_effective_rate(_env: &Env, meter: &Meter, timestamp: u64) -> i128 {
@@ -5419,9 +5473,14 @@ impl UtilityContract {
         let elapsed = now.checked_sub(meter.last_update).unwrap_or(0);
 
         // Task #90: Credit Settlement Flow
-        // If there's a credit_drip_rate, add it to the normal consumption flow
-        let mut amount = (elapsed as i128)
-            .saturating_mul(meter.rate_per_unit.saturating_add(meter.credit_drip_rate));
+        // TOU-prorated consumption cost: the elapsed window is split at peak
+        // boundaries so each second is billed at the rate in force at that
+        // moment (claim() previously used the flat rate_per_unit, silently
+        // disabling the peak/off-peak tariff the meter registered with).
+        // The credit drip remains flat-rate on top.
+        let consumption_cost = tou_prorated_cost(&meter, now - elapsed, now);
+        let mut amount = consumption_cost
+            .saturating_add((elapsed as i128).saturating_mul(meter.credit_drip_rate));
 
         // Apply SLA Penalty if active
         if meter.sla_config_set
@@ -6448,9 +6507,10 @@ impl UtilityContract {
         let now = env.ledger().timestamp();
         let elapsed = now.checked_sub(meter.last_update).unwrap_or(0);
 
-        // Task #90: Credit Settlement Flow
-        let amount = (elapsed as i128)
-            .saturating_mul(meter.rate_per_unit.saturating_add(meter.credit_drip_rate));
+        // Task #90: Credit Settlement Flow (TOU-prorated, mirroring claim()).
+        let consumption_cost = tou_prorated_cost(&meter, now - elapsed, now);
+        let amount = consumption_cost
+            .saturating_add((elapsed as i128).saturating_mul(meter.credit_drip_rate));
 
         // Check if we need to reset the hourly counter
         let hours_passed = now.checked_sub(meter.last_claim_time).unwrap_or(0) / 3600;
@@ -9739,6 +9799,141 @@ mod admin_unification_tests {
             r.is_err(),
             "role appointment must require the real admin"
         );
+    }
+}
+
+#[cfg(test)]
+mod tou_proration_tests {
+    use super::*;
+    use soroban_sdk::testutils::Address as _;
+
+    fn meter_with_rate(off_peak: i128) -> Meter {
+        let env = Env::default();
+        meter_with_rate_env(&env, off_peak)
+    }
+
+    fn meter_with_rate_env(env: &Env, off_peak: i128) -> Meter {
+        let peak = off_peak.saturating_mul(PEAK_RATE_MULTIPLIER) / RATE_PRECISION;
+        Meter {
+            user: Address::generate(env),
+            provider: Address::generate(env),
+            billing_type: BillingType::PrePaid,
+            off_peak_rate: off_peak,
+            peak_rate: peak,
+            rate_per_unit: off_peak,
+            balance: 0,
+            debt: 0,
+            last_update: 0,
+            is_active: true,
+            token: Address::generate(env),
+            usage_data: UsageData {
+                total_watt_hours: 0,
+                current_cycle_watt_hours: 0,
+                peak_usage_watt_hours: 0,
+                last_reading_timestamp: 0,
+                precision_factor: 1,
+                renewable_watt_hours: 0,
+                renewable_percentage: 0,
+                monthly_volume: 0,
+                last_volume_reset: 0,
+                first_reading_timestamp: 0,
+            },
+            device_public_key: BytesN::from_array(env, &[1u8; 32]),
+            end_date: 0,
+            rent_deposit: 0,
+            priority_index: 0,
+            green_energy_discount_bps: 0,
+            is_paused: false,
+            is_disputed: false,
+            challenge_timestamp: 0,
+            credit_drip_rate: 0,
+            carbon_credit_token: None,
+            carbon_credit_drip_rate_bps: 0,
+            is_closed: false,
+            off_peak_reward_rate_bps: 0,
+            milestone_deadline: 0,
+            milestone_confirmed: false,
+            rate_per_second: off_peak,
+            collateral_limit: 0,
+            max_flow_rate_per_hour: off_peak * 3600,
+            last_claim_time: 0,
+            claimed_this_hour: 0,
+            is_paired: false,
+            tier_threshold: 100_000,
+            tier_rate: off_peak,
+            last_heartbeat: 0,
+            grace_period_start: 0,
+            is_offline: false,
+            estimated_usage_total: 0,
+            parent_account: None,
+            sla_config: SLAConfig {
+                threshold_seconds: 0,
+                penalty_multiplier_bps: 0,
+            },
+            sla_config_set: false,
+            sla_state: SLAState {
+                accumulated_downtime: 0,
+                last_report_timestamp: 0,
+                is_penalty_active: false,
+            },
+            is_updating: false,
+            update_start_timestamp: 0,
+        }
+    }
+
+    #[test]
+    fn boundary_is_half_open() {
+        // 17:59:59 off-peak, 18:00:00 peak, 20:59:59 peak, 21:00:00 OFF-peak.
+        assert!(!is_peak_hour(86_399)); // 23:59:59
+        assert!(!is_peak_hour(64_799)); // 17:59:59
+        assert!(is_peak_hour(64_800)); // 18:00:00
+        assert!(is_peak_hour(75_599)); // 20:59:59
+        assert!(
+            !is_peak_hour(75_600),
+            "21:00:00 sharp must be off-peak (half-open window)"
+        );
+    }
+
+    #[test]
+    fn straddling_settlement_prices_each_segment() {
+        let env = Env::default();
+        let m = meter_with_rate_env(&env, 1_000i128);
+
+        // 17:59:50 -> 18:00:10: 10s off-peak + 10s peak.
+        let start = 64_800 - 10;
+        let end = 64_800 + 10;
+        let cost = tou_prorated_cost(&m, start, end);
+        assert_eq!(cost, 10 * 1_000 + 10 * 1_500);
+    }
+
+    #[test]
+    fn full_window_and_multi_day_span() {
+        let env = Env::default();
+        let m = meter_with_rate_env(&env, 1_000i128);
+
+        // Exactly one full day starting at midnight: 21h off + 3h peak.
+        let cost = tou_prorated_cost(&m, 0, DAY_IN_SECONDS);
+        assert_eq!(
+            cost,
+            21 * 3600 * 1_000 + 3 * 3600 * 1_500,
+            "full-day span must price each segment"
+        );
+
+        // Two full days.
+        let cost2 = tou_prorated_cost(&m, 0, 2 * DAY_IN_SECONDS);
+        assert_eq!(cost2, 2 * cost);
+    }
+
+    #[test]
+    fn offpeak_only_and_peak_only_spans() {
+        let env = Env::default();
+        let m = meter_with_rate_env(&env, 1_000i128);
+
+        // 12:00 -> 13:00 (fully off-peak).
+        assert_eq!(tou_prorated_cost(&m, 43_200, 46_800), 3_600 * 1_000);
+
+        // 19:00 -> 20:00 (fully peak).
+        assert_eq!(tou_prorated_cost(&m, 68_400, 72_000), 3_600 * 1_500);
     }
 }
 
