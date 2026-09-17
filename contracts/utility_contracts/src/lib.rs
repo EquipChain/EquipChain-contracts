@@ -6818,17 +6818,19 @@ impl UtilityContract {
         };
 
         if refundable > 0 {
-            let withdrawal_amount =
-                match convert_usd_to_xlm_if_needed(&env, refundable, &meter.token) {
-                    Ok(amount) => amount,
-                    Err(_) => panic_with_error!(&env, ContractError::PriceConversionFailed),
-                };
-
+            // meter.balance is denominated in the meter's own TOKEN units
+            // (claim/deduct costs are debited in the same units). Running it
+            // through the USD->XLM oracle conversion changed the amount: with
+            // an oracle configured, the refund paid out a converted figure
+            // that was neither the recorded balance nor the contract's actual
+            // liability - overpaying drained the shared pool, underpaying
+            // confiscated the remainder of a disputed user's funds. Refunds
+            // must return exactly what the meter bookkeeping owes, 1:1.
             let client = token::Client::new(&env, &meter.token);
             client.transfer(
                 &env.current_contract_address(),
                 &meter.user,
-                &withdrawal_amount,
+                &refundable,
             );
         }
 
@@ -10815,6 +10817,57 @@ mod firmware_gate_tests {
         env.set_auths(&[]);
         let r = client.try_cancel_expired_firmware_update(&meter_id);
         assert!(r.is_err(), "cancel must require the provider");
+    }
+}
+
+#[cfg(test)]
+mod disputed_refund_tests {
+    use super::*;
+    use soroban_sdk::testutils::{Address as _, Ledger as _};
+    use soroban_sdk::token::StellarAssetClient;
+
+    #[test]
+    fn refund_pays_exact_recorded_balance() {
+        let env = Env::default();
+        env.mock_all_auths();
+        let token_id = env
+            .register_stellar_asset_contract_v2(Address::generate(&env))
+            .address();
+        let contract_id = env.register(crate::UtilityContract, ());
+        let client = crate::UtilityContractClient::new(&env, &contract_id);
+        let user = Address::generate(&env);
+        let provider = Address::generate(&env);
+        let token_admin = StellarAssetClient::new(&env, &token_id);
+        token_admin.mint(&user, &2_000_000i128);
+        token_admin.mint(&contract_id, &10_000_000i128);
+
+        let meter_id = client.register_meter_with_mode(
+            &user,
+            &provider,
+            &1_000,
+            &token_id,
+            &BillingType::PrePaid,
+            &BytesN::from_array(&env, &[3u8; 32]),
+            &0,
+        );
+        client.top_up(&meter_id, &700_000i128, &user);
+
+        // Challenge, then wait out the 48h refund window.
+        client.challenge_service(&meter_id);
+        env.ledger().with_mut(|li| {
+            li.timestamp += 48 * HOUR_IN_SECONDS + 1;
+        });
+
+        let user_before = token::Client::new(&env, &token_id).balance(&user);
+        client.refund_disputed_funds(&meter_id);
+        let user_after = token::Client::new(&env, &token_id).balance(&user);
+
+        assert_eq!(
+            user_after - user_before,
+            700_000,
+            "refund must be exactly the recorded meter balance, 1:1"
+        );
+        assert_eq!(client.get_meter(&meter_id).unwrap().balance, 0);
     }
 }
 
