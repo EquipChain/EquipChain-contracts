@@ -1197,6 +1197,9 @@ pub enum ContractError {
     MeterPaused = 121,
     // Admin transfer executed before the veto timelock elapsed.
     AdminTransferTimelockActive = 122,
+    // Role/vault configuration attempted to be read before it was set.
+    ComplianceOfficerNotSet = 123,
+    LegalVaultNotSet = 124,
 }
 
 #[contracttype]
@@ -5901,12 +5904,7 @@ impl UtilityContract {
         validate_hourly_flow_rate(max_rate_per_hour)
             .unwrap_or_else(|_| panic_with_error!(&env, ContractError::FlowRateTooHigh));
 
-        let mut meter: Meter = env
-            .storage()
-            .instance()
-            .get(&DataKey::Meter(meter_id))
-            .ok_or("Meter not found")
-            .unwrap();
+        let mut meter = get_meter_or_panic(&env, meter_id);
         meter.provider.require_auth();
 
         meter.max_flow_rate_per_hour = max_rate_per_hour;
@@ -6328,8 +6326,7 @@ impl UtilityContract {
             .storage()
             .instance()
             .get(&DataKey::BillingGroup(parent_account.clone()))
-            .ok_or("Billing group not found")
-            .unwrap();
+            .unwrap_or_else(|| panic_with_error!(&env, ContractError::NotFound));
 
         // Filter out the removed meter_id
         let mut filtered = Vec::new(&env);
@@ -6635,18 +6632,17 @@ impl UtilityContract {
     }
 
     pub fn resolve_challenge(env: Env, meter_id: u64, restored: bool) {
-        let mut meter: Meter = env
-            .storage()
-            .instance()
-            .get(&DataKey::Meter(meter_id))
-            .expect("Meter not found");
+        let mut meter = get_meter_or_panic(&env, meter_id);
 
-        // This should be called by the Oracle or Admin
+        // The resolver role must be configured before a challenge can be
+        // resolved. Previously this crashed with a string panic instead of
+        // the typed error, surfacing as an opaque internal failure to
+        // integrators and bypassing error-code handling in tooling.
         let oracle: Address = env
             .storage()
             .instance()
             .get(&DataKey::Oracle)
-            .expect("No oracle set");
+            .unwrap_or_else(|| panic_with_error!(&env, ContractError::OracleNotSet));
 
         oracle.require_auth();
 
@@ -7030,7 +7026,7 @@ impl UtilityContract {
             .storage()
             .instance()
             .get(&DataKey::ProposedUpgrade)
-            .expect("No upgrade proposal found");
+            .unwrap_or_else(|| panic_with_error!(&env, ContractError::UpgradeProposalActive));
 
         // Execute the WASM upgrade on-chain
         env.deployer()
@@ -7107,7 +7103,7 @@ impl UtilityContract {
             .storage()
             .instance()
             .get(&DataKey::AdminTransferProposal)
-            .expect("No active transfer");
+            .unwrap_or_else(|| panic_with_error!(&env, ContractError::NoAdminTransferInProgress));
 
         if !proposal.is_active || env.ledger().timestamp() >= proposal.execution_deadline {
             panic_with_error!(&env, ContractError::NoAdminTransferInProgress);
@@ -7148,7 +7144,7 @@ impl UtilityContract {
             .storage()
             .instance()
             .get(&DataKey::AdminTransferProposal)
-            .expect("No active transfer");
+            .unwrap_or_else(|| panic_with_error!(&env, ContractError::NoAdminTransferInProgress));
 
         if !proposal.is_active {
             panic_with_error!(&env, ContractError::NoAdminTransferInProgress);
@@ -7245,7 +7241,7 @@ impl UtilityContract {
             .storage()
             .instance()
             .get(&DataKey::ComplianceOfficer)
-            .expect("No compliance officer set");
+            .unwrap_or_else(|| panic_with_error!(&env, ContractError::ComplianceOfficerNotSet));
 
         compliance_officer.require_auth();
 
@@ -7268,7 +7264,7 @@ impl UtilityContract {
             .storage()
             .instance()
             .get(&DataKey::LegalVault)
-            .expect("No legal vault set");
+            .unwrap_or_else(|| panic_with_error!(&env, ContractError::LegalVaultNotSet));
 
         // Calculate frozen amount
         let frozen_amount = match meter.billing_type {
@@ -7338,7 +7334,7 @@ impl UtilityContract {
             .storage()
             .instance()
             .get(&DataKey::LegalFreeze(meter_id))
-            .expect("No active freeze");
+            .unwrap_or_else(|| panic_with_error!(&env, ContractError::MeterNotFrozen));
 
         if freeze.is_released {
             panic_with_error!(&env, ContractError::MeterNotFrozen);
@@ -7352,7 +7348,7 @@ impl UtilityContract {
                 .storage()
                 .instance()
                 .get(&DataKey::LegalVault)
-                .expect("No legal vault set");
+                .unwrap_or_else(|| panic_with_error!(&env, ContractError::LegalVaultNotSet));
 
             let withdrawal_amount =
                 match convert_usd_to_xlm_if_needed(&env, freeze.frozen_amount, &meter.token) {
@@ -7428,7 +7424,7 @@ impl UtilityContract {
         env.storage()
             .instance()
             .get(&DataKey::LegalFreeze(meter_id))
-            .expect("No freeze found")
+            .unwrap_or_else(|| panic_with_error!(&env, ContractError::MeterNotFrozen))
     }
 
     // ==================== TASK #3: VERIFIED PROVIDER REGISTRY ====================
@@ -7484,7 +7480,7 @@ impl UtilityContract {
             .storage()
             .instance()
             .get(&DataKey::VerifiedProvider(provider.clone()))
-            .expect("No verification request found");
+            .unwrap_or_else(|| panic_with_error!(&env, ContractError::NotFound));
 
         verified_provider.is_verified = true;
         verified_provider.verification_method = method;
@@ -7551,7 +7547,7 @@ impl UtilityContract {
         env.storage()
             .instance()
             .get(&DataKey::VerifiedProvider(provider))
-            .expect("Provider not found")
+            .unwrap_or_else(|| panic_with_error!(&env, ContractError::NotFound))
     }
 
     // ==================== TASK #4: SUB-DAO HIERARCHICAL PERMISSIONS ====================
@@ -7610,7 +7606,7 @@ impl UtilityContract {
             .storage()
             .instance()
             .get(&DataKey::SubDaoConfig(sub_dao.clone()))
-            .expect("Sub-DAO not configured");
+            .unwrap_or_else(|| panic_with_error!(&env, ContractError::SubDaoNotConfigured));
 
         if !config.is_active {
             panic_with_error!(&env, ContractError::SubDaoNotConfigured);
@@ -7660,7 +7656,7 @@ impl UtilityContract {
             .storage()
             .instance()
             .get(&DataKey::SubDaoConfig(sub_dao.clone()))
-            .expect("Sub-DAO not configured");
+            .unwrap_or_else(|| panic_with_error!(&env, ContractError::SubDaoNotConfigured));
 
         if config.parent_dao != parent_dao {
             panic_with_error!(&env, ContractError::NotParentDao);
@@ -7688,7 +7684,7 @@ impl UtilityContract {
             .storage()
             .instance()
             .get(&DataKey::SubDaoConfig(sub_dao.clone()))
-            .expect("Sub-DAO not configured");
+            .unwrap_or_else(|| panic_with_error!(&env, ContractError::SubDaoNotConfigured));
 
         if config.parent_dao != parent_dao {
             panic_with_error!(&env, ContractError::NotParentDao);
@@ -7708,7 +7704,7 @@ impl UtilityContract {
         env.storage()
             .instance()
             .get(&DataKey::SubDaoConfig(sub_dao))
-            .expect("Sub-DAO not configured")
+            .unwrap_or_else(|| panic_with_error!(&env, ContractError::SubDaoNotConfigured))
     }
 
     // ============================================================================
@@ -10031,6 +10027,93 @@ mod credit_drip_validation_tests {
             }
         }
         assert!(found, "set_credit_drip must emit a DripSet event");
+    }
+}
+
+#[cfg(test)]
+mod typed_error_regression_tests {
+    use super::*;
+    use soroban_sdk::testutils::Address as _;
+
+    // All abort paths in fund/config entry points must surface as typed
+    // `ContractError` values — `Error(Contract, #N)` — never as host string
+    // panics (`Error(Context, InternalError)`), which integrators cannot
+    // branch on and which bypass error-code handling in tooling.
+
+    #[test]
+    #[should_panic(expected = "Error(Contract, #54)")]
+    fn veto_without_proposal_is_typed_no_admin_transfer_in_progress() {
+        let env = Env::default();
+        env.mock_all_auths();
+        let contract_id = env.register(crate::UtilityContract, ());
+        let client = crate::UtilityContractClient::new(&env, &contract_id);
+        // No proposal in storage: previously `expect("No active transfer")`.
+        client.veto_admin_transfer(&Address::generate(&env));
+    }
+
+    #[test]
+    #[should_panic(expected = "Error(Contract, #54)")]
+    fn execute_without_proposal_is_typed_no_admin_transfer_in_progress() {
+        let env = Env::default();
+        env.mock_all_auths();
+        let contract_id = env.register(crate::UtilityContract, ());
+        let client = crate::UtilityContractClient::new(&env, &contract_id);
+        client.execute_admin_transfer();
+    }
+
+    #[test]
+    #[should_panic(expected = "Error(Contract, #2)")]
+    fn challenge_resolution_without_oracle_is_typed_oracle_not_set() {
+        let env = Env::default();
+        env.mock_all_auths();
+        let contract_id = env.register(crate::UtilityContract, ());
+        let client = crate::UtilityContractClient::new(&env, &contract_id);
+
+        let meter_id = client.register_meter_with_mode(
+            &Address::generate(&env),
+            &Address::generate(&env),
+            &1_000,
+            &Address::generate(&env),
+            &BillingType::PrePaid,
+            &BytesN::from_array(&env, &[3u8; 32]),
+            &0,
+        );
+
+        // No oracle configured: previously `expect("No oracle set")`.
+        client.resolve_challenge(&meter_id, &true);
+    }
+
+    #[test]
+    #[should_panic(expected = "Error(Contract, #1)")]
+    fn max_flow_rate_on_missing_meter_is_typed_meter_not_found() {
+        let env = Env::default();
+        env.mock_all_auths();
+        let contract_id = env.register(crate::UtilityContract, ());
+        let client = crate::UtilityContractClient::new(&env, &contract_id);
+        // Previously `ok_or("Meter not found").unwrap()` string panic.
+        client.set_max_flow_rate(&999u64, &3_600_000);
+    }
+
+    #[test]
+    #[should_panic(expected = "Error(Contract, #51)")]
+    fn get_legal_freeze_without_freeze_is_typed_meter_not_frozen() {
+        let env = Env::default();
+        env.mock_all_auths();
+        let contract_id = env.register(crate::UtilityContract, ());
+        let client = crate::UtilityContractClient::new(&env, &contract_id);
+        // Previously `expect("No freeze found")`.
+        client.get_legal_freeze(&7u64);
+    }
+
+    #[test]
+    #[should_panic(expected = "Error(Contract, #71)")]
+    fn get_sub_dao_config_unconfigured_is_typed_sub_dao_not_configured() {
+        let env = Env::default();
+        env.mock_all_auths();
+        let contract_id = env.register(crate::UtilityContract, ());
+        let client = crate::UtilityContractClient::new(&env, &contract_id);
+        // Previously `expect("Sub-DAO not configured")`.
+        client.get_sub_dao_config(&Address::generate(&env));
     }
 }
 
