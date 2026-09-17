@@ -1537,6 +1537,16 @@ fn remaining_postpaid_collateral(meter: &Meter) -> i128 {
 }
 
 fn check_throttling_threshold(_env: &Env, meter: &Meter) -> bool {
+    // Scarcity signal: the meter's remaining value cannot cover
+    // THROTTLING_THRESHOLD_PERCENT (20%) of one hour of consumption at its
+    // current rate. The previous arithmetic compared meter.balance against
+    // 20% of itself (PrePaid) or of a strictly smaller net value (PostPaid),
+    // which is a tautologically false comparison — the entire throttling
+    // path, including low-priority stream pausing, was unreachable.
+    let hourly_burn = meter
+        .rate_per_unit
+        .saturating_mul(HOUR_IN_SECONDS as i128)
+        .max(1);
     let total_value = match meter.billing_type {
         BillingType::PrePaid => meter.balance,
         BillingType::PostPaid => meter.balance.saturating_sub(meter.debt),
@@ -1544,8 +1554,10 @@ fn check_throttling_threshold(_env: &Env, meter: &Meter) -> bool {
     if total_value <= 0 {
         return false;
     }
-    let threshold = (total_value * THROTTLING_THRESHOLD_PERCENT) / 100;
-    meter.balance < threshold
+    let threshold = hourly_burn
+        .saturating_mul(THROTTLING_THRESHOLD_PERCENT)
+        .saturating_div(100);
+    total_value < threshold
 }
 
 fn should_pause_low_priority_stream(meter: &Meter, throttling_active: bool) -> bool {
@@ -6819,15 +6831,38 @@ impl UtilityContract {
     }
 
     // Task #1: Check if throttling should be activated and pause low-priority streams
+    /// Applies scarcity throttling: pauses low-priority (index 0) meters
+    /// whose remaining value is critically low, so the provider's highest
+    /// priority customers keep service during shortages.
+    ///
+    /// The previous implementation set `is_paused` and immediately panicked
+    /// with `LowPriorityStreamPaused`; the panic reverted the whole
+    /// transaction, so the pause never persisted and the meter kept flowing
+    /// at full rate. Throttling now persists and is observable via the
+    /// Throttl event payload `(scarcity_detected, is_paused)`.
     pub fn apply_throttling_if_needed(env: Env, meter_id: u64) {
         let mut meter = get_meter_or_panic(&env, meter_id);
         meter.provider.require_auth();
 
         let throttling_active = check_throttling_threshold(&env, &meter);
+        let should_pause = should_pause_low_priority_stream(&meter, throttling_active);
 
-        if should_pause_low_priority_stream(&meter, throttling_active) {
+        if should_pause && !meter.is_paused {
             meter.is_paused = true;
-            panic_with_error!(&env, ContractError::LowPriorityStreamPaused);
+            let now = env.ledger().timestamp();
+            let was_active = meter.is_active;
+            refresh_activity(&mut meter, now);
+            sync_active_count(&env, was_active, meter.is_active);
+
+            env.storage()
+                .instance()
+                .set(&DataKey::Meter(meter_id), &meter);
+
+            env.events().publish(
+                (soroban_sdk::symbol_short!("Throttl"), meter_id),
+                (throttling_active, true),
+            );
+            return;
         }
 
         env.storage()
@@ -6836,7 +6871,7 @@ impl UtilityContract {
 
         env.events().publish(
             (soroban_sdk::symbol_short!("Throttl"), meter_id),
-            throttling_active,
+            (throttling_active, meter.is_paused),
         );
     }
 
@@ -10204,7 +10239,7 @@ mod heartbeat_recovery_tests {
 
     #[test]
     fn heartbeat_on_online_meter_is_a_simple_refresh() {
-        let (mut env, client, _user, meter_id, _contract_id) = setup();
+        let (env, client, _user, meter_id, _contract_id) = setup();
         let before = client.get_meter(&meter_id).unwrap();
 
         env.ledger().with_mut(|li| li.timestamp += 30);
@@ -10269,6 +10304,104 @@ mod offline_view_consistency_tests {
         let client = crate::UtilityContractClient::new(&env, &contract_id);
         assert!(client.is_meter_offline(&42u64));
         let _ = contract_id;
+    }
+}
+
+#[cfg(test)]
+mod throttling_tests {
+    use super::*;
+    use soroban_sdk::testutils::{Address as _, Events as _, Ledger as _};
+    use soroban_sdk::token::StellarAssetClient;
+    use soroban_sdk::TryIntoVal as _;
+
+    fn setup(priority: u32, rate: i128) -> (Env, UtilityContractClient<'static>, Address, u64) {
+        let env = Env::default();
+        env.mock_all_auths();
+        let token_id = env
+            .register_stellar_asset_contract_v2(Address::generate(&env))
+            .address();
+        let contract_id = env.register(crate::UtilityContract, ());
+        let client = crate::UtilityContractClient::new(&env, &contract_id);
+        let user = Address::generate(&env);
+        let provider = Address::generate(&env);
+        StellarAssetClient::new(&env, &token_id).mint(&user, &1_000_000_000i128);
+
+        let meter_id = client.register_meter_with_mode(
+            &user,
+            &provider,
+            &rate,
+            &token_id,
+            &BillingType::PrePaid,
+            &BytesN::from_array(&env, &[6u8; 32]),
+            &priority,
+        );
+        (env, client, user, meter_id)
+    }
+
+    #[test]
+    fn scarce_low_priority_meter_is_persistently_paused() {
+        let (env, client, user, meter_id) = setup(0, 1_000);
+
+        // Tiny balance vs a 1_000/s burn: 500 < 20% of an hour of burn.
+        client.top_up(&meter_id, &500, &user);
+        assert!(
+            client.get_meter(&meter_id).unwrap().is_active,
+            "precondition: meter active after top-up"
+        );
+
+        client.apply_throttling_if_needed(&meter_id);
+
+        let meter = client.get_meter(&meter_id).unwrap();
+        assert!(meter.is_paused, "throttling pause must persist past the call");
+        assert!(!meter.is_active, "paused meter must leave the active set");
+        assert_eq!(client.get_active_meters_count(), 0);
+    }
+
+    #[test]
+    fn high_priority_meter_is_not_throttled() {
+        let (env, client, user, meter_id) = setup(1, 1_000);
+        client.top_up(&meter_id, &500, &user);
+
+        client.apply_throttling_if_needed(&meter_id);
+
+        let meter = client.get_meter(&meter_id).unwrap();
+        assert!(!meter.is_paused, "priority > 0 streams are exempt");
+        assert!(meter.is_active);
+        let _ = env;
+    }
+
+    #[test]
+    fn healthy_meter_is_untouched_but_event_is_emitted() {
+        let (env, client, user, meter_id) = setup(0, 1_000);
+        // 1_000_000 >> 20% of hourly burn (720_000).
+        client.top_up(&meter_id, &1_000_000, &user);
+
+        client.apply_throttling_if_needed(&meter_id);
+
+        // Throttl event is published regardless, with the scarcity flag
+        // false — previously the event only existed on the (dead) pause
+        // path, so "no scarcity" was indistinguishable from "never checked".
+        // Capture BEFORE any further client call: the event buffer is
+        // delta-based in soroban-sdk 23.x and resets on every invocation,
+        // including read-only ones like get_meter.
+        let events = env.events().all();
+
+        let meter = client.get_meter(&meter_id).unwrap();
+        assert!(!meter.is_paused);
+        assert!(meter.is_active);
+
+        let mut found = false;
+        for (_, topics, _data) in events.iter() {
+            if topics.len() != 2 {
+                continue;
+            }
+            let topic0: Option<Symbol> = topics.get(0).unwrap().try_into_val(&env).ok();
+            if topic0 == Some(symbol_short!("Throttl")) {
+                found = true;
+                break;
+            }
+        }
+        assert!(found, "Throttl event must be emitted");
     }
 }
 
