@@ -5918,9 +5918,26 @@ impl UtilityContract {
         let mut meter = get_meter_or_panic(&env, meter_id);
         meter.user.require_auth();
         meter.last_heartbeat = env.ledger().timestamp();
+
+        // A fresh heartbeat proves the device is reachable again, so any
+        // offline marker set during the outage must be cleared here — exactly
+        // as ping() does. Leaving is_offline set forced the next settlement
+        // through the estimate/reconciliation branch even though the device
+        // had recovered, mis-billing from stale historical averages and
+        // diverging from the liveness snapshot reported by get_meter_liveness.
+        if meter.is_offline {
+            meter.is_offline = false;
+            meter.grace_period_start = 0;
+        }
+
         env.storage()
             .instance()
             .set(&DataKey::Meter(meter_id), &meter);
+
+        // Liveness signal previously unobservable; monitors had to infer
+        // heartbeats from storage reads.
+        env.events()
+            .publish((symbol_short!("HbUpd"), meter_id), meter.last_heartbeat);
     }
 
     pub fn withdraw_earnings(env: Env, meter_id: u64, amount_usd_cents: i128) {
@@ -10114,6 +10131,79 @@ mod typed_error_regression_tests {
         let client = crate::UtilityContractClient::new(&env, &contract_id);
         // Previously `expect("Sub-DAO not configured")`.
         client.get_sub_dao_config(&Address::generate(&env));
+    }
+}
+
+#[cfg(test)]
+mod heartbeat_recovery_tests {
+    use super::*;
+    use soroban_sdk::testutils::{Address as _, Ledger as _};
+
+    fn setup() -> (
+        Env,
+        UtilityContractClient<'static>,
+        Address,
+        u64,
+        soroban_sdk::Address,
+    ) {
+        let env = Env::default();
+        env.mock_all_auths();
+        let contract_id = env.register(crate::UtilityContract, ());
+        let client = crate::UtilityContractClient::new(&env, &contract_id);
+        let user = Address::generate(&env);
+        let provider = Address::generate(&env);
+        let meter_id = client.register_meter_with_mode(
+            &user,
+            &provider,
+            &1_000,
+            &Address::generate(&env),
+            &BillingType::PrePaid,
+            &BytesN::from_array(&env, &[9u8; 32]),
+            &0,
+        );
+        (env, client, user, meter_id, contract_id)
+    }
+
+    #[test]
+    fn heartbeat_clears_offline_state_and_emits_event() {
+        let (mut env, client, user, meter_id, contract_id) = setup();
+
+        // Device goes silent past the heartbeat threshold.
+        env.ledger().with_mut(|li| li.timestamp += HEARTBEAT_THRESHOLD_SECONDS + 60);
+
+        // Force the offline marker the same way settle_claim_for_meter does
+        // (direct storage access; a client call here would be re-entry).
+        env.as_contract(&contract_id, || {
+            let mut m: Meter = env
+                .storage()
+                .instance()
+                .get(&DataKey::Meter(meter_id))
+                .unwrap();
+            assert!(!m.is_offline, "precondition: meter starts online");
+            m.is_offline = true;
+            m.grace_period_start = env.ledger().timestamp() - 60;
+            env.storage().instance().set(&DataKey::Meter(meter_id), &m);
+        });
+
+        // Device reconnects: the user's heartbeat must clear the outage state.
+        client.update_heartbeat(&meter_id);
+        let meter = client.get_meter(&meter_id).unwrap();
+        assert!(!meter.is_offline, "heartbeat must clear is_offline");
+        assert_eq!(meter.grace_period_start, 0, "grace window must be reset");
+        let _ = user;
+    }
+
+    #[test]
+    fn heartbeat_on_online_meter_is_a_simple_refresh() {
+        let (mut env, client, _user, meter_id, _contract_id) = setup();
+        let before = client.get_meter(&meter_id).unwrap();
+
+        env.ledger().with_mut(|li| li.timestamp += 30);
+        client.update_heartbeat(&meter_id);
+
+        let after = client.get_meter(&meter_id).unwrap();
+        assert!(after.last_heartbeat > before.last_heartbeat);
+        assert!(!after.is_offline);
     }
 }
 
