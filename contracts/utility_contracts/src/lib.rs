@@ -6732,11 +6732,29 @@ impl UtilityContract {
         let mut meter = get_meter_or_panic(&env, meter_id);
         meter.provider.require_auth();
 
+        // A negative drip rate is silently added to every settlement
+        // (consumption_cost + elapsed * drip_rate): the claim hourly-cap
+        // branch treats a negative accrual as claimable, and postpaid debt
+        // settlement credits the payer for consuming. Drip credits must be
+        // non-negative — a provider wanting to charge more should raise the
+        // unit rate instead.
+        if drip_rate < 0 {
+            panic_with_error!(&env, ContractError::InvalidTokenAmount);
+        }
+
         meter.credit_drip_rate = drip_rate;
 
         env.storage()
             .instance()
             .set(&DataKey::Meter(meter_id), &meter);
+
+        // Rate-affecting config change: previously a silent storage write,
+        // so payers and monitors could not observe a drip-rate change until
+        // a settlement landed at the new rate.
+        env.events().publish(
+            (symbol_short!("DripSet"), meter_id),
+            drip_rate,
+        );
     }
 
     /// Configure carbon credit asset and drip rate for a meter.
@@ -9934,6 +9952,85 @@ mod tou_proration_tests {
 
         // 19:00 -> 20:00 (fully peak).
         assert_eq!(tou_prorated_cost(&m, 68_400, 72_000), 3_600 * 1_500);
+    }
+}
+
+#[cfg(test)]
+mod credit_drip_validation_tests {
+    use super::*;
+    use soroban_sdk::testutils::Address as _;
+    use soroban_sdk::testutils::Events as _;
+    use soroban_sdk::TryIntoVal as _;
+
+    fn setup() -> (Env, UtilityContractClient<'static>, Address, u64) {
+        let env = Env::default();
+        env.mock_all_auths();
+        let contract_id = env.register(crate::UtilityContract, ());
+        let client = crate::UtilityContractClient::new(&env, &contract_id);
+        let provider = Address::generate(&env);
+        let user = Address::generate(&env);
+        let meter_id = client.register_meter_with_mode(
+            &user,
+            &provider,
+            &1_000,
+            &Address::generate(&env),
+            &BillingType::PostPaid,
+            &BytesN::from_array(&env, &[7u8; 32]),
+            &0,
+        );
+        (env, client, provider, meter_id)
+    }
+
+    #[test]
+    fn negative_drip_rate_is_rejected() {
+        let (env, client, _provider, meter_id) = setup();
+        let result = client.try_set_credit_drip(&meter_id, &-1);
+        assert!(result.is_err(), "negative drip rate must be rejected");
+        // State must be untouched.
+        assert_eq!(
+            client.get_meter(&meter_id).unwrap().credit_drip_rate,
+            0
+        );
+        let _ = env;
+    }
+
+    #[test]
+    fn zero_and_positive_drip_rates_accepted_and_observable() {
+        let (env, client, _provider, meter_id) = setup();
+
+        client.set_credit_drip(&meter_id, &0);
+        assert_eq!(
+            client.get_meter(&meter_id).unwrap().credit_drip_rate,
+            0
+        );
+
+        client.set_credit_drip(&meter_id, &25);
+        assert_eq!(
+            client.get_meter(&meter_id).unwrap().credit_drip_rate,
+            25
+        );
+        let _ = env;
+    }
+
+    #[test]
+    fn drip_change_emits_observable_event() {
+        let (env, client, _provider, meter_id) = setup();
+        client.set_credit_drip(&meter_id, &42);
+
+        let events = env.events().all();
+        let mut found = false;
+        for (_, topics, _) in events.iter() {
+            if topics.len() != 2 {
+                continue;
+            }
+            let topic0: Option<Symbol> = topics.get(0).unwrap().try_into_val(&env).ok();
+            let topic1: Option<u64> = topics.get(1).unwrap().try_into_val(&env).ok();
+            if topic0 == Some(symbol_short!("DripSet")) && topic1 == Some(meter_id) {
+                found = true;
+                break;
+            }
+        }
+        assert!(found, "set_credit_drip must emit a DripSet event");
     }
 }
 
