@@ -6150,6 +6150,14 @@ impl UtilityContract {
         meter.provider.require_auth();
         new_user.require_auth();
 
+        // The canonical zero address has no owner; assigning it as the new
+        // tenant makes the meter's balance permanently unspendable (no key
+        // can ever authorize top_up, pause, dispute or withdrawal on the
+        // meter's behalf).
+        if is_zero_address(&env, &new_user) {
+            panic_with_error!(&env, ContractError::InvalidAddress);
+        }
+
         let old_user = meter.user.clone();
         let old_meter_value = provider_meter_value(&meter);
         meter.user = new_user.clone();
@@ -10868,6 +10876,37 @@ mod disputed_refund_tests {
             "refund must be exactly the recorded meter balance, 1:1"
         );
         assert_eq!(client.get_meter(&meter_id).unwrap().balance, 0);
+    }
+}
+
+#[cfg(test)]
+mod transfer_guard_tests {
+    use super::*;
+    use soroban_sdk::testutils::Address as _;
+
+    #[test]
+    fn transfer_to_zero_address_is_rejected() {
+        let env = Env::default();
+        env.mock_all_auths();
+        let contract_id = env.register(crate::UtilityContract, ());
+        let client = crate::UtilityContractClient::new(&env, &contract_id);
+        let user = Address::generate(&env);
+        let provider = Address::generate(&env);
+        let meter_id = client.register_meter_with_mode(
+            &user,
+            &provider,
+            &1_000,
+            &Address::generate(&env),
+            &BillingType::PrePaid,
+            &BytesN::from_array(&env, &[1u8; 32]),
+            &0,
+        );
+
+        let zero = Address::from_str(&env, ZERO_ADDRESS_STRKEY);
+        let r = client.try_transfer_meter_ownership(&meter_id, &zero);
+        assert!(r.is_err(), "zero-address transfer must be rejected");
+        // Owner unchanged.
+        assert_eq!(client.get_meter(&meter_id).unwrap().user, user);
     }
 }
 
