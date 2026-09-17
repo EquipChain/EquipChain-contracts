@@ -6387,6 +6387,49 @@ impl UtilityContract {
             .publish((symbol_short!("FWUpdEnd"), signed_update.meter_id), event);
     }
 
+    /// Cancel a firmware update whose authorization window has expired.
+    ///
+    /// # Security
+    ///
+    /// Provider-only. While `is_updating` is set, ALL settlement is blocked
+    /// (deduct_units and claim both reject with FirmwareUpdateInProgress),
+    /// and re-initiating is rejected too. Completion requires a signature
+    /// from the device inside a 2-hour window — so a device that dies,
+    /// is lost, or is replaced mid-update previously bricked the meter's
+    /// billing forever with no on-chain recovery path. This cancel is
+    /// deliberately restricted to EXPIRED windows: while the window is live
+    /// the device may still legitimately complete, and a provider must not
+    /// be able to drop the authorization gate mid-window.
+    pub fn cancel_expired_firmware_update(env: Env, meter_id: u64) {
+        let mut meter = get_meter_or_panic(&env, meter_id);
+        meter.provider.require_auth();
+
+        if !meter.is_updating {
+            panic_with_error!(&env, ContractError::MeterNotFound);
+        }
+
+        let now = env.ledger().timestamp();
+        if now.saturating_sub(meter.update_start_timestamp) <= FIRMWARE_UPDATE_WINDOW_SECS {
+            // Window still live: the device may still complete the update.
+            panic_with_error!(&env, ContractError::FirmwareUpdateInProgress);
+        }
+
+        meter.is_updating = false;
+        meter.update_start_timestamp = 0;
+        // Restart the billing clock at the cancel instant: the update and
+        // stall span was gated, not consumed, and must not be retro-billed.
+        meter.last_update = now;
+
+        env.storage()
+            .instance()
+            .set(&DataKey::Meter(meter_id), &meter);
+
+        env.events().publish(
+            (symbol_short!("FWUpdCxl"), meter_id),
+            now,
+        );
+    }
+
     pub fn get_billing_group(env: Env, parent_account: Address) -> Option<BillingGroup> {
         env.storage()
             .instance()
@@ -10722,6 +10765,56 @@ mod firmware_gate_tests {
             "update window must not be billed retroactively"
         );
         let _ = t0;
+    }
+
+    #[test]
+    #[should_panic(expected = "Error(Contract, #35)")]
+    fn cancel_within_live_window_is_rejected() {
+        let (env, client, _user, _provider, meter_id, _contract_id) = setup();
+        client.initiate_firmware_update(&meter_id);
+        // Window (2h) still live: device may still complete.
+        env.ledger().with_mut(|li| li.timestamp += HOUR_IN_SECONDS);
+        client.cancel_expired_firmware_update(&meter_id);
+        let _ = env;
+    }
+
+    #[test]
+    fn expired_update_can_be_cancelled_and_billing_resumes() {
+        let (mut env, client, _user, _provider, meter_id, _contract_id) = setup();
+        client.initiate_firmware_update(&meter_id);
+
+        // Window expires with no device signature.
+        env.ledger().with_mut(|li| {
+            li.timestamp += FIRMWARE_UPDATE_WINDOW_SECS + 60;
+        });
+        client.cancel_expired_firmware_update(&meter_id);
+
+        let meter = client.get_meter(&meter_id).unwrap();
+        assert!(!meter.is_updating, "cancel must clear the update gate");
+        assert_eq!(meter.update_start_timestamp, 0);
+
+        // Billing resumes normally after the cancel.
+        env.ledger().with_mut(|li| li.timestamp += 5);
+        let before = client.get_meter(&meter_id).unwrap().balance;
+        client.claim(&meter_id);
+        let after = client.get_meter(&meter_id).unwrap().balance;
+        assert_eq!(
+            before - after,
+            5_000,
+            "post-cancel settlement bills only the post-cancel window"
+        );
+    }
+
+    #[test]
+    fn non_provider_cannot_cancel() {
+        let (env, client, _user, _provider, meter_id, _contract_id) = setup();
+        client.initiate_firmware_update(&meter_id);
+        env.ledger().with_mut(|li| {
+            li.timestamp += FIRMWARE_UPDATE_WINDOW_SECS + 60;
+        });
+        env.set_auths(&[]);
+        let r = client.try_cancel_expired_firmware_update(&meter_id);
+        assert!(r.is_err(), "cancel must require the provider");
     }
 }
 
