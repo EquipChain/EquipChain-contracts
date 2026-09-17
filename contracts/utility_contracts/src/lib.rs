@@ -5273,6 +5273,13 @@ impl UtilityContract {
             panic_with_error!(&env, ContractError::InDispute);
         }
 
+        // Signed usage on a paused meter must not settle: pause is the
+        // payer's kill switch for exactly this debit path (parity with the
+        // claim entry points).
+        if meter.is_paused {
+            panic_with_error!(&env, ContractError::MeterPaused);
+        }
+
         // Store old meter value for pool update
         let old_meter_value = provider_meter_value(&meter);
 
@@ -5479,6 +5486,14 @@ impl UtilityContract {
         // Task #88: Kill-Switch Check
         if meter.is_disputed {
             panic_with_error!(&env, ContractError::InDispute);
+        }
+
+        // Paused meters must not settle: settlement is what debits the payer
+        // and credits the provider — exactly the value movement a user pause
+        // is meant to stop. claim_with_alerts() already enforced this; this
+        // path silently settled user-paused meters.
+        if meter.is_paused {
+            panic_with_error!(&env, ContractError::MeterPaused);
         }
 
         // Store old meter value for pool update
@@ -5813,6 +5828,16 @@ impl UtilityContract {
 
         meter.is_paused = paused;
         let now = env.ledger().timestamp();
+
+        // Freeze/restart the billing clock across the pause span. Settlement
+        // is now blocked while paused, but last_update would otherwise still
+        // point at the last pre-pause settlement — so the entire paused span
+        // would be billed in one lump at the next settlement after resume.
+        // On pause the clock stops at the pause instant; on resume it starts
+        // at the resume instant. The only forgiven consumption is the
+        // trailing pre-pause window (bounded by one settlement interval).
+        meter.last_update = now;
+
         let was_active = meter.is_active;
         refresh_activity(&mut meter, now);
         sync_active_count(&env, was_active, meter.is_active);
@@ -6655,6 +6680,10 @@ impl UtilityContract {
         meter.challenge_timestamp = env.ledger().timestamp();
 
         let now = env.ledger().timestamp();
+        // Freeze the billing clock at the challenge instant (see
+        // set_meter_pause): the paused span must not be billed later.
+        meter.last_update = now;
+
         let was_active = meter.is_active;
         refresh_activity(&mut meter, now);
         sync_active_count(&env, was_active, meter.is_active);
@@ -6689,9 +6718,12 @@ impl UtilityContract {
         }
 
         if restored {
-            // Service restored, unpause and resume stream
+            // Service restored, unpause and resume stream. Restart the
+            // billing clock so the paused span is never billed (see
+            // set_meter_pause).
             meter.is_disputed = false;
             meter.is_paused = false;
+            meter.last_update = env.ledger().timestamp();
         } else {
             // Service NOT restored
             meter.is_disputed = false; // Resolved but failed
@@ -10402,6 +10434,100 @@ mod throttling_tests {
             }
         }
         assert!(found, "Throttl event must be emitted");
+    }
+}
+
+#[cfg(test)]
+mod pause_settlement_guard_tests {
+    use super::*;
+    use soroban_sdk::testutils::{Address as _, Ledger as _};
+    use soroban_sdk::token::StellarAssetClient;
+
+    fn setup() -> (Env, UtilityContractClient<'static>, Address, Address, u64) {
+        let env = Env::default();
+        env.mock_all_auths();
+        let token_id = env
+            .register_stellar_asset_contract_v2(Address::generate(&env))
+            .address();
+        let contract_id = env.register(crate::UtilityContract, ());
+        let client = crate::UtilityContractClient::new(&env, &contract_id);
+        let user = Address::generate(&env);
+        let provider = Address::generate(&env);
+        StellarAssetClient::new(&env, &token_id).mint(&user, &1_000_000_000i128);
+
+        let meter_id = client.register_meter_with_mode(
+            &user,
+            &provider,
+            &1_000,
+            &token_id,
+            &BillingType::PrePaid,
+            &BytesN::from_array(&env, &[4u8; 32]),
+            &0,
+        );
+        client.top_up(&meter_id, &1_000_000, &user);
+        (env, client, user, provider, meter_id)
+    }
+
+    #[test]
+    #[should_panic(expected = "Error(Contract, #121)")]
+    fn claim_on_user_paused_meter_is_rejected() {
+        let (env, client, user, _provider, meter_id) = setup();
+        client.set_meter_pause(&meter_id, &true);
+        client.claim(&meter_id);
+        let _ = env;
+    }
+
+    #[test]
+    #[should_panic(expected = "Error(Contract, #121)")]
+    fn deduct_units_on_user_paused_meter_is_rejected() {
+        let (env, client, user, _provider, meter_id) = setup();
+        client.set_meter_pause(&meter_id, &true);
+
+        let signed = SignedUsageData {
+            meter_id,
+            timestamp: env.ledger().timestamp(),
+            watt_hours_consumed: 10,
+            units_consumed: 10,
+            signature: BytesN::from_array(&env, &[9u8; 64]),
+            public_key: BytesN::from_array(&env, &[4u8; 32]),
+            is_renewable_energy: false,
+        };
+        client.deduct_units(&signed);
+    }
+
+    #[test]
+    fn pause_freezes_billing_clock_no_lump_sum_on_resume() {
+        let (mut env, client, user, provider, meter_id) = setup();
+        let t0 = env.ledger().timestamp();
+
+        // Settle once to anchor the clock, then pause.
+        client.claim(&meter_id);
+        client.set_meter_pause(&meter_id, &true);
+
+        // Two hours of "service" while paused.
+        env.ledger().with_mut(|li| li.timestamp += 2 * HOUR_IN_SECONDS);
+
+        // Resume: clock restarts now.
+        client.set_meter_pause(&meter_id, &false);
+        let meter = client.get_meter(&meter_id).unwrap();
+        assert_eq!(
+            meter.last_update,
+            t0 + 2 * HOUR_IN_SECONDS,
+            "resume must restart the billing clock at the resume instant"
+        );
+
+        // The immediate post-resume settlement bills only the post-resume
+        // window (2s here), not the paused span.
+        env.ledger().with_mut(|li| li.timestamp += 2);
+        let bal_before = client.get_meter(&meter_id).unwrap().balance;
+        client.claim(&meter_id);
+        let bal_after = client.get_meter(&meter_id).unwrap().balance;
+        assert_eq!(
+            bal_before - bal_after,
+            2_000,
+            "only 2s at rate 1000/s may be billed — no paused-span lump sum"
+        );
+        let _ = provider;
     }
 }
 
