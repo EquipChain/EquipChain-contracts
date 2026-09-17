@@ -5142,7 +5142,6 @@ impl UtilityContract {
         let was_active = meter.is_active;
         refresh_activity(&mut meter, now);
         sync_active_count(&env, was_active, meter.is_active);
-        sync_active_count(&env, was_active, meter.is_active);
 
         if !was_active && meter.is_active {
             meter.last_update = now;
@@ -10528,6 +10527,104 @@ mod pause_settlement_guard_tests {
             "only 2s at rate 1000/s may be billed — no paused-span lump sum"
         );
         let _ = provider;
+    }
+}
+
+#[cfg(test)]
+mod active_counter_integrity_tests {
+    use super::*;
+    use soroban_sdk::testutils::{Address as _, Ledger as _};
+    use soroban_sdk::token::StellarAssetClient;
+
+    /// Regression: top_up() called sync_active_count() twice, so every
+    /// inactive->active transition it performed incremented the fleet
+    /// counter twice. Scenario: fund, let the provider claim the balance to
+    /// exactly zero — deactivating the meter — then refill: reactivation
+    /// must count exactly once.
+    #[test]
+    fn reactivation_after_drain_counts_once() {
+        let env = Env::default();
+        env.mock_all_auths();
+        let token_id = env
+            .register_stellar_asset_contract_v2(Address::generate(&env))
+            .address();
+        let contract_id = env.register(crate::UtilityContract, ());
+        let client = crate::UtilityContractClient::new(&env, &contract_id);
+        let user = Address::generate(&env);
+        let provider = Address::generate(&env);
+        StellarAssetClient::new(&env, &token_id).mint(&user, &1_000_000_000i128);
+
+        let meter_id = client.register_meter_with_mode(
+            &user,
+            &provider,
+            &1_000,
+            &token_id,
+            &BillingType::PrePaid,
+            &BytesN::from_array(&env, &[8u8; 32]),
+            &0,
+        );
+        client.top_up(&meter_id, &1_000_000, &user);
+        assert_eq!(client.get_active_meters_count(), 1);
+
+        // Provider claims 1000s of service at rate 1000/s: exactly drains
+        // the 1,000,000 balance to zero and deactivates the meter.
+        env.ledger().with_mut(|li| li.timestamp += 1_000);
+        client.claim(&meter_id);
+        let drained = client.get_meter(&meter_id).unwrap();
+        assert_eq!(drained.balance, 0);
+        assert!(
+            !drained.is_active,
+            "precondition: fully drained meter must be inactive"
+        );
+        assert_eq!(client.get_active_meters_count(), 0);
+
+        // Refill: the meter reactivates. With the duplicated
+        // sync_active_count this read 2.
+        client.top_up(&meter_id, &5_000_000, &user);
+        assert!(client.get_meter(&meter_id).unwrap().is_active);
+        assert_eq!(
+            client.get_active_meters_count(),
+            1,
+            "reactivation via top_up must count exactly once"
+        );
+        let _ = contract_id;
+    }
+
+    #[test]
+    fn pause_unpause_cycles_keep_counter_exact() {
+        let env = Env::default();
+        env.mock_all_auths();
+        let token_id = env
+            .register_stellar_asset_contract_v2(Address::generate(&env))
+            .address();
+        let contract_id = env.register(crate::UtilityContract, ());
+        let client = crate::UtilityContractClient::new(&env, &contract_id);
+        let user = Address::generate(&env);
+        let provider = Address::generate(&env);
+        StellarAssetClient::new(&env, &token_id).mint(&user, &1_000_000_000i128);
+
+        let meter_id = client.register_meter_with_mode(
+            &user,
+            &provider,
+            &1_000,
+            &token_id,
+            &BillingType::PrePaid,
+            &BytesN::from_array(&env, &[8u8; 32]),
+            &0,
+        );
+        client.top_up(&meter_id, &1_000_000, &user);
+        assert_eq!(client.get_active_meters_count(), 1);
+
+        // Five pause/unpause cycles: counter must return to exactly 1 every
+        // time (a double-decrement would underflow-saturate to 0 then leave
+        // 1 missing; a double-increment would drift upward).
+        for _ in 0..5 {
+            client.set_meter_pause(&meter_id, &true);
+            assert_eq!(client.get_active_meters_count(), 0);
+            client.set_meter_pause(&meter_id, &false);
+            assert_eq!(client.get_active_meters_count(), 1);
+        }
+        let _ = contract_id;
     }
 }
 
