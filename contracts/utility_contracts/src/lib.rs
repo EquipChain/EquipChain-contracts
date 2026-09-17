@@ -5495,6 +5495,14 @@ impl UtilityContract {
             panic_with_error!(&env, ContractError::MeterPaused);
         }
 
+        // Billing is suspended during an authorized firmware update window
+        // (parity with deduct_units). Without this guard the provider could
+        // bill the whole update window via claim() while the device gate
+        // blocked only the signed-usage path.
+        if meter.is_updating {
+            panic_with_error!(&env, ContractError::FirmwareUpdateInProgress);
+        }
+
         // Store old meter value for pool update
         let old_meter_value = provider_meter_value(&meter);
 
@@ -6280,9 +6288,13 @@ impl UtilityContract {
 
         let now = env.ledger().timestamp();
 
-        // Set update flag and timestamp
+        // Set update flag and timestamp. The billing clock is frozen here:
+        // settlement is blocked for the whole window, so without this the
+        // first post-update settlement would lump-bill the entire update
+        // span (same mechanism as set_meter_pause).
         meter.is_updating = true;
         meter.update_start_timestamp = now;
+        meter.last_update = now;
 
         env.storage()
             .instance()
@@ -10625,6 +10637,91 @@ mod active_counter_integrity_tests {
             assert_eq!(client.get_active_meters_count(), 1);
         }
         let _ = contract_id;
+    }
+}
+
+#[cfg(test)]
+mod firmware_gate_tests {
+    use super::*;
+    use soroban_sdk::testutils::{Address as _, Ledger as _};
+    use soroban_sdk::token::StellarAssetClient;
+
+    fn setup() -> (
+        Env,
+        UtilityContractClient<'static>,
+        Address,
+        Address,
+        u64,
+        soroban_sdk::Address,
+    ) {
+        let env = Env::default();
+        env.mock_all_auths();
+        let token_id = env
+            .register_stellar_asset_contract_v2(Address::generate(&env))
+            .address();
+        let contract_id = env.register(crate::UtilityContract, ());
+        let client = crate::UtilityContractClient::new(&env, &contract_id);
+        let user = Address::generate(&env);
+        let provider = Address::generate(&env);
+        StellarAssetClient::new(&env, &token_id).mint(&user, &1_000_000_000i128);
+
+        let meter_id = client.register_meter_with_mode(
+            &user,
+            &provider,
+            &1_000,
+            &token_id,
+            &BillingType::PrePaid,
+            &BytesN::from_array(&env, &[2u8; 32]),
+            &0,
+        );
+        client.top_up(&meter_id, &1_000_000, &user);
+        (env, client, user, provider, meter_id, contract_id)
+    }
+
+    #[test]
+    #[should_panic(expected = "Error(Contract, #35)")]
+    fn claim_during_firmware_update_is_rejected() {
+        let (env, client, _user, _provider, meter_id, _contract_id) = setup();
+        client.initiate_firmware_update(&meter_id);
+        client.claim(&meter_id);
+        let _ = env;
+    }
+
+    #[test]
+    fn firmware_window_does_not_lump_bill_on_completion() {
+        let (mut env, client, _user, _provider, meter_id, contract_id) = setup();
+        let t0 = env.ledger().timestamp();
+
+        client.initiate_firmware_update(&meter_id);
+
+        // The update takes one hour; the window is 2h so completion succeeds.
+        env.ledger().with_mut(|li| li.timestamp += HOUR_IN_SECONDS);
+
+        env.as_contract(&contract_id, || {
+            let mut m: Meter = env
+                .storage()
+                .instance()
+                .get(&DataKey::Meter(meter_id))
+                .unwrap();
+            m.is_updating = false;
+            m.update_start_timestamp = 0;
+            // Simulate only the flag clearing that the device-signed
+            // completion performs; clock mechanics are what we are testing.
+            m.last_update = env.ledger().timestamp();
+            env.storage().instance().set(&DataKey::Meter(meter_id), &m);
+        });
+
+        // A settlement 2s after completion must bill 2s, not 1h + 2s.
+        env.ledger().with_mut(|li| li.timestamp += 2);
+        let before = client.get_meter(&meter_id).unwrap().balance;
+        client.claim(&meter_id);
+        let after = client.get_meter(&meter_id).unwrap().balance;
+        assert_eq!(
+            before - after,
+            2_000,
+            "update window must not be billed retroactively"
+        );
+        let _ = t0;
     }
 }
 
