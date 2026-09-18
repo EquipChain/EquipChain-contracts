@@ -1676,10 +1676,10 @@ fn should_use_gas_buffer(env: &Env, provider: &Address, amount: i128) -> bool {
 fn deduct_from_gas_buffer(
     env: &Env,
     provider: &Address,
+    token: &Address,
     amount: i128,
 ) -> Result<(), ContractError> {
-    // Use provider as token placeholder since token address not needed for gas buffer deduction
-    let mut gas_buffer = get_gas_buffer_or_default(env, provider, provider);
+    let mut gas_buffer = get_gas_buffer_or_default(env, provider, token);
 
     if gas_buffer.balance < amount {
         return Err(ContractError::InsufficientGasBuffer);
