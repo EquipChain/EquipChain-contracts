@@ -1690,8 +1690,6 @@ fn deduct_from_gas_buffer(
     Ok(())
 }
 
-fn apply_provider_withdrawal_limit_placeholder() {}
-
 // --- Internal Settlement Logic ---
 
 fn settle_claim_for_meter(
