@@ -8866,6 +8866,11 @@ fn verify_usage_signature(
         return Err(ContractError::TimestampTooOld);
     }
 
+    // Check timestamp is not in the future (prevent forward-dated submissions)
+    if signed_data.timestamp > current_time {
+        return Err(ContractError::TimestampTooOld);
+    }
+
     // Create the message that was signed
     let report = UsageReport {
         meter_id: signed_data.meter_id,
