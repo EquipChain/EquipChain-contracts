@@ -2987,6 +2987,11 @@ impl UtilityContract {
     pub fn set_oracle(env: Env, oracle_address: Address) {
         require_admin_auth(&env);
 
+        // Prevent setting the contract itself as oracle to avoid price manipulation
+        if oracle_address == env.current_contract_address() {
+            panic_with_error!(&env, ContractError::InvalidAddress);
+        }
+
         env.storage()
             .instance()
             .set(&DataKey::Oracle, &oracle_address);
