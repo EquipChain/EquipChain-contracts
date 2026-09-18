@@ -7286,11 +7286,6 @@ impl UtilityContract {
             panic_with_error!(&env, ContractError::InsufficientApprovals);
         }
 
-        // Check sufficient approvals
-        if request.approval_count < config.required_signatures {
-            panic_with_error!(&env, ContractError::InsufficientApprovals);
-        }
-
         // Get meter and verify
         let mut meter = get_meter_or_panic(&env, request.meter_id);
         if meter.provider != provider {
