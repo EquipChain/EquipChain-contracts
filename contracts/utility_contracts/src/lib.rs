@@ -2336,8 +2336,12 @@ fn create_continuous_flow(
     })
 }
 
-/// Calculate required buffer amount (24 hours of flow rate)
+/// Calculate required buffer amount (24 hours of flow rate).
+/// Uses saturating arithmetic to prevent overflow on extreme flow rates.
 fn calculate_required_buffer(flow_rate_per_second: i128) -> i128 {
+    if flow_rate_per_second <= 0 {
+        return 0;
+    }
     let buffer_duration_i128 = BUFFER_DURATION_SECONDS as i128;
     flow_rate_per_second.saturating_mul(buffer_duration_i128)
 }
