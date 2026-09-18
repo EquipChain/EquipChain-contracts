@@ -1640,6 +1640,9 @@ fn convert_usd_to_token_if_needed(
     Ok(usd_cents)
 }
 
+/// Retrieve the gas buffer for a provider, creating a zeroed default if none exists.
+/// NOTE: Storage key is provider-only (not provider+token). If multi-token gas
+/// buffers are needed in the future, the DataKey should be changed to include the token.
 fn get_gas_buffer_or_default(env: &Env, provider: &Address, token: &Address) -> GasBuffer {
     env.storage()
         .instance()
