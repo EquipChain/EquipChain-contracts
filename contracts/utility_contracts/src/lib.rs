@@ -6112,6 +6112,11 @@ impl UtilityContract {
         let mut meter = get_meter_or_panic(&env, meter_id);
         meter.provider.require_auth();
 
+        // Validate drip rate is non-negative to prevent debt manipulation
+        if drip_rate < 0 {
+            panic_with_error!(&env, ContractError::InvalidTokenAmount);
+        }
+
         meter.credit_drip_rate = drip_rate;
 
         env.storage()
