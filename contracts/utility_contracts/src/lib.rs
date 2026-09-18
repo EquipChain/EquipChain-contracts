@@ -2083,7 +2083,7 @@ fn publish_active_event(env: &Env, meter_id: u64, timestamp: u64) {
 
 // Task #3: Self-Maintenance Helper Functions
 fn allocate_to_maintenance_fund(env: &Env, meter_id: u64, amount: i128) {
-    let maintenance_amount = (amount * MAINTENANCE_FUND_PERCENT_BPS) / 10_000;
+    let maintenance_amount = amount.saturating_mul(MAINTENANCE_FUND_PERCENT_BPS) / 10_000;
 
     if maintenance_amount > 0 {
         let current_fund: i128 = env
