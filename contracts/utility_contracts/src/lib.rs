@@ -5802,7 +5802,10 @@ impl UtilityContract {
             config.is_active = false;
             env.storage()
                 .instance()
-                .set(&DataKey::WebhookConfig(user), &config);
+                .set(&DataKey::WebhookConfig(user.clone()), &config);
+
+            env.events()
+                .publish((symbol_short!("WebhookOff"),), user);
         }
     }
 
