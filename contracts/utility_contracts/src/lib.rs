@@ -1174,6 +1174,8 @@ pub enum ContractError {
     // Issue #23 - Token Security
     UnapprovedToken = 117,
     TokenBalanceMismatch = 118,
+    // Stream state validation
+    InvalidStreamState = 119,
 }
 
 #[contracttype]
@@ -2535,7 +2537,7 @@ fn pause_stream(env: &Env, stream_id: u64, provider: &Address) -> Result<(), Con
     if flow.status != StreamStatus::Active {
         // Clear reentrancy guard before error
         env.storage().instance().remove(&reentrancy_key);
-        return Err(ContractError::InvalidTokenAmount); // Reuse error for invalid state
+        return Err(ContractError::InvalidStreamState);
     }
 
     let current_timestamp = env.ledger().timestamp();
@@ -2618,7 +2620,7 @@ fn resume_stream(
     if flow.status != StreamStatus::Paused {
         // Clear reentrancy guard before error
         env.storage().instance().remove(&reentrancy_key);
-        return Err(ContractError::InvalidTokenAmount); // Reuse error for invalid state
+        return Err(ContractError::InvalidStreamState);
     }
 
     let current_timestamp = env.ledger().timestamp();
