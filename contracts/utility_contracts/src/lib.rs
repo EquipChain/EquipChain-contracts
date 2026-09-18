@@ -5423,6 +5423,11 @@ impl UtilityContract {
             panic_with_error!(&env, ContractError::InvalidTokenAmount);
         }
 
+        // Prevent withdrawals from inactive or disputed meters
+        if meter.is_disputed || meter.is_paused {
+            panic_with_error!(&env, ContractError::InDispute);
+        }
+
         // Store old meter value for pool update
         let old_meter_value = provider_meter_value(&meter);
 
