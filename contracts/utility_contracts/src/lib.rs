@@ -5255,10 +5255,16 @@ impl UtilityContract {
             meter.usage_data.peak_usage_watt_hours = meter.usage_data.current_cycle_watt_hours;
         }
 
-        meter.usage_data.last_reading_timestamp = env.ledger().timestamp();
+        let now = env.ledger().timestamp();
+        meter.usage_data.last_reading_timestamp = now;
         env.storage()
             .instance()
             .set(&DataKey::Meter(meter_id), &meter);
+
+        env.events().publish(
+            (symbol_short!("UsageUpd"), meter_id),
+            (watt_hours_consumed, now),
+        );
     }
 
     pub fn reset_cycle_usage(env: Env, meter_id: u64) {
