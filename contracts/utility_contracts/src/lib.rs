@@ -5339,7 +5339,10 @@ impl UtilityContract {
 
     pub fn emergency_shutdown(env: Env, meter_id: u64) {
         let mut meter = get_meter_or_panic(&env, meter_id);
+        // Require both provider AND admin authorization for emergency shutdown
+        // to prevent a single compromised key from disabling critical meters
         meter.provider.require_auth();
+        require_admin_auth(&env);
 
         // Emergency shutdown always disables the meter regardless of balance
         meter.is_active = false;
@@ -5347,6 +5350,11 @@ impl UtilityContract {
         env.storage()
             .instance()
             .set(&DataKey::Meter(meter_id), &meter);
+
+        env.events().publish(
+            (symbol_short!("EmgOff"), meter_id),
+            env.ledger().timestamp(),
+        );
     }
 
     pub fn set_max_flow_rate(env: Env, meter_id: u64, max_rate_per_hour: i128) {
