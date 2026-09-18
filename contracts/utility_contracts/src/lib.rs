@@ -7965,8 +7965,7 @@ impl UtilityContract {
     /// Set the platform streaming fee in basis points (admin only).
     /// E.g. 50 bps = 0.5%. Max is 1000 bps (10%).
     pub fn set_platform_fee_bps(env: Env, fee_bps: i128) {
-        let admin = get_admin_or_panic(&env);
-        admin.require_auth();
+        require_admin_auth(&env);
         if fee_bps < 0 || fee_bps > MAX_PLATFORM_FEE_BPS {
             panic_with_error!(&env, ContractError::InvalidTokenAmount);
         }
