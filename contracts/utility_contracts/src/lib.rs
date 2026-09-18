@@ -8763,8 +8763,9 @@ fn verify_usage_signature(
 fn negate_g1(env: &Env, point: &Bytes) -> Bytes {
     let mut result = point.clone();
     if result.len() >= 64 {
-        let y_byte = result.get(63);
-        result.set(63, y_byte ^ 0x01);
+        if let Some(y_byte) = result.get(63) {
+            result.set(63, y_byte ^ 0x01);
+        }
     }
     result
 }
