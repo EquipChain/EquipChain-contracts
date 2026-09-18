@@ -6218,6 +6218,11 @@ impl UtilityContract {
         env.storage()
             .instance()
             .set(&DataKey::Meter(meter_id), &meter);
+
+        env.events().publish(
+            (symbol_short!("CrDrpSet"), meter_id),
+            drip_rate,
+        );
     }
 
     /// Configure carbon credit asset and drip rate for a meter.
