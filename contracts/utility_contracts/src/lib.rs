@@ -3109,6 +3109,10 @@ impl UtilityContract {
 
     pub fn set_admin(env: Env, admin_address: Address) {
         env.current_contract_address().require_auth();
+        // Prevent setting the contract itself as admin to avoid self-referential loops
+        if admin_address == env.current_contract_address() {
+            panic_with_error!(&env, ContractError::InvalidAddress);
+        }
         env.storage()
             .instance()
             .set(&DataKey::AdminAddress, &admin_address);
