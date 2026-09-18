@@ -5391,12 +5391,7 @@ impl UtilityContract {
         validate_hourly_flow_rate(max_rate_per_hour)
             .unwrap_or_else(|_| panic_with_error!(&env, ContractError::FlowRateTooHigh));
 
-        let mut meter: Meter = env
-            .storage()
-            .instance()
-            .get(&DataKey::Meter(meter_id))
-            .ok_or("Meter not found")
-            .unwrap();
+        let mut meter = get_meter_or_panic(&env, meter_id);
         meter.provider.require_auth();
 
         meter.max_flow_rate_per_hour = max_rate_per_hour;
