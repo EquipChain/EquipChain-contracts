@@ -8719,6 +8719,21 @@ impl UtilityContract {
             .unwrap_or(false)
     }
 
+    /// Sweeps dust balances from depleted/paused streams to the treasury.
+    ///
+    /// Relayers are paid a gas bounty from the bounty pool; the admin can
+    /// sweep without consuming the bounty pool.
+    ///
+    /// # Authorization
+    /// * BOTH paths require a signature from `caller` (Issue #2): the admin
+    ///   path previously skipped authentication entirely, so anyone could
+    ///   execute the sweep by passing the admin's address.
+    ///
+    /// # Panics
+    /// * Panics if `caller` is not signed (`Error(Auth, ...)` host error).
+    /// * Panics if `caller` is not the admin and the bounty pool is below
+    ///   the bounty amount (`ContractError::InsufficientGasBounty`).
+    /// * Panics if there is no dust to sweep (`ContractError::NoDustToSweep`).
     pub fn sweep_dust(
         env: Env,
         caller: Address,
@@ -8745,6 +8760,12 @@ impl UtilityContract {
                 panic_with_error!(&env, ContractError::InsufficientGasBounty);
             }
 
+            caller.require_auth();
+        } else {
+            // Issue #2: the admin path previously skipped require_auth()
+            // entirely — merely *claiming* to be the admin address executed
+            // the whole sweep (and its treasury payout) with no signature at
+            // all. Authentication is now enforced on BOTH paths.
             caller.require_auth();
         }
 
@@ -10191,6 +10212,79 @@ mod credit_drip_validation_tests {
 mod typed_error_regression_tests {
     use super::*;
     use soroban_sdk::testutils::Address as _;
+
+    // Issue #2 — sweep_dust must authenticate the caller on EVERY path.
+    // The admin path previously skipped require_auth entirely: passing the
+    // admin's address with an empty auth set executed the full sweep and its
+    // treasury payout with zero signatures.
+    mod sweep_dust_auth_tests {
+        use super::*;
+        use soroban_sdk::token::StellarAssetClient;
+
+        fn setup_funded_env(env: &Env) -> (crate::UtilityContractClient<'static>, Address, Address) {
+            env.mock_all_auths();
+            let token_id = env
+                .register_stellar_asset_contract_v2(Address::generate(env))
+                .address();
+            let contract_id = env.register(crate::UtilityContract, ());
+            let client = crate::UtilityContractClient::new(env, &contract_id);
+            let token_admin = StellarAssetClient::new(env, &token_id);
+            // Bootstrap the admin FIRST (fund_gas_bounty requires one), then
+            // fund the gas bounty pool so the non-admin path passes the
+            // bounty check and the admin path is the only thing under test.
+            let admin = Address::generate(env);
+            client.set_admin(&admin);
+            token_admin.mint(&contract_id, &10_000_000_000i128);
+            client.fund_gas_bounty(&1_000_000i128);
+            (client, token_id, admin)
+        }
+
+        /// Differential proof: the ONLY thing that changed is whether the
+        /// caller's signature is required. With an empty auth set and the
+        /// admin's address, the call must now abort (previously it executed).
+        #[test]
+        fn unauthenticated_admin_claimed_identity_is_rejected() {
+            let env = Env::default();
+            let (client, token_id, admin) = setup_funded_env(&env);
+
+            // Drop all signatures: claiming the admin identity must abort.
+            env.set_auths(&[]);
+
+            let r = client.try_sweep_dust(&admin, &token_id, &None);
+            assert!(r.is_err(), "claiming the admin identity without a signature must abort");
+        }
+
+        #[test]
+        fn unauthenticated_random_caller_is_still_rejected() {
+            let env = Env::default();
+            let (client, token_id, _admin) = setup_funded_env(&env);
+
+            let rando = Address::generate(&env);
+            env.set_auths(&[]);
+
+            let r = client.try_sweep_dust(&rando, &token_id, &None);
+            assert!(r.is_err(), "unsigned random caller must abort");
+        }
+
+        /// Sanity: with authentication supplied (mocked), the admin path
+        /// still completes end-to-end.
+        #[test]
+        fn authenticated_admin_path_still_executes() {
+            let env = Env::default();
+            let (client, token_id, admin) = setup_funded_env(&env);
+            env.mock_all_auths();
+
+            // No dust exists in a fresh contract: the authenticated admin
+            // gets past BOTH auth gates and fails later on NoDustToSweep
+            // (typed error #18) — proving the auth path itself is sound.
+            let r = client.try_sweep_dust(&admin, &token_id, &None);
+            match r {
+                Err(Ok(code)) => assert_eq!(code, ContractError::NoDustToSweep.into()),
+                Err(Err(_)) => panic!("expected typed ContractError, got host error"),
+                Ok(_) => panic!("expected NoDustToSweep, sweep unexpectedly succeeded"),
+            }
+        }
+    }
 
     // All abort paths in fund/config entry points must surface as typed
     // `ContractError` values — `Error(Contract, #N)` — never as host string

@@ -5,7 +5,7 @@ One improvement per commit. Status: `[ ]` todo, `[x]` done.
 
 ## Batch 1 — Critical: fund loss & access control (2–21)
 
-- [ ] **#2 sweep_dust admin path never calls require_auth — auth bypass** (HIGH)
+- [x] **#2 sweep_dust admin path never calls require_auth — auth bypass** (HIGH)
 - [ ] **#3 create_continuous_stream/withdraw_continuous never move tokens — unbacked paper balances** (HIGH)
 - [ ] **#4 add_continuous_balance mints bookkeeping without collecting tokens** (HIGH)
 - [ ] **#5 refund_buffer marks buffer refunded without token transfer** (HIGH)
