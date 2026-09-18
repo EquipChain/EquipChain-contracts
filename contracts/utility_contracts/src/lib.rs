@@ -1514,8 +1514,6 @@ fn should_pause_low_priority_stream(meter: &Meter, throttling_active: bool) -> b
     throttling_active && meter.priority_index == 0
 }
 
-fn unlock_reentrancy(_env: &Env) {}
-
 // Peak hours: 18:00 - 21:00 UTC
 const PEAK_HOUR_START: u64 = 18 * HOUR_IN_SECONDS; // 64800 seconds
 const PEAK_HOUR_END: u64 = 21 * HOUR_IN_SECONDS; // 75600 seconds
