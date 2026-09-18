@@ -4620,6 +4620,16 @@ impl UtilityContract {
     pub fn top_up(env: Env, meter_id: u64, amount: i128, contributor: Address) {
         let mut meter = get_meter_or_panic(&env, meter_id);
 
+        // Validate amount is positive
+        if amount <= 0 {
+            panic_with_error!(&env, ContractError::InvalidTokenAmount);
+        }
+
+        // Prevent top-ups on inactive or closed meters
+        if !meter.is_active || meter.is_closed {
+            panic_with_error!(&env, ContractError::MeterNotFound);
+        }
+
         // Authorization: either the primary user OR an authorized contributor
         let is_authorized = if contributor == meter.user {
             contributor.require_auth();
