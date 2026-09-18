@@ -5948,11 +5948,63 @@ impl UtilityContract {
 
         if final_claimable > 0 {
             let client = token::Client::new(&env, &meter.token);
-            client.transfer(
-                &env.current_contract_address(),
-                &meter.provider,
-                &final_claimable,
-            );
+
+            // Task #3: Allocate to maintenance fund
+            allocate_to_maintenance_fund(&env, meter_id, final_claimable);
+
+            // Task #2: Tax Compliance - Split tax before provider payout
+            let tax_rate_bps = get_tax_rate_or_default(&env);
+            let (tax_amount, after_tax_amount) = calculate_tax_split(final_claimable, tax_rate_bps);
+
+            if tax_amount > 0 {
+                if let Some(gov_vault) = get_government_vault_or_default(&env) {
+                    client.transfer(&env.current_contract_address(), &gov_vault, &tax_amount);
+                    let tax_receipt = TaxReceipt {
+                        meter_id,
+                        total_amount: final_claimable,
+                        tax_amount,
+                        net_amount: after_tax_amount,
+                        tax_rate_bps,
+                        government_vault: gov_vault.clone(),
+                        timestamp: now,
+                    };
+                    env.events().publish(
+                        (soroban_sdk::symbol_short!("TaxRcpt"), meter_id),
+                        tax_receipt,
+                    );
+                }
+            }
+
+            let mut payout = after_tax_amount;
+            let credit_discount_active =
+                issue_carbon_credits(&env, meter_id, &meter, final_claimable, now);
+
+            // Protocol fee with green energy discount
+            if let Some(wallet) = env
+                .storage()
+                .instance()
+                .get::<_, Address>(&DataKey::MaintenanceWallet)
+            {
+                let fee_bps: i128 = env
+                    .storage()
+                    .instance()
+                    .get(&DataKey::ProtocolFeeBps)
+                    .unwrap_or(0);
+                let discount_bps = if credit_discount_active {
+                    meter.green_energy_discount_bps.min(fee_bps)
+                } else {
+                    0
+                };
+                let effective_fee = fee_bps.saturating_sub(discount_bps);
+                let fee = (payout * effective_fee) / 10000;
+                payout -= fee;
+                if fee > 0 {
+                    client.transfer(&env.current_contract_address(), &wallet, &fee);
+                }
+            }
+            if payout > 0 {
+                client.transfer(&env.current_contract_address(), &meter.provider, &payout);
+            }
             meter.balance -= final_claimable;
             meter.claimed_this_hour += final_claimable;
 
