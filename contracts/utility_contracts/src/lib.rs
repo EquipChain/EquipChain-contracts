@@ -6634,6 +6634,7 @@ impl UtilityContract {
 
     /// Set legal vault address
     pub fn set_legal_vault(env: Env, vault: Address) {
+        require_admin_auth(&env);
         vault.require_auth();
 
         env.storage().instance().set(&DataKey::LegalVault, &vault);
