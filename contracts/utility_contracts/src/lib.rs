@@ -2031,7 +2031,14 @@ fn apply_provider_withdrawal_limit(
     if amount <= 0 {
         return window;
     }
-    // Simple limit check for now
+    // Enforce 10% daily withdrawal limit against provider's total pool
+    let total_pool = get_provider_total_pool_impl(env, provider);
+    let daily_limit = (total_pool * DAILY_WITHDRAWAL_PERCENT) / 100;
+    let new_total = window.daily_withdrawn.saturating_add(amount);
+    if daily_limit > 0 && new_total > daily_limit {
+        panic_with_error!(env, ContractError::WithdrawalLimitExceeded);
+    }
+    window.daily_withdrawn = new_total;
     window
 }
 
