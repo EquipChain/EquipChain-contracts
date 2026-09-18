@@ -2070,7 +2070,7 @@ fn get_provider_total_pool_impl(env: &Env, provider: &Address) -> i128 {
 
 fn get_reseller_cut(env: &Env, meter_id: u64, amount: i128) -> i128 {
     if let Some(config) = get_reseller_config_impl(env, meter_id) {
-        (amount * config.fee_bps) / 10000
+        amount.saturating_mul(config.fee_bps) / 10000
     } else {
         0
     }
