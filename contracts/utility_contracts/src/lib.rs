@@ -143,6 +143,7 @@ impl IoTErrorCode {
             ContractError::BufferAlreadyDepleted => Self::BufferBreached,
             ContractError::FirmwareUpdateInProgress => Self::FirmwareUpdateActive,
             ContractError::FirmwareUpdateWindowExpired => Self::FirmwareWindowExpired,
+            ContractError::InvalidStreamState => Self::MeterPaused,
             _ => Self::UnknownError,
         }
     }
