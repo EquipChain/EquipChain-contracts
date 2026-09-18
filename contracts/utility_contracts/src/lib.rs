@@ -5026,6 +5026,11 @@ impl UtilityContract {
             panic_with_error!(&env, ContractError::InDispute);
         }
 
+        // Prevent claims on inactive or closed meters
+        if !meter.is_active || meter.is_closed {
+            panic_with_error!(&env, ContractError::MeterNotFound);
+        }
+
         // Store old meter value for pool update
         let old_meter_value = provider_meter_value(&meter);
 
