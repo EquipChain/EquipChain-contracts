@@ -1906,9 +1906,11 @@ fn get_tax_rate_or_default(env: &Env) -> i128 {
         .unwrap_or(DEFAULT_TAX_RATE_BPS)
 }
 
+/// Split an amount into tax and net portions using basis-point arithmetic.
+/// Uses saturating multiplication to prevent overflow on large amounts.
 fn calculate_tax_split(amount: i128, tax_rate_bps: i128) -> (i128, i128) {
-    let tax_amount = (amount * tax_rate_bps) / 10000;
-    (tax_amount, amount - tax_amount)
+    let tax_amount = amount.saturating_mul(tax_rate_bps) / 10000;
+    (tax_amount, amount.saturating_sub(tax_amount))
 }
 
 fn get_government_vault_or_default(env: &Env) -> Option<Address> {
