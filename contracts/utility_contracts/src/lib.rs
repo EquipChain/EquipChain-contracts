@@ -6154,7 +6154,13 @@ impl UtilityContract {
 
     // Task #2: Tax Compliance - Set government vault address
     pub fn set_government_vault(env: Env, vault_address: Address) {
+        require_admin_auth(&env);
         vault_address.require_auth();
+
+        // Prevent setting the contract itself as the government vault
+        if vault_address == env.current_contract_address() {
+            panic_with_error!(&env, ContractError::InvalidAddress);
+        }
 
         env.storage()
             .instance()
