@@ -1449,6 +1449,10 @@ fn validate_token(env: &Env, token: &Address) -> TokenStandard {
     TokenStandard::Standard
 }
 
+/// Placeholder for Stellar native token (XLM) detection.
+/// Returns false until network-specific native token address comparison is implemented.
+/// TODO: Compare token address against the well-known native XLM contract ID
+/// for the target network (testnet/mainnet) to enable native XLM event emission.
 fn is_native_token(_env: &Env, _token: &Address) -> bool {
     false
 }
