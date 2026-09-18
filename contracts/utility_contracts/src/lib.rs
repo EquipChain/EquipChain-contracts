@@ -6154,7 +6154,7 @@ impl UtilityContract {
 
     // Task #2: Tax Compliance - Set tax rate (in basis points)
     pub fn set_tax_rate(env: Env, tax_rate_bps: i128) {
-        // Should be admin-only in production
+        require_admin_auth(&env);
         if tax_rate_bps < 0 || tax_rate_bps > 10_000 {
             panic_with_error!(&env, ContractError::InvalidUsageValue);
         }
