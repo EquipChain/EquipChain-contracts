@@ -6043,8 +6043,13 @@ impl UtilityContract {
         meter.user.require_auth();
 
         env.storage().instance().set(
-            &DataKey::AuthorizedContributor(meter_id, contributor),
+            &DataKey::AuthorizedContributor(meter_id, contributor.clone()),
             &true,
+        );
+
+        env.events().publish(
+            (symbol_short!("ContribAdd"), meter_id),
+            contributor,
         );
     }
 
