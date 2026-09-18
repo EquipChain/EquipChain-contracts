@@ -3550,6 +3550,11 @@ impl UtilityContract {
             panic_with_error!(&env, ContractError::InvalidGrantAmount);
         }
 
+        let now = env.ledger().timestamp();
+        if deadline <= now {
+            panic_with_error!(&env, ContractError::GoalExpired);
+        }
+
         // Generate unique goal ID
         let goal_count: u64 = env.storage().instance().get(&DataKey::Count).unwrap_or(0);
         let goal_id = goal_count + 1;
