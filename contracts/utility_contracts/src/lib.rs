@@ -8041,8 +8041,7 @@ impl UtilityContract {
     /// Set the minimum capital threshold for yield routing (admin only).
     /// route_to_yield will abort if available capital is below this value.
     pub fn set_min_route_threshold(env: Env, threshold: i128) {
-        let admin = get_admin_or_panic(&env);
-        admin.require_auth();
+        require_admin_auth(&env);
         if threshold < 0 {
             panic_with_error!(&env, ContractError::InvalidTokenAmount);
         }
