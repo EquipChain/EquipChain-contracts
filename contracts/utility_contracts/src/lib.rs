@@ -5341,6 +5341,14 @@ impl UtilityContract {
         let mut meter = get_meter_or_panic(&env, meter_id);
         meter.provider.require_auth();
 
+        // Validate tier parameters
+        if threshold <= 0 {
+            panic_with_error!(&env, ContractError::InvalidTokenAmount);
+        }
+        if rate <= 0 {
+            panic_with_error!(&env, ContractError::InvalidTokenAmount);
+        }
+
         meter.tier_threshold = threshold;
         meter.tier_rate = rate;
 
