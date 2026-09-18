@@ -3036,6 +3036,11 @@ impl UtilityContract {
     pub fn set_maintenance_config(env: Env, wallet: Address, fee_bps: i128) {
         require_admin_auth(&env);
 
+        // Prevent contract from being set as its own maintenance wallet
+        if wallet == env.current_contract_address() {
+            panic_with_error!(&env, ContractError::InvalidAddress);
+        }
+
         if fee_bps < 0 {
             panic_with_error!(&env, ContractError::InvalidFeeAmount);
         }
