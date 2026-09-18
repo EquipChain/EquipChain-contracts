@@ -1510,7 +1510,7 @@ fn check_throttling_threshold(_env: &Env, meter: &Meter) -> bool {
     if total_value <= 0 {
         return false;
     }
-    let threshold = (total_value * THROTTLING_THRESHOLD_PERCENT) / 100;
+    let threshold = total_value.saturating_mul(THROTTLING_THRESHOLD_PERCENT) / 100;
     meter.balance < threshold
 }
 
