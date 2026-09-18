@@ -1601,6 +1601,9 @@ fn calculate_historical_average(usage_data: &UsageData, now: u64) -> i128 {
     if elapsed == 0 {
         return 0;
     }
+    if usage_data.precision_factor == 0 {
+        return 0;
+    }
     // watt_hours / second. We use precision_factor to keep accuracy.
     usage_data
         .total_watt_hours
