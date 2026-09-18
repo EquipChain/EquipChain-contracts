@@ -25,13 +25,13 @@ impl GasCostEstimator {
     ) -> i128 {
         let mut monthly_cost = Self::REGISTER_METER;
 
-        monthly_cost += (Self::CLAIM as u32 * Self::CLAIMS_PER_MONTH) as i128;
-        monthly_cost += (Self::UPDATE_HEARTBEAT as u32 * Self::HEARTBEATS_PER_MONTH) as i128;
-        monthly_cost += (Self::TOP_UP as u32 * Self::TOP_UPS_PER_MONTH) as i128;
+        monthly_cost = monthly_cost.saturating_add(Self::CLAIM.saturating_mul(Self::CLAIMS_PER_MONTH as i128));
+        monthly_cost = monthly_cost.saturating_add(Self::UPDATE_HEARTBEAT.saturating_mul(Self::HEARTBEATS_PER_MONTH as i128));
+        monthly_cost = monthly_cost.saturating_add(Self::TOP_UP.saturating_mul(Self::TOP_UPS_PER_MONTH as i128));
 
         if is_group_meter {
-            monthly_cost -= (Self::TOP_UP as u32 * Self::TOP_UPS_PER_MONTH) as i128;
-            monthly_cost += (Self::GROUP_TOP_UP_PER_METER as u32 * Self::TOP_UPS_PER_MONTH) as i128;
+            monthly_cost = monthly_cost.saturating_sub(Self::TOP_UP.saturating_mul(Self::TOP_UPS_PER_MONTH as i128));
+            monthly_cost = monthly_cost.saturating_add(Self::GROUP_TOP_UP_PER_METER.saturating_mul(Self::TOP_UPS_PER_MONTH as i128));
         }
 
         monthly_cost
