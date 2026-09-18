@@ -5438,10 +5438,15 @@ impl UtilityContract {
     pub fn update_heartbeat(env: Env, meter_id: u64) {
         let mut meter = get_meter_or_panic(&env, meter_id);
         meter.user.require_auth();
-        meter.last_heartbeat = env.ledger().timestamp();
+        let now = env.ledger().timestamp();
+        meter.last_heartbeat = now;
         env.storage()
             .instance()
             .set(&DataKey::Meter(meter_id), &meter);
+        env.events().publish(
+            (symbol_short!("Heartbeat"), meter_id),
+            now,
+        );
     }
 
     pub fn withdraw_earnings(env: Env, meter_id: u64, amount_usd_cents: i128) {
