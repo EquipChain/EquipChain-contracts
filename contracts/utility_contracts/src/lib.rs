@@ -3770,6 +3770,11 @@ impl UtilityContract {
         env.storage()
             .instance()
             .set(&DataKey::Meter(meter_id), &meter);
+
+        env.events().publish(
+            (symbol_short!("GrnDscSet"), meter_id),
+            discount_bps,
+        );
     }
 
     // ============================================================================
