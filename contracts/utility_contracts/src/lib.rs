@@ -1607,9 +1607,12 @@ fn calculate_historical_average(usage_data: &UsageData, now: u64) -> i128 {
         .saturating_div(elapsed as i128)
 }
 
+/// Check if a given timestamp falls within peak hours (18:00-21:00 UTC).
+/// Peak window is [PEAK_HOUR_START, PEAK_HOUR_END) — end is exclusive
+/// so that exactly 21:00:00 is treated as off-peak.
 fn is_peak_hour(timestamp: u64) -> bool {
     let day_seconds = timestamp % DAY_IN_SECONDS;
-    day_seconds >= PEAK_HOUR_START && day_seconds <= PEAK_HOUR_END
+    day_seconds >= PEAK_HOUR_START && day_seconds < PEAK_HOUR_END
 }
 
 fn get_effective_rate(_env: &Env, meter: &Meter, timestamp: u64) -> i128 {
