@@ -5775,6 +5775,11 @@ impl UtilityContract {
                 .instance()
                 .set(&DataKey::Meter(meter_id), &meter);
         }
+
+        env.events().publish(
+            (symbol_short!("BillingRm"), meter_id),
+            parent_account,
+        );
     }
 
     // Gas Cost Estimator Functions
