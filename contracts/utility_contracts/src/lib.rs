@@ -4505,6 +4505,12 @@ impl UtilityContract {
     ) -> u64 {
         user.require_auth();
 
+        // Validate off_peak_rate is positive — a zero or negative rate would
+        // cause division-by-zero or inverted billing logic downstream.
+        if off_peak_rate <= 0 {
+            panic_with_error!(&env, ContractError::InvalidTokenAmount);
+        }
+
         // Issue #279: Validate device_public_key byte array
         validate_ed25519_public_key(&env, &device_public_key)
             .unwrap_or_else(|_| panic_with_error!(&env, ContractError::InvalidSignature));
