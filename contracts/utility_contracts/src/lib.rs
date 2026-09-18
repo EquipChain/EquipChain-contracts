@@ -7978,8 +7978,11 @@ impl UtilityContract {
     /// Set the Protocol Fee Vault address (admin only).
     /// Only authorized DAO multi-sigs should be set here.
     pub fn set_protocol_fee_vault(env: Env, vault: Address) {
-        let admin = get_admin_or_panic(&env);
-        admin.require_auth();
+        require_admin_auth(&env);
+        // Prevent contract from being set as its own fee vault
+        if vault == env.current_contract_address() {
+            panic_with_error!(&env, ContractError::InvalidAddress);
+        }
         env.storage()
             .instance()
             .set(&DataKey::ProtocolFeeVault, &vault);
