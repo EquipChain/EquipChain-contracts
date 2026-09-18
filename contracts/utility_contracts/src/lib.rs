@@ -6898,9 +6898,21 @@ impl UtilityContract {
     }
 
     // Task #1: Stream Priority System - Set priority index for a meter
+    ///
+    /// Priority 0 is the provider-controlled sacrificial tier: scarce-grid
+    /// throttling (apply_throttling_if_needed) pauses exactly priority-0
+    /// meters. Users may raise their priority but may never DROP to 0, or
+    /// any throttled user could immediately re-exempt themselves, making
+    /// the scarcity guarantee unenforceable. Priority 0 can only be set at
+    /// registration (by whoever registers) or via the provider's own
+    /// internal flows.
     pub fn set_priority_index(env: Env, meter_id: u64, priority_index: u32) {
         let mut meter = get_meter_or_panic(&env, meter_id);
         meter.user.require_auth();
+
+        if priority_index == 0 {
+            panic_with_error!(&env, ContractError::InvalidUsageValue);
+        }
 
         meter.priority_index = priority_index;
 
@@ -10954,6 +10966,51 @@ mod claim_solvent_clamp_tests {
         assert_eq!(meter.balance, 0, "claim must stop at exactly zero");
         assert!(meter.balance >= 0);
         let _ = (user, provider);
+    }
+}
+
+#[cfg(test)]
+mod priority_guard_tests {
+    use super::*;
+    use soroban_sdk::testutils::Address as _;
+
+    fn setup_meter_at(env: &Env, priority: u32) -> (UtilityContractClient<'static>, u64) {
+        env.mock_all_auths();
+        let contract_id = env.register(crate::UtilityContract, ());
+        let client = crate::UtilityContractClient::new(env, &contract_id);
+        let meter_id = client.register_meter_with_mode(
+            &Address::generate(env),
+            &Address::generate(env),
+            &1_000,
+            &Address::generate(env),
+            &BillingType::PrePaid,
+            &BytesN::from_array(env, &[6u8; 32]),
+            &priority,
+        );
+        (client, meter_id)
+    }
+
+    #[test]
+    fn user_cannot_demote_to_throttleable_tier() {
+        let env = Env::default();
+        let (client, meter_id) = setup_meter_at(&env, 2);
+
+        let r = client.try_set_priority_index(&meter_id, &0u32);
+        assert!(r.is_err(), "dropping to priority 0 must be rejected");
+        assert_eq!(
+            client.get_meter(&meter_id).unwrap().priority_index,
+            2,
+            "priority unchanged after rejection"
+        );
+    }
+
+    #[test]
+    fn user_can_raise_priority() {
+        let env = Env::default();
+        let (client, meter_id) = setup_meter_at(&env, 0);
+
+        client.set_priority_index(&meter_id, &5u32);
+        assert_eq!(client.get_meter(&meter_id).unwrap().priority_index, 5);
     }
 }
 
