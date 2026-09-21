@@ -1365,6 +1365,9 @@ fn validate_user_bytes(bytes: &Bytes, max_size: u32) -> Result<(), ContractError
 }
 
 /// Issue #273: Validate flow rate is within acceptable boundaries
+/// Validate that a stream flow rate is within acceptable boundaries.
+/// Returns FlowRateTooLow if below MIN_FLOW_RATE_PER_SECOND, or
+/// FlowRateTooHigh if above MAX_FLOW_RATE_PER_SECOND.
 fn validate_flow_rate(flow_rate: i128) -> Result<(), ContractError> {
     if flow_rate < MIN_FLOW_RATE_PER_SECOND {
         return Err(ContractError::FlowRateTooLow);
