@@ -156,16 +156,18 @@ pub fn calculate_risk_score(env: &Env, user: &Address, meter_id: u64) -> u32 {
     let meter: Meter = env.storage()
         .instance()
         .get(&DataKey::Meter(meter_id))
-        .unwrap_or_else(|| panic!("Meter not found"));
+        .ok_or(ContractError::MeterNotFound)?;
     
     let now = env.ledger().timestamp();
     
     // Payment history score (0-250)
     let payment_score = if meter.billing_type == BillingType::PrePaid {
         // For prepaid, check balance maintenance
-        if meter.balance > meter.rate_per_unit * 86400 { // 1 day buffer
+        let one_day_buffer = meter.rate_per_unit.saturating_mul(86400);
+        let one_hour_buffer = meter.rate_per_unit.saturating_mul(3600);
+        if meter.balance > one_day_buffer {
             250
-        } else if meter.balance > meter.rate_per_unit * 3600 { // 1 hour buffer  
+        } else if meter.balance > one_hour_buffer {
             150
         } else {
             50
