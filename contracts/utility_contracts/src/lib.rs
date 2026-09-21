@@ -1926,6 +1926,10 @@ fn provider_meter_value(meter: &Meter) -> i128 {
     meter.balance.max(DEBT_THRESHOLD)
 }
 
+/// Refresh the meter's active status based on current balance and state.
+/// A meter is active only if it has positive total value and is not
+/// paused, disputed, or closed.
+#[inline]
 fn refresh_activity(meter: &mut Meter, _now: u64) {
     let total_value = match meter.billing_type {
         BillingType::PrePaid => meter.balance,
