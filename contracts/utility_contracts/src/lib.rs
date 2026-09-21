@@ -2139,6 +2139,8 @@ fn publish_active_event(env: &Env, meter_id: u64, timestamp: u64) {
 }
 
 // Task #3: Self-Maintenance Helper Functions
+/// Allocate a percentage of claimable amount to the meter's maintenance fund.
+/// Uses MAINTENANCE_FUND_PERCENT_BPS to calculate the fund allocation.
 fn allocate_to_maintenance_fund(env: &Env, meter_id: u64, amount: i128) {
     let maintenance_amount = amount.saturating_mul(MAINTENANCE_FUND_PERCENT_BPS) / 10_000;
 
