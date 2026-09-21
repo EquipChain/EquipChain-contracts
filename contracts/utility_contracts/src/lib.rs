@@ -1919,6 +1919,9 @@ fn update_dust_aggregation(
 
 // --- Helpers ---
 
+/// Calculate the provider-visible value of a meter for pool aggregation.
+/// Returns the meter balance clamped to a minimum of DEBT_THRESHOLD.
+#[inline]
 fn provider_meter_value(meter: &Meter) -> i128 {
     meter.balance.max(DEBT_THRESHOLD)
 }
