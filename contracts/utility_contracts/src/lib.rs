@@ -1675,6 +1675,10 @@ fn update_gas_buffer(env: &Env, gas_buffer: &GasBuffer) {
         .set(&DataKey::GasBuffer(gas_buffer.provider.clone()), gas_buffer);
 }
 
+/// Determine whether to use the gas buffer for a transaction.
+/// Returns true if the provider has sufficient buffer balance and the
+/// amount is positive. In production this would check actual network fees.
+#[inline]
 fn should_use_gas_buffer(env: &Env, provider: &Address, amount: i128) -> bool {
     // Check if provider has a gas buffer with sufficient balance
     if let Some(gas_buffer) = env
