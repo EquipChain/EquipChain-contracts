@@ -1896,6 +1896,9 @@ fn get_or_create_dust_aggregation(env: &Env, token_address: &Address) -> DustAgg
 }
 
 /// Update dust aggregation for a token using temporary storage optimization
+/// Update dust aggregation tracking for a token using temporary storage.
+/// Accumulates dust deltas in temporary storage and flushes to persistent
+/// storage only when the threshold (1,000,000 stroops) is exceeded.
 fn update_dust_aggregation(
     env: &Env,
     token_address: &Address,
