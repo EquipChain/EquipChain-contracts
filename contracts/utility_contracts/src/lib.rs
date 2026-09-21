@@ -1453,6 +1453,7 @@ fn validate_token(env: &Env, token: &Address) -> TokenStandard {
 /// Returns false until network-specific native token address comparison is implemented.
 /// TODO: Compare token address against the well-known native XLM contract ID
 /// for the target network (testnet/mainnet) to enable native XLM event emission.
+#[inline]
 fn is_native_token(_env: &Env, _token: &Address) -> bool {
     false
 }
@@ -1618,6 +1619,7 @@ fn calculate_historical_average(usage_data: &UsageData, now: u64) -> i128 {
 /// Check if a given timestamp falls within peak hours (18:00-21:00 UTC).
 /// Peak window is [PEAK_HOUR_START, PEAK_HOUR_END) — end is exclusive
 /// so that exactly 21:00:00 is treated as off-peak.
+#[inline]
 fn is_peak_hour(timestamp: u64) -> bool {
     let day_seconds = timestamp % DAY_IN_SECONDS;
     day_seconds >= PEAK_HOUR_START && day_seconds < PEAK_HOUR_END
@@ -1823,6 +1825,7 @@ fn settle_claim_for_meter(
 }
 
 /// Check if a balance amount qualifies as dust (less than 1 stroop)
+#[inline]
 fn is_dust_amount(amount: i128) -> bool {
     amount > 0 && amount < XLM_MINIMUM_INCREMENT
 }
@@ -1899,6 +1902,7 @@ fn refresh_activity(meter: &mut Meter, _now: u64) {
     meter.is_active = total_value > 0 && !meter.is_paused && !meter.is_disputed && !meter.is_closed;
 }
 
+#[inline]
 fn get_tax_rate_or_default(env: &Env) -> i128 {
     env.storage()
         .instance()
