@@ -624,7 +624,7 @@ pub fn execute_proposal(env: &Env, proposal_id: u64) -> Result<(), ContractError
     let pool = get_insurance_pool(env)?;
     
     // Check quorum
-    let quorum_required = (pool.total_voting_power * QUORUM_THRESHOLD_BPS) / 10000;
+    let quorum_required = pool.total_voting_power.saturating_mul(QUORUM_THRESHOLD_BPS) / 10000;
     if proposal.total_votes < quorum_required {
         proposal.is_cancelled = true;
         env.storage().instance().set(&DataKey::InsuranceProposal(proposal_id), &proposal);
@@ -632,7 +632,7 @@ pub fn execute_proposal(env: &Env, proposal_id: u64) -> Result<(), ContractError
     }
     
     // Check approval
-    let approval_required = (proposal.total_votes * APPROVAL_THRESHOLD_BPS) / 10000;
+    let approval_required = proposal.total_votes.saturating_mul(APPROVAL_THRESHOLD_BPS) / 10000;
     if proposal.votes_for < approval_required {
         proposal.is_cancelled = true;
         env.storage().instance().set(&DataKey::InsuranceProposal(proposal_id), &proposal);
@@ -681,7 +681,7 @@ fn execute_proposal_action(env: &Env, proposal: &GovernanceProposal) -> Result<(
 
 pub fn allocate_claim_fees_to_pool(env: &Env, claim_amount: i128) -> i128 {
     if let Ok(mut pool) = get_insurance_pool(env) {
-        let pool_allocation = (claim_amount * INSURANCE_POOL_FEE_BPS) / 10000;
+        let pool_allocation = claim_amount.saturating_mul(INSURANCE_POOL_FEE_BPS) / 10000;
         pool.total_funds = pool.total_funds.saturating_add(pool_allocation);
         env.storage().instance().set(&DataKey::InsurancePool, &pool);
         
