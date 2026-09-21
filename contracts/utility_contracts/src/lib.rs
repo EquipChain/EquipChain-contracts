@@ -7742,6 +7742,9 @@ impl UtilityContract {
         env.storage()
             .instance()
             .set(&DataKey::ZKVerificationKey(meter_id), &vk);
+
+        env.events()
+            .publish((symbol_short!("ZKVKSet"), meter_id), meter.provider);
     }
 
     pub fn submit_zk_usage_report(
