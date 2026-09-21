@@ -1981,6 +1981,8 @@ fn is_green_source_verified(env: &Env, provider: &Address, meter_id: u64, timest
     }
 }
 
+/// Calculate carbon credit amount based on claimable usage and renewable
+/// energy parameters. Returns zero if any parameter is non-positive.
 fn carbon_credit_amount(claimable: i128, renewable_bps: i128, drip_rate_bps: i128) -> i128 {
     if claimable <= 0 || renewable_bps <= 0 || drip_rate_bps <= 0 {
         return 0;
