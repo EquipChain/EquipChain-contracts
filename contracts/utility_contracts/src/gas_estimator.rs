@@ -75,18 +75,18 @@ impl GasCostEstimator {
             number_of_meters,
             percentage_group_meters_bps,
         );
-        let annual_cost_stroops = monthly_cost_stroops * 12;
+        let annual_cost_stroops = monthly_cost_stroops.saturating_mul(12);
         let cost_per_meter_stroops = if number_of_meters > 0 {
-            annual_cost_stroops / number_of_meters as i128
+            annual_cost_stroops.saturating_div(number_of_meters as i128)
         } else {
             0
         };
 
         // Convert to XLM (1 XLM = 10,000,000 stroops)
         let xlm_precision: i128 = 10_000_000;
-        let monthly_cost_xlm = monthly_cost_stroops / xlm_precision;
-        let annual_cost_xlm = annual_cost_stroops / xlm_precision;
-        let cost_per_meter_xlm = cost_per_meter_stroops / xlm_precision;
+        let monthly_cost_xlm = monthly_cost_stroops.saturating_div(xlm_precision);
+        let annual_cost_xlm = annual_cost_stroops.saturating_div(xlm_precision);
+        let cost_per_meter_xlm = cost_per_meter_stroops.saturating_div(xlm_precision);
 
         LargeScaleCostEstimate {
             number_of_meters,
