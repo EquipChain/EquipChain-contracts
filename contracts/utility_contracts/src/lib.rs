@@ -5259,6 +5259,11 @@ impl UtilityContract {
         let mut meter = get_meter_or_panic(&env, meter_id);
         meter.user.require_auth();
 
+        // Reject usage updates on inactive or closed meters
+        if !meter.is_active || meter.is_closed {
+            panic_with_error!(&env, ContractError::MeterNotFound);
+        }
+
         let precise_consumption =
             watt_hours_consumed.saturating_mul(meter.usage_data.precision_factor);
         meter.usage_data.total_watt_hours = meter
