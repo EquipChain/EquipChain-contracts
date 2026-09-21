@@ -5330,9 +5330,9 @@ impl UtilityContract {
                 return Some(0); // Already depleted or no consumption
             }
 
-            let seconds_until_depletion = meter.balance / meter.rate_per_unit;
+            let seconds_until_depletion = meter.balance.saturating_div(meter.rate_per_unit);
             let current_time = env.ledger().timestamp();
-            Some(current_time + seconds_until_depletion as u64)
+            Some(current_time.saturating_add(seconds_until_depletion as u64))
         } else {
             None
         }
