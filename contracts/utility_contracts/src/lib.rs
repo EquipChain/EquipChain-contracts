@@ -1511,6 +1511,10 @@ fn get_maintenance_fund_balance(env: &Env, meter_id: u64) -> i128 {
         .unwrap_or(0)
 }
 
+/// Calculate remaining collateral for a postpaid meter.
+/// Returns the difference between collateral_limit and current debt,
+/// clamped to a minimum of 0.
+#[inline]
 fn remaining_postpaid_collateral(meter: &Meter) -> i128 {
     meter.collateral_limit.saturating_sub(meter.debt).max(0)
 }
