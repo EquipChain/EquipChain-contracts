@@ -7809,6 +7809,10 @@ impl UtilityContract {
 
     /// Withdraw from a continuous flow stream
     pub fn withdraw_continuous(env: Env, stream_id: u64, withdrawal_amount: i128) -> i128 {
+        if withdrawal_amount <= 0 {
+            panic_with_error!(&env, ContractError::InvalidTokenAmount);
+        }
+
         let withdrawn = withdraw_from_flow(&env, stream_id, withdrawal_amount).unwrap();
 
         env.events()
