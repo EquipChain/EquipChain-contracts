@@ -2830,6 +2830,8 @@ pub(crate) fn get_continuous_flow_or_panic(env: &Env, stream_id: u64) -> Continu
 }
 
 /// Refund buffer to payer on amicable stream closure
+/// Refund the remaining buffer balance when a stream is closed amicably.
+/// Returns the refunded amount, or an error if the buffer is depleted.
 fn refund_buffer(env: &Env, stream_id: u64) -> Result<i128, ContractError> {
     let mut flow = get_continuous_flow_or_panic(env, stream_id);
 
