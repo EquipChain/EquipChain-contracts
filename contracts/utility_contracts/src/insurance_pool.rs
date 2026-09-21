@@ -226,7 +226,7 @@ pub fn calculate_premium_amount(
     
     // Base premium calculation
     let monthly_usage_value = meter.usage_data.monthly_volume;
-    let base_premium = (monthly_usage_value * pool.base_premium_rate_bps) / 10000;
+    let base_premium = monthly_usage_value.saturating_mul(pool.base_premium_rate_bps) / 10000;
     
     // Risk assessment
     let risk_score = calculate_risk_score(env, user, meter_id);
@@ -241,7 +241,7 @@ pub fn calculate_premium_amount(
     };
     
     let risk_multiplier = risk_assessment.calculate_premium_multiplier();
-    let adjusted_premium = (base_premium * risk_multiplier) / 100;
+    let adjusted_premium = base_premium.saturating_mul(risk_multiplier) / 100;
     
     // Ensure within bounds
     let final_premium = adjusted_premium
