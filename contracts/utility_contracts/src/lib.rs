@@ -1680,6 +1680,7 @@ fn get_gas_buffer_or_default(env: &Env, provider: &Address, token: &Address) -> 
         })
 }
 
+/// Persist the gas buffer state to contract storage.
 fn update_gas_buffer(env: &Env, gas_buffer: &GasBuffer) {
     env.storage()
         .instance()
