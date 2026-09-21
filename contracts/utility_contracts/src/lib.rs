@@ -2463,6 +2463,8 @@ fn check_stream_creation_rate_limit(env: &Env, provider: &Address) -> Result<(),
 
 /// Calculate flow accumulation since last update with precise timestamp math and buffer logic
 /// Optimized to use temporary storage for reduced ledger costs
+/// Calculate the token accumulation for a continuous flow since last update.
+/// Delegates to OptimizedFlowCalculator for temporary storage optimization.
 fn calculate_flow_accumulation(env: &Env, flow: &ContinuousFlow, current_timestamp: u64) -> i128 {
     // Use optimized flow calculator with temporary storage
     OptimizedFlowCalculator::calculate_with_temp_storage(env, flow, current_timestamp)
