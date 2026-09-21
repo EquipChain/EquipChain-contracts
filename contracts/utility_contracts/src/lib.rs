@@ -1882,6 +1882,8 @@ fn require_admin_auth(env: &Env) {
 }
 
 /// Get or create dust aggregation for a specific token
+/// Retrieve or initialize dust aggregation tracking for a token.
+/// Returns existing aggregation data or a zeroed default with current timestamp.
 fn get_or_create_dust_aggregation(env: &Env, token_address: &Address) -> DustAggregation {
     env.storage()
         .instance()
