@@ -1519,6 +1519,10 @@ fn remaining_postpaid_collateral(meter: &Meter) -> i128 {
     meter.collateral_limit.saturating_sub(meter.debt).max(0)
 }
 
+/// Check if a meter's balance has dropped below the throttling threshold.
+/// Returns true when the meter balance is below the configured percentage
+/// of total value, indicating the meter should be throttled.
+#[inline]
 fn check_throttling_threshold(_env: &Env, meter: &Meter) -> bool {
     let total_value = match meter.billing_type {
         BillingType::PrePaid => meter.balance,
