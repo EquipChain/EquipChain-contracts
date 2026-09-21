@@ -1994,6 +1994,10 @@ fn carbon_credit_amount(claimable: i128, renewable_bps: i128, drip_rate_bps: i12
         .saturating_div(10000)
 }
 
+/// Issue carbon credits to the meter's provider if all prerequisites are met.
+/// Returns true if credits were successfully minted, false otherwise.
+/// Prerequisites: carbon credit token configured, positive drip rate,
+/// renewable percentage, and verified green source.
 fn issue_carbon_credits(
     env: &Env,
     meter_id: u64,
