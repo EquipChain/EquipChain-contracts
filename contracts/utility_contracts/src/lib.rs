@@ -5213,8 +5213,8 @@ impl UtilityContract {
             if payout > 0 {
                 client.transfer(&env.current_contract_address(), &meter.provider, &payout);
             }
-            meter.balance -= claimable;
-            meter.claimed_this_hour += claimable;
+            meter.balance = meter.balance.saturating_sub(claimable);
+            meter.claimed_this_hour = meter.claimed_this_hour.saturating_add(claimable);
 
             // If credit drip was active, reduce the debt if in PostPaid mode
             if meter.billing_type == BillingType::PostPaid && meter.credit_drip_rate > 0 {
