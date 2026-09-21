@@ -7757,6 +7757,11 @@ impl UtilityContract {
         let meter = get_meter_or_panic(&env, meter_id);
         meter.user.require_auth();
 
+        // Reject ZK reports on inactive or closed meters
+        if !meter.is_active || meter.is_closed {
+            panic_with_error!(&env, ContractError::MeterNotFound);
+        }
+
         let mut privacy_status: PrivateBillingStatus = env
             .storage()
             .instance()
