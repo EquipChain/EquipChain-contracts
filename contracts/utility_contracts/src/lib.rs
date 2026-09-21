@@ -1653,6 +1653,9 @@ fn get_effective_rate(_env: &Env, meter: &Meter, timestamp: u64) -> i128 {
     }
 }
 
+/// Convert USD cents to the destination token amount using the price oracle.
+/// Currently a placeholder that returns the USD amount unchanged.
+/// TODO: Integrate with PriceOracle for actual USD-to-token conversion.
 fn convert_usd_to_token_if_needed(
     _env: &Env,
     usd_cents: i128,
