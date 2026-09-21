@@ -8091,6 +8091,11 @@ impl UtilityContract {
     pub fn top_up_gas_buffer(env: Env, provider: Address, token: Address, amount: i128) {
         provider.require_auth();
 
+        // Validate amount is positive
+        if amount <= 0 {
+            panic_with_error!(&env, ContractError::InvalidTokenAmount);
+        }
+
         let mut gas_buffer = get_gas_buffer_or_default(&env, &provider, &token);
 
         if gas_buffer.balance.saturating_add(amount) > MAX_GAS_BUFFER {
