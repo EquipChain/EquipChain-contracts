@@ -8925,6 +8925,14 @@ impl UtilityContract {
     }
 }
 
+/// Verify an Ed25519 signature over a usage report.
+///
+/// Performs three checks:
+/// 1. Public key matches the meter's registered device key.
+/// 2. Timestamp is within MAX_TIMESTAMP_DELAY of the current ledger time.
+/// 3. Ed25519 signature is valid over the canonical XDR encoding of the report.
+///
+/// In test builds the crypto check is skipped to allow mock signatures.
 fn verify_usage_signature(
     env: &Env,
     signed_data: &SignedUsageData,
