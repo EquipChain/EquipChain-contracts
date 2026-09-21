@@ -44,13 +44,14 @@ impl GasCostEstimator {
         percentage_group_meters_bps: i128, // basis points (10000 = 100%)
     ) -> i128 {
         let group_meters =
-            ((number_of_meters as i128 * percentage_group_meters_bps) / 10000) as u32;
-        let individual_meters = number_of_meters - group_meters;
+            ((number_of_meters as i128).saturating_mul(percentage_group_meters_bps) / 10000) as u32;
+        let individual_meters = number_of_meters.saturating_sub(group_meters);
 
         let group_cost = if group_meters > 0 {
             let groups = group_meters / 5;
             if groups > 0 {
-                Self::estimate_meter_monthly_cost(_env, true, 5) * groups as i128
+                Self::estimate_meter_monthly_cost(_env, true, 5)
+                    .saturating_mul(groups as i128)
             } else {
                 0
             }
@@ -58,10 +59,10 @@ impl GasCostEstimator {
             0
         };
 
-        let individual_cost =
-            Self::estimate_meter_monthly_cost(_env, false, 0) * individual_meters as i128;
+        let individual_cost = Self::estimate_meter_monthly_cost(_env, false, 0)
+            .saturating_mul(individual_meters as i128);
 
-        group_cost + individual_cost
+        group_cost.saturating_add(individual_cost)
     }
 
     pub fn estimate_large_scale_costs(
