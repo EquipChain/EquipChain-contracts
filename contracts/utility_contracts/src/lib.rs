@@ -5204,7 +5204,7 @@ impl UtilityContract {
                     0
                 };
                 let effective_fee = fee_bps.saturating_sub(discount_bps);
-                let fee = (payout * effective_fee) / 10000;
+                let fee = payout.saturating_mul(effective_fee) / 10000;
                 payout -= fee;
                 if fee > 0 {
                     client.transfer(&env.current_contract_address(), &wallet, &fee);
@@ -6072,7 +6072,7 @@ impl UtilityContract {
                     0
                 };
                 let effective_fee = fee_bps.saturating_sub(discount_bps);
-                let fee = (payout * effective_fee) / 10000;
+                let fee = payout.saturating_mul(effective_fee) / 10000;
                 payout -= fee;
                 if fee > 0 {
                     client.transfer(&env.current_contract_address(), &wallet, &fee);
