@@ -1425,6 +1425,8 @@ fn get_token_balance(env: &Env, token: &Address, address: &Address) -> i128 {
     client.balance(address)
 }
 
+/// Verify that a token is on the approved whitelist (if one is configured).
+/// In test mode, this check is skipped to allow mock tokens.
 fn require_approved_token(env: &Env, token: &Address) {
     // Skip whitelist enforcement in test mode
     #[cfg(not(test))]
