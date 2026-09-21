@@ -1446,6 +1446,9 @@ fn require_approved_token(env: &Env, token: &Address) {
     }
 }
 
+/// Validate that a token address corresponds to a functioning token contract.
+/// Performs a basic balance query to confirm the token is alive and responding.
+/// Returns the detected TokenStandard.
 fn validate_token(env: &Env, token: &Address) -> TokenStandard {
     let client = token::Client::new(env, token);
     // Check that the token responds to basic queries
