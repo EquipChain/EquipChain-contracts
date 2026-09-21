@@ -7785,6 +7785,12 @@ impl UtilityContract {
         // Refund buffer
         let refunded_amount = refund_buffer(&env, stream_id).unwrap();
 
+        env.events()
+            .publish(
+                (symbol_short!("StreamCls"),),
+                (stream_id, refunded_amount),
+            );
+
         refunded_amount
     }
 
