@@ -1694,6 +1694,8 @@ fn should_use_gas_buffer(env: &Env, provider: &Address, amount: i128) -> bool {
     }
 }
 
+/// Deduct a specified amount from a provider's gas buffer.
+/// Returns InsufficientGasBuffer if the buffer balance is too low.
 fn deduct_from_gas_buffer(
     env: &Env,
     provider: &Address,
