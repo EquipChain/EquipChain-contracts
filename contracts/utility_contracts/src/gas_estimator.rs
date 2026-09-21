@@ -101,43 +101,31 @@ impl GasCostEstimator {
     }
 
     pub fn get_operation_cost(operation: &soroban_sdk::String) -> i128 {
-        // Compare operation name by checking known byte patterns
-        if *operation
-            == soroban_sdk::String::from_str(&soroban_sdk::Env::default(), "register_meter")
-        {
+        // Allocate Env once for all comparisons instead of once per comparison
+        let env = soroban_sdk::Env::default();
+
+        if *operation == soroban_sdk::String::from_str(&env, "register_meter") {
             return Self::REGISTER_METER;
         }
-        if *operation == soroban_sdk::String::from_str(&soroban_sdk::Env::default(), "top_up") {
+        if *operation == soroban_sdk::String::from_str(&env, "top_up") {
             return Self::TOP_UP;
         }
-        if *operation == soroban_sdk::String::from_str(&soroban_sdk::Env::default(), "claim") {
+        if *operation == soroban_sdk::String::from_str(&env, "claim") {
             return Self::CLAIM;
         }
-        if *operation
-            == soroban_sdk::String::from_str(&soroban_sdk::Env::default(), "update_heartbeat")
-        {
+        if *operation == soroban_sdk::String::from_str(&env, "update_heartbeat") {
             return Self::UPDATE_HEARTBEAT;
         }
-        if *operation == soroban_sdk::String::from_str(&soroban_sdk::Env::default(), "group_top_up")
-        {
+        if *operation == soroban_sdk::String::from_str(&env, "group_top_up") {
             return Self::GROUP_TOP_UP_PER_METER;
         }
-        if *operation
-            == soroban_sdk::String::from_str(&soroban_sdk::Env::default(), "emergency_shutdown")
-        {
+        if *operation == soroban_sdk::String::from_str(&env, "emergency_shutdown") {
             return Self::EMERGENCY_SHUTDOWN;
         }
-        if *operation
-            == soroban_sdk::String::from_str(&soroban_sdk::Env::default(), "submit_zk_usage_report")
-        {
+        if *operation == soroban_sdk::String::from_str(&env, "submit_zk_usage_report") {
             return Self::SUBMIT_ZK_REPORT;
         }
-        if *operation
-            == soroban_sdk::String::from_str(
-                &soroban_sdk::Env::default(),
-                "set_zk_verification_key",
-            )
-        {
+        if *operation == soroban_sdk::String::from_str(&env, "set_zk_verification_key") {
             return Self::SET_ZK_VK;
         }
         0
