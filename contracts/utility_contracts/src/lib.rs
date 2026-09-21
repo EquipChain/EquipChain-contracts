@@ -2109,6 +2109,9 @@ fn get_reseller_config_impl(env: &Env, meter_id: u64) -> Option<ResellerConfig> 
         .get(&DataKey::ResellerConfig(meter_id))
 }
 
+/// Auto-extends the contract TTL if the current ledger is at a threshold
+/// interval and sufficient maintenance fund balance exists.
+/// Deducts estimated ledger extension cost from the meter's maintenance fund.
 fn auto_extend_ttl_if_needed(env: &Env, meter_id: u64) {
     let ledger_sequence = env.ledger().sequence();
     let threshold: u32 = env
@@ -2116,6 +2119,11 @@ fn auto_extend_ttl_if_needed(env: &Env, meter_id: u64) {
         .instance()
         .get(&DataKey::AutoExtendThreshold)
         .unwrap_or(AUTO_EXTEND_LEDGER_THRESHOLD);
+
+    // Prevent division by zero if threshold is misconfigured to 0
+    if threshold == 0 {
+        return;
+    }
 
     if ledger_sequence % threshold == 0 {
         let maintenance_balance = get_maintenance_fund_balance(env, meter_id);
