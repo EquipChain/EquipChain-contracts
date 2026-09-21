@@ -1965,6 +1965,9 @@ fn calculate_tax_split(amount: i128, tax_rate_bps: i128) -> (i128, i128) {
     (tax_amount, amount.saturating_sub(tax_amount))
 }
 
+/// Retrieve the government vault address for tax collection.
+/// Returns None if no vault has been configured.
+#[inline]
 fn get_government_vault_or_default(env: &Env) -> Option<Address> {
     env.storage().instance().get(&DataKey::GovernmentVault)
 }
