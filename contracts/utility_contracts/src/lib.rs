@@ -1715,6 +1715,9 @@ fn deduct_from_gas_buffer(
 
 // --- Internal Settlement Logic ---
 
+/// Internal settlement logic for meter claims.
+/// Calculates elapsed consumption, applies grace period and SLA penalties,
+/// and returns a ClaimSettlement with the final claimable amount.
 fn settle_claim_for_meter(
     env: &Env,
     meter_id: u64,
