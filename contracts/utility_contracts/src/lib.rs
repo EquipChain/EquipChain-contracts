@@ -8474,9 +8474,18 @@ impl UtilityContract {
             .get::<DataKey, Address>(&DataKey::CurrentAdmin)
             .unwrap_or_else(|| panic_with_error!(&env, ContractError::UnauthorizedAdmin));
         super_a.require_auth();
+
+        // Prevent contract from being set as its own grid admin
+        if grid_admin == env.current_contract_address() {
+            panic_with_error!(&env, ContractError::InvalidAddress);
+        }
+
         env.storage()
             .instance()
             .set(&DataKey::GridAdministrator, &grid_admin);
+
+        env.events()
+            .publish((symbol_short!("GridAdmSet"),), grid_admin);
     }
 
     pub fn grid_shortage_load_shed(
