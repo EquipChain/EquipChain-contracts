@@ -1504,6 +1504,9 @@ fn convert_usd_to_xlm_if_needed(
     }
 }
 
+/// Retrieve the current maintenance fund balance for a meter.
+/// Returns 0 if no fund exists for the meter.
+#[inline]
 fn get_maintenance_fund_balance(env: &Env, meter_id: u64) -> i128 {
     env.storage()
         .instance()
