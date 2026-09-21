@@ -1966,6 +1966,8 @@ fn get_government_vault_or_default(env: &Env) -> Option<Address> {
     env.storage().instance().get(&DataKey::GovernmentVault)
 }
 
+/// Verify that a provider's energy source is green via the price oracle.
+/// Returns false if no oracle is configured or verification fails.
 fn is_green_source_verified(env: &Env, provider: &Address, meter_id: u64, timestamp: u64) -> bool {
     if let Some(oracle_address) = env
         .storage()
