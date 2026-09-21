@@ -5473,6 +5473,12 @@ impl UtilityContract {
     pub fn update_heartbeat(env: Env, meter_id: u64) {
         let mut meter = get_meter_or_panic(&env, meter_id);
         meter.user.require_auth();
+
+        // Reject heartbeats on inactive or closed meters
+        if !meter.is_active || meter.is_closed {
+            panic_with_error!(&env, ContractError::MeterNotFound);
+        }
+
         let now = env.ledger().timestamp();
         meter.last_heartbeat = now;
         env.storage()
