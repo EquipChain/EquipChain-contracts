@@ -6012,7 +6012,9 @@ impl UtilityContract {
 
         // Apply max flow rate cap
         let final_claimable = if claimable > 0 {
-            let remaining_hourly_capacity = meter.max_flow_rate_per_hour - meter.claimed_this_hour;
+            let remaining_hourly_capacity = meter
+                .max_flow_rate_per_hour
+                .saturating_sub(meter.claimed_this_hour);
             if claimable > remaining_hourly_capacity {
                 remaining_hourly_capacity
             } else {
