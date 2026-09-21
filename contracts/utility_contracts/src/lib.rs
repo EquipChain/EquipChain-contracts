@@ -2469,6 +2469,9 @@ fn calculate_flow_accumulation(env: &Env, flow: &ContinuousFlow, current_timesta
 }
 
 /// Update flow with new timestamp and handle underflow risks with buffer depletion logic
+/// Update a continuous flow's accumulated balance and apply platform fees.
+/// Calculates token accumulation since last update, deducts platform fee,
+/// and returns the net deducted amount.
 fn update_continuous_flow(
     env: &Env,
     flow: &mut ContinuousFlow,
