@@ -9,7 +9,10 @@ pub struct LoadConfig {
 
 pub fn set_peak_multiplier(env: &Env, admin: Address, multiplier: i128) {
     // Only grid admin can configure
-    let stored_admin: Address = env.storage().get("grid_admin").unwrap();
+    let stored_admin: Address = env
+        .storage()
+        .get("grid_admin")
+        .unwrap_or_else(|| panic!("Grid admin not configured"));
     if admin != stored_admin {
         panic!("Unauthorized");
     }
@@ -21,7 +24,10 @@ pub fn set_peak_multiplier(env: &Env, admin: Address, multiplier: i128) {
 }
 
 pub fn set_low_discount(env: &Env, admin: Address, discount: i128) {
-    let stored_admin: Address = env.storage().get("grid_admin").unwrap();
+    let stored_admin: Address = env
+        .storage()
+        .get("grid_admin")
+        .unwrap_or_else(|| panic!("Grid admin not configured"));
     if admin != stored_admin {
         panic!("Unauthorized");
     }
@@ -40,24 +46,24 @@ pub fn bill_consumption(env: &Env, user: Address, base_rate: i128, timestamp: u6
     if hour >= 18 && hour <= 22 {
         // Peak hours
         let peak: i128 = env.storage().get("peak_load_multiplier").unwrap_or(2);
-        final_rate *= peak;
+        final_rate = final_rate.saturating_mul(peak);
         env.events().publish(
             (Symbol::short("BillingApplied"),),
             (user.clone(), "peak", final_rate),
         );
     } else {
         // Off-peak hours
-        let discount: i128 = env.storage().get("low_load_discount").unwrap_or(1);
-        final_rate = final_rate * discount / 100; // discount as percentage
+        let discount: i128 = env.storage().get("low_load_discount").unwrap_or(100);
+        final_rate = final_rate.saturating_mul(discount) / 100; // discount as percentage
         env.events().publish(
             (Symbol::short("BillingApplied"),),
             (user.clone(), "offpeak", final_rate),
         );
     }
 
-    // Debit user balance
+    // Debit user balance using saturating subtraction
     let mut balance: i128 = env.storage().get(&format!("balance:{}", user)).unwrap_or(0);
-    balance -= final_rate;
+    balance = balance.saturating_sub(final_rate);
     env.storage().set(&format!("balance:{}", user), &balance);
 
     final_rate
