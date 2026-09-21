@@ -1404,6 +1404,9 @@ fn get_meter_or_panic(env: &Env, meter_id: u64) -> Meter {
     }
 }
 
+/// Transfer tokens between two addresses and verify the balance change.
+/// This provides a safety net by checking that the actual balance change
+/// matches the expected transfer amount.
 fn transfer_tokens(env: &Env, token: &Address, from: &Address, to: &Address, amount: &i128) {
     require_approved_token(env, token);
     let balance_before = get_token_balance(env, token, from);
