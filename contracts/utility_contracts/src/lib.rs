@@ -5385,6 +5385,11 @@ impl UtilityContract {
         env.storage()
             .instance()
             .set(&DataKey::Meter(meter_id), &meter);
+
+        env.events().publish(
+            (symbol_short!("TierSet"), meter_id),
+            (threshold, rate),
+        );
     }
 
     pub fn vote_for_asset(env: Env, voter: Address, asset_symbol: Symbol) {
