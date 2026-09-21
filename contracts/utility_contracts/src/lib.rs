@@ -5120,7 +5120,7 @@ impl UtilityContract {
         // Determine claimable amount
         let claimable = if current_hour == last_claim_hour {
             // Same hour, check if we exceed max flow rate
-            let max_allowed = meter.max_flow_rate_per_hour - meter.claimed_this_hour;
+            let max_allowed = meter.max_flow_rate_per_hour.saturating_sub(meter.claimed_this_hour);
             let actual_amount = if amount > max_allowed {
                 max_allowed
             } else {
