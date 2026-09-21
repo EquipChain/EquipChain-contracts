@@ -5835,6 +5835,16 @@ impl UtilityContract {
     pub fn configure_webhook(env: Env, user: Address, webhook_url: String) {
         user.require_auth();
 
+        // Validate webhook URL is not empty
+        if webhook_url.len() == 0 {
+            panic_with_error!(&env, ContractError::InvalidTokenAmount);
+        }
+
+        // Validate max URL length (256 bytes reasonable for on-chain storage)
+        if webhook_url.len() > 256 {
+            panic_with_error!(&env, ContractError::InvalidTokenAmount);
+        }
+
         let webhook_config = WebhookConfig {
             url: webhook_url.clone(),
             user: user.clone(),
@@ -5844,7 +5854,10 @@ impl UtilityContract {
 
         env.storage()
             .instance()
-            .set(&DataKey::WebhookConfig(user), &webhook_config);
+            .set(&DataKey::WebhookConfig(user.clone()), &webhook_config);
+
+        env.events()
+            .publish((symbol_short!("WhkCfg"),), (user, webhook_url));
     }
 
     pub fn deactivate_webhook(env: Env, user: Address) {
