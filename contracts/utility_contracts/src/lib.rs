@@ -2950,6 +2950,9 @@ fn add_balance_to_flow(
 }
 
 /// Withdraw from continuous flow with high-frequency safety
+/// Withdraw accumulated tokens from a continuous flow stream.
+/// Updates the flow balance first, then transfers the requested amount
+/// (clamped to available balance) to the caller.
 fn withdraw_from_flow(
     env: &Env,
     stream_id: u64,
