@@ -2823,6 +2823,11 @@ fn add_buffer_to_stream(
 
     let mut flow = get_continuous_flow_or_panic(env, stream_id);
 
+    // Reject operations on paused or closed streams
+    if flow.status != StreamStatus::Active {
+        return Err(ContractError::InvalidStreamState);
+    }
+
     // Verify payer authorization
     flow.payer.require_auth();
 
