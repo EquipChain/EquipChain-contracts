@@ -6073,7 +6073,7 @@ impl UtilityContract {
                 };
                 let effective_fee = fee_bps.saturating_sub(discount_bps);
                 let fee = payout.saturating_mul(effective_fee) / 10000;
-                payout -= fee;
+                payout = payout.saturating_sub(fee);
                 if fee > 0 {
                     client.transfer(&env.current_contract_address(), &wallet, &fee);
                 }
@@ -6081,8 +6081,8 @@ impl UtilityContract {
             if payout > 0 {
                 client.transfer(&env.current_contract_address(), &meter.provider, &payout);
             }
-            meter.balance -= final_claimable;
-            meter.claimed_this_hour += final_claimable;
+            meter.balance = meter.balance.saturating_sub(final_claimable);
+            meter.claimed_this_hour = meter.claimed_this_hour.saturating_add(final_claimable);
 
             // If credit drip was active, reduce the debt if in PostPaid mode
             if meter.billing_type == BillingType::PostPaid && meter.credit_drip_rate > 0 {
