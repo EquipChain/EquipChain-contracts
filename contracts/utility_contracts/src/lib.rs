@@ -1419,6 +1419,7 @@ fn transfer_tokens(env: &Env, token: &Address, from: &Address, to: &Address, amo
     }
 }
 
+/// Retrieve the current token balance for an address via cross-contract call.
 fn get_token_balance(env: &Env, token: &Address, address: &Address) -> i128 {
     let client = token::Client::new(env, token);
     client.balance(address)
