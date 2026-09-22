@@ -2285,9 +2285,8 @@ fn can_finalize_upgrade(env: &Env) -> bool {
 
 #[contract]
 pub struct UtilityContract;
-
-// Re-export the generated client type so tests can use `use crate::*` or explicit imports
-pub use utility_contract::Client as UtilityContractClient;
+// Note: #[contract] already generates `UtilityContractClient` at crate root;
+// tests and fuzz targets import it directly from here.
 
 // Issue #118: ZK Privacy Helper Functions
 
@@ -5005,12 +5004,12 @@ impl UtilityContract {
         let mut cost = signed_data.units_consumed.saturating_mul(discounted_rate);
 
         // Apply SLA Penalty if active
-        if let Some(config) = &meter.sla_config {
+        if meter.sla_config_set {
             if meter.sla_state.is_penalty_active
-                || meter.sla_state.accumulated_downtime >= config.threshold_seconds
+                || meter.sla_state.accumulated_downtime >= meter.sla_config.threshold_seconds
             {
                 cost = cost
-                    .saturating_mul(config.penalty_multiplier_bps)
+                    .saturating_mul(meter.sla_config.penalty_multiplier_bps)
                     .saturating_div(10000);
             }
         }
@@ -5896,7 +5895,7 @@ impl UtilityContract {
         billing_group.child_meters = filtered;
         env.storage()
             .instance()
-            .set(&DataKey::BillingGroup(parent_account), &billing_group);
+            .set(&DataKey::BillingGroup(parent_account.clone()), &billing_group);
 
         // Update the meter to remove parent reference
         if let Some(mut meter) = env
@@ -5972,7 +5971,7 @@ impl UtilityContract {
                 .set(&DataKey::WebhookConfig(user.clone()), &config);
 
             env.events()
-                .publish((symbol_short!("WebhookOff"),), user);
+                .publish((symbol_short!("WhkOff"),), user);
         }
     }
 
@@ -6199,7 +6198,7 @@ impl UtilityContract {
         );
 
         env.events().publish(
-            (symbol_short!("ContribAdd"), meter_id),
+            (symbol_short!("ContribAd"), meter_id),
             contributor,
         );
     }
@@ -8561,7 +8560,7 @@ impl UtilityContract {
             .set(&DataKey::GridAdministrator, &grid_admin);
 
         env.events()
-            .publish((symbol_short!("GridAdmSet"),), grid_admin);
+            .publish((symbol_short!("GrdAdmSet"),), grid_admin);
     }
 
     pub fn grid_shortage_load_shed(
