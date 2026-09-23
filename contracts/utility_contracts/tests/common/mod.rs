@@ -32,7 +32,9 @@ pub fn setup() -> Fixture {
     });
 
     // Deploy a real Stellar Asset Contract with a mintable admin.
-    let token_id = env.register_stellar_asset_contract_v2(Address::generate(&env)).address();
+    let token_id = env
+        .register_stellar_asset_contract_v2(Address::generate(&env))
+        .address();
 
     let contract_id = env.register(utility_contracts::UtilityContract, ());
     let client = utility_contracts::UtilityContractClient::new(&env, &contract_id);
