@@ -10622,7 +10622,7 @@ mod heartbeat_recovery_tests {
 
     #[test]
     fn heartbeat_clears_offline_state_and_emits_event() {
-        let (mut env, client, user, meter_id, contract_id) = setup();
+        let (env, client, user, meter_id, contract_id) = setup();
 
         // Device goes silent past the heartbeat threshold.
         env.ledger()
@@ -10723,7 +10723,7 @@ mod offline_view_consistency_tests {
 #[cfg(test)]
 mod throttling_tests {
     use super::*;
-    use soroban_sdk::testutils::{Address as _, Events as _, Ledger as _};
+    use soroban_sdk::testutils::{Address as _, Events as _};
     use soroban_sdk::token::StellarAssetClient;
     use soroban_sdk::TryIntoVal as _;
 
@@ -10881,7 +10881,7 @@ mod pause_settlement_guard_tests {
 
     #[test]
     fn pause_freezes_billing_clock_no_lump_sum_on_resume() {
-        let (mut env, client, user, provider, meter_id) = setup();
+        let (env, client, user, provider, meter_id) = setup();
         let t0 = env.ledger().timestamp();
 
         // Settle once to anchor the clock, then pause.
@@ -11063,7 +11063,7 @@ mod firmware_gate_tests {
 
     #[test]
     fn firmware_window_does_not_lump_bill_on_completion() {
-        let (mut env, client, _user, _provider, meter_id, contract_id) = setup();
+        let (env, client, _user, _provider, meter_id, contract_id) = setup();
         let t0 = env.ledger().timestamp();
 
         client.initiate_firmware_update(&meter_id);
@@ -11111,7 +11111,7 @@ mod firmware_gate_tests {
 
     #[test]
     fn expired_update_can_be_cancelled_and_billing_resumes() {
-        let (mut env, client, _user, _provider, meter_id, _contract_id) = setup();
+        let (env, client, _user, _provider, meter_id, _contract_id) = setup();
         client.initiate_firmware_update(&meter_id);
 
         // Window expires with no device signature.
@@ -11942,6 +11942,10 @@ mod active_meters_count_tests {
         token_admin.mint(&user, &1_000_000_000i128);
         env.ledger().with_mut(|li| li.timestamp = 1_767_225_600);
 
+        // One-time admin bootstrap: emergency_shutdown requires an admin to
+        // exist (dual provider+admin authorization).
+        client.set_admin(&Address::generate(&env));
+
         assert_eq!(client.get_active_meters_count(), 0);
 
         let m1 = client.register_meter(
@@ -11985,6 +11989,10 @@ mod active_meters_count_tests {
         let user = Address::generate(&env);
         token_admin.mint(&user, &1_000_000_000i128);
         env.ledger().with_mut(|li| li.timestamp = 1_767_225_600);
+
+        // One-time admin bootstrap: emergency_shutdown requires an admin to
+        // exist (dual provider+admin authorization).
+        client.set_admin(&Address::generate(&env));
 
         let m1 = client.register_meter(
             &user,
@@ -12692,9 +12700,7 @@ mod claim_underflow_tests {
         env.ledger().with_mut(|li| {
             li.timestamp = 1_767_225_600;
         });
-        let contract_balance_before =
-            StellarAssetClient::new(&env, &token_id).mint(&contract_id, &10_000_000_000i128);
-        let _ = contract_balance_before;
+        StellarAssetClient::new(&env, &token_id).mint(&contract_id, &10_000_000_000i128);
 
         let meter_id = client.register_meter(
             &user,

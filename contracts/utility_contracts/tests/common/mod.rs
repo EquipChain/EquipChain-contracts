@@ -9,6 +9,10 @@ use soroban_sdk::{Address, BytesN, Env};
 /// Deterministic starting timestamp for all tests (2026-01-01 UTC).
 pub const START_TS: u64 = 1_767_225_600;
 
+// Individual test binaries only exercise a subset of the fixture, so
+// unused fields/methods here are expected; keep them available for all
+// suites that share this module.
+#[allow(dead_code)]
 pub struct Fixture {
     pub env: Env,
     pub contract_id: Address,
@@ -53,19 +57,33 @@ pub fn setup() -> Fixture {
     // Fund the contract so provider payouts can be made from the pool.
     token.transfer(&user_addr, &contract_id, &5_000_000_000_000i128);
 
+    // One-time admin bootstrap: admin-gated entrypoints (e.g.
+    // emergency_shutdown's dual provider+admin auth) panic with
+    // UnauthorizedAdmin when no admin has ever been set.
+    client.set_admin(&admin);
+
     Fixture {
         env,
         contract_id: contract_id.clone(),
-        client: unsafe { std::mem::transmute(client) },
+        client: unsafe {
+            std::mem::transmute::<
+                utility_contracts::UtilityContractClient<'_>,
+                utility_contracts::UtilityContractClient<'static>,
+            >(client)
+        },
         token_id,
-        token: unsafe { std::mem::transmute(token) },
-        token_admin: unsafe { std::mem::transmute(token_admin) },
+        token: unsafe { std::mem::transmute::<TokenClient<'_>, TokenClient<'static>>(token) },
+        token_admin: unsafe {
+            std::mem::transmute::<StellarAssetClient<'_>, StellarAssetClient<'static>>(token_admin)
+        },
         admin,
         provider,
         user: user_addr,
     }
 }
 
+// Individual test binaries only exercise a subset of the fixture helpers.
+#[allow(dead_code)]
 impl Fixture {
     pub fn advance(&self, secs: u64) {
         self.env.ledger().with_mut(|li| {
@@ -101,6 +119,7 @@ impl Fixture {
 }
 
 /// Panic helper: assert that the closure panics.
+#[allow(dead_code)]
 #[track_caller]
 pub fn assert_panics<T>(f: impl FnOnce() -> T) {
     let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(f));

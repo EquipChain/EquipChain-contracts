@@ -7,7 +7,7 @@
 mod common;
 
 use common::*;
-use soroban_sdk::{testutils::Address as _, BytesN};
+use soroban_sdk::BytesN;
 
 fn make_stream(f: &Fixture, stream_id: u64) {
     f.client.create_continuous_stream(

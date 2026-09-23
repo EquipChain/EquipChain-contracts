@@ -75,7 +75,7 @@ fn reward_applies_only_when_backed_by_deposit() {
 
     // Balance = deposit + reward conversion, but never more than 2x deposit.
     assert!(
-        balance >= 100 && balance <= 200,
+        (100..=200).contains(&balance),
         "balance must stay within deposit + bounded reward, got {balance}"
     );
 

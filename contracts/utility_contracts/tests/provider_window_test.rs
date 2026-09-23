@@ -6,7 +6,6 @@
 mod common;
 
 use common::*;
-use soroban_sdk::testutils::Address as _;
 
 #[test]
 fn withdraw_earnings_within_cap_succeeds() {
