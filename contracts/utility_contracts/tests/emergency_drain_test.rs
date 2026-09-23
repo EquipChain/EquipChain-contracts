@@ -119,7 +119,10 @@ fn drain_blocked_while_paused() {
         &1_000_000_000i128,
         &String::from_str(&f.env, "during pause"),
     );
-    assert!(result.is_err(), "drain must fail while circuit breaker is on");
+    assert!(
+        result.is_err(),
+        "drain must fail while circuit breaker is on"
+    );
 }
 
 const EMERGENCY_DRAIN_MIN: i128 = 1_000_000;

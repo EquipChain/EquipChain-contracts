@@ -93,7 +93,10 @@ fn tax_rate_above_cap_rejected_even_for_admin() {
 
     // 5,001 bps > 50% cap
     let result = f.client.try_set_tax_rate(&5_001i128);
-    assert!(result.is_err(), "tax rate above the 50% cap must be rejected");
+    assert!(
+        result.is_err(),
+        "tax rate above the 50% cap must be rejected"
+    );
 
     // Exactly 50% is allowed.
     f.client.set_tax_rate(&5_000i128);

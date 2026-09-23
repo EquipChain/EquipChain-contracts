@@ -13,10 +13,8 @@ fn paused_contract_rejects_top_up_and_claim() {
     f.client.set_admin(&f.admin);
     let meter_id = f.register_meter();
 
-    f.client.emergency_pause(
-        &f.admin,
-        &String::from_str(&f.env, "active exploit"),
-    );
+    f.client
+        .emergency_pause(&f.admin, &String::from_str(&f.env, "active exploit"));
     assert!(f.client.is_protocol_paused());
 
     // top_up must be blocked while paused.
@@ -40,19 +38,14 @@ fn pause_requires_admin_or_compliance() {
         invoke: &MockAuthInvoke {
             contract: &f.contract_id,
             fn_name: "emergency_pause",
-            args: (
-                attacker.clone(),
-                String::from_str(&f.env, "not authorized"),
-            )
-                .into_val(&f.env),
+            args: (attacker.clone(), String::from_str(&f.env, "not authorized")).into_val(&f.env),
             sub_invokes: &[],
         },
     }
     .into()]);
-    let result = f.client.try_emergency_pause(
-        &attacker,
-        &String::from_str(&f.env, "not authorized"),
-    );
+    let result = f
+        .client
+        .try_emergency_pause(&attacker, &String::from_str(&f.env, "not authorized"));
     assert!(result.is_err(), "attacker must not be able to pause");
 }
 
@@ -62,10 +55,8 @@ fn pause_auto_expires_after_24h() {
     f.client.set_admin(&f.admin);
     let meter_id = f.register_meter();
 
-    f.client.emergency_pause(
-        &f.admin,
-        &String::from_str(&f.env, "test"),
-    );
+    f.client
+        .emergency_pause(&f.admin, &String::from_str(&f.env, "test"));
     assert!(f.client.is_protocol_paused());
 
     // Advance past the 24h expiry window.
@@ -83,7 +74,8 @@ fn admin_can_resume_before_expiry() {
     f.client.set_admin(&f.admin);
     let meter_id = f.register_meter();
 
-    f.client.emergency_pause(&f.admin, &String::from_str(&f.env, "test"));
+    f.client
+        .emergency_pause(&f.admin, &String::from_str(&f.env, "test"));
     f.client.resume_after_pause(&f.admin);
     assert!(!f.client.is_protocol_paused());
 
@@ -113,7 +105,8 @@ fn claim_blocked_while_paused() {
     let meter_id = f.register_meter();
     f.top_up(meter_id, 10_000_000);
 
-    f.client.emergency_pause(&f.admin, &String::from_str(&f.env, "incident"));
+    f.client
+        .emergency_pause(&f.admin, &String::from_str(&f.env, "incident"));
 
     f.env.set_auths(&[]);
     let result = f.client.try_claim(&meter_id);

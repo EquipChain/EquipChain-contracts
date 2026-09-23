@@ -28,7 +28,10 @@ fn withdraw_earnings_above_daily_cap_rejected() {
     // 2_000_000 > 10% of 10_000_000 pool.
     f.env.set_auths(&[]);
     let result = f.client.try_withdraw_earnings(&meter_id, &2_000_000i128);
-    assert!(result.is_err(), "withdrawal above daily cap must be rejected");
+    assert!(
+        result.is_err(),
+        "withdrawal above daily cap must be rejected"
+    );
     // Balance untouched.
     assert_eq!(f.meter_balance(meter_id), 10_000_000);
 }
@@ -45,7 +48,10 @@ fn daily_cap_is_cumulative_across_calls() {
     // Second same-day withdrawal of 500k would push the total to 1.1M > cap.
     f.env.set_auths(&[]);
     let result = f.client.try_withdraw_earnings(&meter_id, &500_000i128);
-    assert!(result.is_err(), "cumulative daily withdrawal must be capped");
+    assert!(
+        result.is_err(),
+        "cumulative daily withdrawal must be capped"
+    );
 }
 
 #[test]
