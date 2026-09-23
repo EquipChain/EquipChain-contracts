@@ -25,13 +25,20 @@ impl GasCostEstimator {
     ) -> i128 {
         let mut monthly_cost = Self::REGISTER_METER;
 
-        monthly_cost = monthly_cost.saturating_add(Self::CLAIM.saturating_mul(Self::CLAIMS_PER_MONTH as i128));
-        monthly_cost = monthly_cost.saturating_add(Self::UPDATE_HEARTBEAT.saturating_mul(Self::HEARTBEATS_PER_MONTH as i128));
-        monthly_cost = monthly_cost.saturating_add(Self::TOP_UP.saturating_mul(Self::TOP_UPS_PER_MONTH as i128));
+        monthly_cost =
+            monthly_cost.saturating_add(Self::CLAIM.saturating_mul(Self::CLAIMS_PER_MONTH as i128));
+        monthly_cost = monthly_cost.saturating_add(
+            Self::UPDATE_HEARTBEAT.saturating_mul(Self::HEARTBEATS_PER_MONTH as i128),
+        );
+        monthly_cost = monthly_cost
+            .saturating_add(Self::TOP_UP.saturating_mul(Self::TOP_UPS_PER_MONTH as i128));
 
         if is_group_meter {
-            monthly_cost = monthly_cost.saturating_sub(Self::TOP_UP.saturating_mul(Self::TOP_UPS_PER_MONTH as i128));
-            monthly_cost = monthly_cost.saturating_add(Self::GROUP_TOP_UP_PER_METER.saturating_mul(Self::TOP_UPS_PER_MONTH as i128));
+            monthly_cost = monthly_cost
+                .saturating_sub(Self::TOP_UP.saturating_mul(Self::TOP_UPS_PER_MONTH as i128));
+            monthly_cost = monthly_cost.saturating_add(
+                Self::GROUP_TOP_UP_PER_METER.saturating_mul(Self::TOP_UPS_PER_MONTH as i128),
+            );
         }
 
         monthly_cost
@@ -50,8 +57,7 @@ impl GasCostEstimator {
         let group_cost = if group_meters > 0 {
             let groups = group_meters / 5;
             if groups > 0 {
-                Self::estimate_meter_monthly_cost(_env, true, 5)
-                    .saturating_mul(groups as i128)
+                Self::estimate_meter_monthly_cost(_env, true, 5).saturating_mul(groups as i128)
             } else {
                 0
             }

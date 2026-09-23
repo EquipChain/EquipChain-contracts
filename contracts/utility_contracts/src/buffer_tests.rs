@@ -1,11 +1,68 @@
 #![cfg(test)]
 
 use crate::{
-    ContinuousFlow, ContractError, StreamStatus, UtilityContract, BUFFER_DURATION_SECONDS,
-    BUFFER_WARNING_THRESHOLD,
+    ContinuousFlow, ContractError, StreamStatus, UtilityContract, UtilityContractClient,
+    BUFFER_DURATION_SECONDS, BUFFER_WARNING_THRESHOLD,
 };
 use soroban_sdk::testutils::{Address as _, Ledger as _};
 use soroban_sdk::{symbol_short, Address, BytesN, Env, Symbol};
+
+#[test]
+fn test_liveness_slash_requires_provider_auth() {
+    let env = Env::default();
+    let contract_id = env.register(UtilityContract, ());
+    let client = UtilityContractClient::new(&env, &contract_id);
+
+    let provider = Address::generate(&env);
+    let payer = Address::generate(&env);
+    let attacker = Address::generate(&env);
+    let stream_id = 1;
+    let initial_buffer = 1_000;
+    let flow = ContinuousFlow {
+        stream_id,
+        flow_rate_per_second: 1,
+        accumulated_balance: 1_000,
+        last_flow_timestamp: 0,
+        created_timestamp: 0,
+        status: StreamStatus::Active,
+        paused_at: 0,
+        provider: provider.clone(),
+        buffer_balance: initial_buffer,
+        buffer_warning_sent: false,
+        payer,
+        priority_tier: 0,
+        grid_epoch_seen: 0,
+        device_mac_pubkey: BytesN::from_array(&env, &[1; 32]),
+        is_unreliable: false,
+    };
+
+    env.as_contract(&contract_id, || {
+        env.storage()
+            .instance()
+            .set(&DataKey::ContinuousFlow(stream_id), &flow);
+        env.storage()
+            .temporary()
+            .set(&DataKey::StreamLastHeartbeat(stream_id), &1_u32);
+    });
+    env.ledger().set_sequence_number(3);
+
+    env.mock_auths(&[(&attacker, &Symbol::new(&env, "apply_liveness_slash"))]);
+    let unauthorized = std::panic::catch_unwind(|| {
+        client.apply_liveness_slash(&stream_id, &7, &1);
+    });
+    assert!(unauthorized.is_err(), "non-provider slash must be rejected");
+
+    let unchanged = client.get_continuous_flow(&stream_id).unwrap();
+    assert_eq!(unchanged.buffer_balance, initial_buffer);
+    assert!(!unchanged.is_unreliable);
+
+    env.mock_auths(&[(&provider, &Symbol::new(&env, "apply_liveness_slash"))]);
+    assert_eq!(client.apply_liveness_slash(&stream_id, &7, &1), 500);
+
+    let slashed = client.get_continuous_flow(&stream_id).unwrap();
+    assert_eq!(slashed.buffer_balance, 500);
+    assert!(slashed.is_unreliable);
+}
 
 #[test]
 fn test_buffer_creation_requirement() {

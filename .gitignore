@@ -27,6 +27,11 @@ issue.md
 # Test artifacts
 contracts/**/errors.txt
 contracts/**/test_out.txt
+contracts/**/test_snapshots/
+*.rs.bak
+
+# Build artifacts
+rust_out
 
 # OS files
 .DS_Store

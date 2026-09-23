@@ -2,6 +2,7 @@
 // This test validates the math and state transitions for SLA penalties.
 
 #[derive(Clone, Debug, PartialEq)]
+#[allow(dead_code)]
 enum BillingType {
     PrePaid,
     PostPaid,
@@ -143,5 +144,3 @@ mod tests {
         assert!(meter.sla_state.is_penalty_active);
     }
 }
-
-fn main() {}
