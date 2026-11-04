@@ -3,7 +3,6 @@ target/
 
 # IDE/Editor
 .idea/
-.vscode/
 *.swp
 *.swo
 
@@ -36,3 +35,5 @@ rust_out
 # OS files
 .DS_Store
 Thumbs.db
+config.bat
+node_modules
